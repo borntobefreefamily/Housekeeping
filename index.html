@@ -4,168 +4,164 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#f7f3ee">
+<meta name="theme-color" content="#FDF6ED">
 <title>Huisplanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#f7f3ee;
-  --surface:#ffffff;
-  --border:#e5ddd3;
-  --text:#1a1612;
-  --muted:#8a7e74;
-  --hint:#b5aca3;
-  --tijn:#2c5f8a;
-  --tijn-light:#e8f0f7;
-  --suzan:#3a7a52;
-  --suzan-light:#e8f3ec;
-  --extra-bg:#fef3e8;
-  --extra-border:#f0c080;
-  --extra-text:#7a4a0a;
-  --done-bg:#edf7f1;
-  --danger:#c0392b;
-  --accent:#5c4a3a;
-  --accent-light:#f0ebe4;
+  --cream:#FDF6ED;--espresso:#2B1A0E;--caramel:#C8722A;--gold:#E8A84C;
+  --steam:#F3E3CC;--moss:#4A6741;--sky:#5B8FA8;--text:#1E1208;--muted:#7A5C3E;
+  --white:#FFFFFF;--border:#E8D8C4;--radius:14px;--radius-sm:9px;
+  --tijn:#2c5f8a;--tijn-light:#e8f0f7;--suzan:#4A6741;--suzan-light:#eaf3e8;
+  --extra-bg:#FFF5E6;--extra-border:#E8A84C;--done-bg:#EAF3E8;--danger:#c0392b;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text)}
-.app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--surface)}
+html,body{height:100%;overflow:hidden;background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--text);line-height:1.6}
+.app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--cream)}
 .screen{display:none;flex-direction:column;height:100%}
 .screen.active{display:flex}
 
-/* PIN */
-.pin-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:2rem 2rem;background:var(--bg)}
-.pin-logo{width:68px;height:68px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px}
-.pin-appname{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text)}
-.pin-sub{font-size:13px;color:var(--muted);margin-top:-10px;letter-spacing:.02em}
-.pin-dots{display:flex;gap:12px}
-.pdot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--border);background:transparent;transition:all .2s}
-.pdot.on{background:var(--accent);border-color:var(--accent)}
-.pin-err{font-size:12px;color:var(--danger);height:16px;text-align:center}
+/* PIN SCREEN */
+.pin-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:2.5rem 2rem;background:var(--espresso)}
+.pin-badge{background:var(--caramel);color:#fff;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:5px 16px;border-radius:100px;margin-bottom:4px}
+.pin-title{font-family:'Fraunces',serif;font-size:2.2rem;font-weight:700;color:var(--cream);text-align:center;line-height:1.1}
+.pin-title span{color:var(--gold);font-style:italic}
+.pin-sub{font-size:.85rem;color:rgba(253,246,237,.55);font-weight:300;margin-top:-8px}
+.pin-dots{display:flex;gap:12px;margin:8px 0}
+.pdot{width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:transparent;transition:all .2s}
+.pdot.on{background:var(--caramel);border-color:var(--caramel)}
+.pin-err{font-size:12px;color:var(--gold);height:16px;text-align:center}
 .keypad{display:grid;grid-template-columns:repeat(3,70px);gap:10px}
-.key{width:70px;height:54px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:20px;font-weight:400;color:var(--text);cursor:pointer;transition:background .1s;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}
-.key:active{background:var(--bg)}
-.pin-hint{font-size:11px;color:var(--hint);text-align:center}
+.key{width:70px;height:54px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:20px;font-weight:300;color:var(--cream);cursor:pointer;transition:background .1s;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}
+.key:active{background:rgba(255,255,255,.15)}
+.pin-hint{font-size:.7rem;color:rgba(253,246,237,.25);letter-spacing:.08em;text-transform:uppercase}
 
 /* HEADER */
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--border);background:var(--white);flex-shrink:0}
 .hdr-l{display:flex;align-items:center;gap:10px}
-.hdr-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#fff}
-.hdr-name{font-size:16px;font-weight:500;color:var(--text)}
-.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px}
-.btn-out{font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.hdr-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;font-family:'DM Sans',sans-serif}
+.hdr-name{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--espresso)}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px;letter-spacing:.04em}
+.btn-out{font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:100px;padding:5px 14px;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.02em}
 
 /* TABS */
-.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;overflow-x:auto}
-.tab{flex:1;white-space:nowrap;padding:10px 6px;font-size:12px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;min-width:0}
-.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--white);flex-shrink:0;overflow-x:auto}
+.tab{flex:1;white-space:nowrap;padding:11px 6px;font-size:11.5px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;letter-spacing:.02em;min-width:0}
+.tab.on{color:var(--caramel);border-bottom-color:var(--caramel)}
 
 /* WEEK NAV */
-.week-nav{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0}
-.week-lbl{font-size:13px;font-weight:500;color:var(--text)}
-.wbtn{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;color:var(--text);font-size:16px;line-height:1;font-family:'DM Sans',sans-serif}
+.week-nav{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1.25rem;background:var(--espresso);flex-shrink:0}
+.week-lbl{font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--cream)}
+.wbtn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:5px 13px;cursor:pointer;color:var(--cream);font-size:15px;line-height:1;font-family:'DM Sans',sans-serif;transition:background .15s}
+.wbtn:active{background:rgba(255,255,255,.18)}
 
 /* SCROLL */
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem 1.25rem}
 
-/* CARDS */
-.day-card{border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;background:var(--surface)}
-.day-hdr{padding:.75rem 1rem;background:var(--bg);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
-.day-name{font-size:14px;font-weight:500;color:var(--text)}
+/* SECTION LABEL */
+.sec-label{font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--caramel);margin-bottom:6px;display:block}
+
+/* DAY CARDS */
+.day-card{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;background:var(--white)}
+.day-hdr{padding:.75rem 1rem;background:var(--steam);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.day-name{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--espresso)}
 .day-prog{font-size:11px;color:var(--muted)}
-.day-chev{font-size:16px;color:var(--hint);transition:transform .2s;display:inline-block}
+.day-chev{font-size:14px;color:var(--muted);transition:transform .2s;display:inline-block}
 .day-chev.open{transform:rotate(180deg)}
 .day-body{padding:.75rem 1rem}
 
 /* LOC BLOCK */
-.loc-block{border-radius:10px;margin-bottom:10px;overflow:hidden;border:1px solid var(--border)}
-.loc-hdr{padding:.5rem .875rem;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
-.loc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.loc-block{border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;border:1px solid var(--border)}
+.loc-hdr{padding:.5rem .875rem;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--espresso)}
+.loc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .loc-body{padding:.5rem .875rem .75rem}
 
 /* TASKS */
-.sec-lbl{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:.625rem 0 .3rem}
-.sec-lbl:first-child{margin-top:0}
-.task-row{display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:3px;border-radius:8px;transition:background .15s}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:2px;border-radius:8px;transition:background .15s}
 .task-row.done-row{background:var(--done-bg)}
 .task-row.extra-row{background:var(--extra-bg);border:1px solid var(--extra-border);border-radius:8px}
-.cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s;font-size:12px}
-.cb.on{background:#3a7a52;border-color:#3a7a52;color:#fff}
-.task-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45}
-.task-txt.done{text-decoration:line-through;color:var(--hint)}
-.badge-extra{font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px;background:var(--extra-border);color:var(--extra-text);margin-left:5px;white-space:nowrap}
-.badge-user{font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px;margin-left:5px;white-space:nowrap}
+.cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s;font-size:11px;color:#fff}
+.cb.on{background:var(--moss);border-color:var(--moss)}
+.task-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45;font-weight:400}
+.task-txt.done{text-decoration:line-through;color:var(--muted)}
+.badge-extra{display:inline-block;font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:100px;background:var(--extra-border);color:var(--espresso);margin-left:5px}
+.badge-user{display:inline-block;font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:100px;margin-left:4px}
 
 /* RECIPES */
-.recipe-block{background:#fef9f3;border:1px solid #f0d9b5;border-radius:10px;padding:.625rem .875rem;margin-bottom:.75rem}
-.recipe-title{font-size:10px;font-weight:500;color:#8a5a1a;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
-.recipe-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f0d9b515}
+.recipe-block{background:#FFF9F0;border:1px solid #F3D49A;border-radius:var(--radius-sm);padding:.625rem .875rem;margin-bottom:.75rem}
+.recipe-lbl{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--caramel);margin-bottom:.35rem;display:block}
+.recipe-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(200,114,42,.1)}
 .recipe-item:last-child{border-bottom:none}
-.recipe-item a{font-size:13px;color:var(--text);text-decoration:none;flex:1}
-.recipe-item a:hover{color:var(--accent)}
+.recipe-item a{font-size:13px;color:var(--espresso);text-decoration:none;flex:1;font-weight:400}
+.recipe-item a:hover{color:var(--caramel)}
 
 /* PROGRESS */
-.prog-card{background:var(--bg);border-radius:12px;padding:.875rem 1rem;margin-bottom:1rem;border:1px solid var(--border)}
-.prog-bar{height:6px;background:var(--border);border-radius:3px;margin-top:6px;overflow:hidden}
-.prog-fill{height:100%;background:#3a7a52;border-radius:3px;transition:width .4s}
+.prog-card{background:var(--espresso);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:1rem}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.prog-title{font-family:'Fraunces',serif;font-size:14px;color:var(--cream)}
+.prog-count{font-size:12px;color:rgba(253,246,237,.5)}
+.prog-bar{height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s}
+.prog-pct{font-size:11px;color:rgba(253,246,237,.4);margin-top:5px}
 
 /* NOTES */
-.notes-area{width:100%;border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;font-size:13px;background:var(--surface);color:var(--text);resize:none;min-height:56px;font-family:'DM Sans',sans-serif;line-height:1.5;margin-top:.25rem}
-.notes-area:focus{outline:none;border-color:var(--accent)}
+.notes-area{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:.5rem .75rem;font-size:13px;background:var(--cream);color:var(--text);resize:none;min-height:56px;font-family:'DM Sans',sans-serif;line-height:1.5;margin-top:.25rem}
+.notes-area:focus{outline:none;border-color:var(--caramel)}
 
 /* SAVE BTN */
-.save-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.75rem;font-family:'DM Sans',sans-serif;letter-spacing:.01em}
-.save-btn:active{opacity:.85}
-.save-btn.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
-.flash{font-size:12px;color:#3a7a52;text-align:center;margin-top:5px;height:15px;transition:opacity .4s}
+.save-btn{width:100%;padding:12px;background:var(--caramel);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.75rem;font-family:'DM Sans',sans-serif;letter-spacing:.04em;transition:background .15s}
+.save-btn:active{background:var(--espresso)}
+.save-btn.sec{background:transparent;color:var(--caramel);border:1.5px solid var(--caramel)}
+.flash{font-size:11px;color:var(--moss);text-align:center;margin-top:5px;height:14px;transition:opacity .4s;letter-spacing:.04em}
 
 /* FORMS */
-.form-section{margin-bottom:1.25rem}
-.form-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;display:block}
-.form-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:8px}
-.form-input:focus{outline:none;border-color:var(--accent)}
+.form-card{background:var(--white);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:1rem;border:1px solid var(--border)}
+.form-lbl{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--caramel);margin-bottom:5px;display:block}
+.form-input{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;background:var(--cream);color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:10px}
+.form-input:focus{outline:none;border-color:var(--caramel);background:var(--white)}
 .form-input:last-child{margin-bottom:0}
-.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.form-card{background:var(--bg);border-radius:12px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border)}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.form-hint{font-size:.72rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;font-style:italic}
 
 /* SETTINGS */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border)}
 .set-row:last-child{border-bottom:none}
-.set-lbl{font-size:14px;color:var(--text)}
-.set-sub{font-size:12px;color:var(--muted);margin-top:2px}
-.btn-sm{padding:6px 14px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:none;color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif}
-.btn-danger{padding:6px 12px;border:1px solid #f0c5c5;border-radius:8px;font-size:12px;background:none;color:var(--danger);cursor:pointer;font-family:'DM Sans',sans-serif}
+.set-lbl{font-size:13px;color:var(--text);font-weight:500}
+.set-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.btn-sm{padding:6px 14px;border:1px solid var(--border);border-radius:100px;font-size:12px;background:none;color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-danger{padding:6px 14px;border:1px solid #f0c5c5;border-radius:100px;font-size:12px;background:none;color:var(--danger);cursor:pointer;font-family:'DM Sans',sans-serif}
 
-/* WORKDAYS */
-.day-pill{display:inline-flex;align-items:center;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:400;color:var(--muted);cursor:pointer;transition:all .15s;margin:3px;font-family:'DM Sans',sans-serif}
-.day-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+/* WORKDAY PILLS */
+.day-pill{display:inline-flex;align-items:center;padding:7px 14px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;margin:3px;font-family:'DM Sans',sans-serif}
+.day-pill.on{background:var(--caramel);border-color:var(--caramel);color:#fff}
 
-/* SECTION TITLE */
-.sec-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);margin:.875rem 0 .5rem;padding-bottom:.375rem;border-bottom:1px solid var(--border)}
+/* SECTION TITLE (serif) */
+.sec-title{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--espresso);margin:.875rem 0 .5rem;padding-bottom:.375rem;border-bottom:1px solid var(--border)}
 
-.empty{font-size:13px;color:var(--hint);font-style:italic;padding:.5rem 0}
-.loading-wrap{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;background:var(--bg)}
-.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.empty{font-size:13px;color:var(--muted);font-style:italic;padding:.5rem 0;font-weight:300}
+.loading-wrap{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;background:var(--espresso)}
+.spinner{width:28px;height:28px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--caramel);border-radius:50%;animation:spin .7s linear infinite}
+.loading-txt{font-size:13px;color:rgba(253,246,237,.4);font-family:'DM Sans',sans-serif;letter-spacing:.06em;text-transform:uppercase}
 @keyframes spin{to{transform:rotate(360deg)}}
-.translate-hint{font-size:11px;color:var(--hint);margin-top:-4px;margin-bottom:4px}
+.translate-hint{font-size:.72rem;color:var(--muted);margin-top:-6px;margin-bottom:8px;font-style:italic}
 </style>
 </head>
 <body>
-<div class="app" id="app">
+<div class="app">
 
 <div class="loading-wrap" id="loading">
   <div class="spinner"></div>
-  <div style="font-size:13px;color:var(--muted)">Laden...</div>
+  <div class="loading-txt">Laden...</div>
 </div>
 
 <!-- PIN -->
-<div class="screen" id="s-pin" style="background:var(--bg)">
+<div class="screen" id="s-pin">
   <div class="pin-wrap">
-    <div class="pin-logo">🏡</div>
-    <div class="pin-appname">Huisplanner</div>
+    <div class="pin-badge">Huisplanner</div>
+    <div class="pin-title">Jouw huis,<br><span>op orde.</span></div>
     <div class="pin-sub">Structuur met warmte</div>
     <div class="pin-dots">
       <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
@@ -186,7 +182,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
 <div class="screen" id="s-worker">
   <div class="hdr">
     <div class="hdr-l">
-      <div class="hdr-avatar" id="w-avatar" style="background:#3a7a52">D</div>
+      <div class="hdr-avatar" id="w-avatar">D</div>
       <div><div class="hdr-name" id="w-name">Diana</div><div class="hdr-sub" id="w-sub">Medewerker</div></div>
     </div>
     <button class="btn-out" onclick="logout()">Uitloggen</button>
@@ -196,7 +192,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
     <div class="week-lbl" id="w-week-lbl">Deze week</div>
     <button class="wbtn" onclick="chWeek(1)">›</button>
   </div>
-  <div class="scroll" id="w-scroll">
+  <div class="scroll">
     <div id="w-prog"></div>
     <div id="w-days"></div>
   </div>
@@ -206,7 +202,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
 <div class="screen" id="s-manager">
   <div class="hdr">
     <div class="hdr-l">
-      <div class="hdr-avatar" id="m-avatar" style="background:var(--tijn)">T</div>
+      <div class="hdr-avatar" id="m-avatar">T</div>
       <div><div class="hdr-name" id="m-name">Beheerder</div><div class="hdr-sub" id="m-sub">Beheerder</div></div>
     </div>
     <button class="btn-out" onclick="logout()">Uitloggen</button>
@@ -214,13 +210,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
   <div class="tabs">
     <button class="tab on" id="t-week" onclick="mTab('week')">Week</button>
     <button class="tab" id="t-plan" onclick="mTab('plan')">Planning</button>
-    <button class="tab" id="t-extra" onclick="mTab('extra')">Extra taak</button>
+    <button class="tab" id="t-extra" onclick="mTab('extra')">Extra</button>
     <button class="tab" id="t-recipe" onclick="mTab('recipe')">Recepten</button>
     <button class="tab" id="t-taken" onclick="mTab('taken')">Taken</button>
     <button class="tab" id="t-inst" onclick="mTab('inst')">Instellingen</button>
   </div>
 
-  <!-- WEEK TAB -->
+  <!-- WEEK -->
   <div id="mt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div class="week-nav">
       <button class="wbtn" onclick="chWeek(-1)">‹</button>
@@ -230,79 +226,79 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
     <div class="scroll"><div id="m-days"></div></div>
   </div>
 
-  <!-- PLANNING TAB -->
+  <!-- PLANNING -->
   <div id="mt-plan" class="scroll" style="display:none">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:1rem">Kies per dag welke locaties Diana schoonmaakt deze week. Sleep locaties tussen dagen voor verschuivingen.</div>
+    <span class="sec-label">Weekplanning</span>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:1rem;font-weight:300">Kies per dag welke locaties Diana schoonmaakt. Sleep locaties tussen dagen om te wisselen.</div>
     <div id="plan-grid"></div>
   </div>
 
-  <!-- EXTRA TAAK TAB -->
+  <!-- EXTRA -->
   <div id="mt-extra" class="scroll" style="display:none">
-    <div class="sec-title">Extra taak toevoegen</div>
+    <span class="sec-label">Extra taak</span>
     <div class="form-card">
       <label class="form-lbl">Omschrijving (NL)</label>
-      <input class="form-input" type="text" id="ex-txt-nl" placeholder="bijv. Zwembad grondig schoonmaken" onblur="autoTranslate('ex-txt-nl','ex-txt-pt','nl')">
-      <div class="translate-hint">Portugese vertaling wordt automatisch ingevuld</div>
+      <input class="form-input" type="text" id="ex-txt-nl" placeholder="bijv. Zwembad extra schoonmaken" onblur="autoTranslate('ex-txt-nl','ex-txt-pt','nl')">
+      <div class="translate-hint">↳ Portugese vertaling wordt automatisch ingevuld</div>
       <label class="form-lbl">Descrição (PT)</label>
       <input class="form-input" type="text" id="ex-txt-pt" placeholder="Automatisch vertaald...">
-      <div class="form-row-2">
+      <div class="form-2col">
         <div><label class="form-lbl">Locatie</label><select class="form-input" id="ex-loc"></select></div>
         <div><label class="form-lbl">Dag</label><select class="form-input" id="ex-day"></select></div>
       </div>
       <label class="form-lbl">Herhaling</label>
-      <select class="form-input" id="ex-repeat" onchange="toggleRepeatDate()">
+      <select class="form-input" id="ex-repeat" onchange="toggleRepeat()">
         <option value="once">Eenmalig</option>
         <option value="weeks">Aantal weken herhalen</option>
         <option value="until">Herhalen tot datum</option>
       </select>
-      <div id="ex-repeat-weeks" style="display:none;margin-top:8px">
-        <label class="form-lbl">Aantal weken (incl. deze week)</label>
-        <input class="form-input" type="number" id="ex-weeks-count" min="1" max="52" value="2">
+      <div id="ex-rep-weeks" style="display:none">
+        <label class="form-lbl">Aantal weken</label>
+        <input class="form-input" type="number" id="ex-weeks-n" min="1" max="52" value="2">
       </div>
-      <div id="ex-repeat-until" style="display:none;margin-top:8px">
-        <label class="form-lbl">Herhalen tot en met</label>
-        <input class="form-input" type="date" id="ex-until-date">
+      <div id="ex-rep-until" style="display:none">
+        <label class="form-lbl">Tot en met</label>
+        <input class="form-input" type="date" id="ex-until">
       </div>
-      <div style="margin-top:4px"><label class="form-lbl">Startweek</label>
-        <select class="form-input" id="ex-week">
-          <option value="0">Deze week</option>
-          <option value="1">Volgende week</option>
-          <option value="2">Over 2 weken</option>
-        </select>
-      </div>
+      <label class="form-lbl">Startweek</label>
+      <select class="form-input" id="ex-week">
+        <option value="0">Deze week</option>
+        <option value="1">Volgende week</option>
+        <option value="2">Over 2 weken</option>
+      </select>
       <button class="save-btn" onclick="addExtra()">+ Inplannen</button>
     </div>
     <div id="ex-list"></div>
   </div>
 
-  <!-- RECEPTEN TAB -->
+  <!-- RECEPTEN -->
   <div id="mt-recipe" class="scroll" style="display:none">
-    <div class="sec-title">Recept toevoegen</div>
+    <span class="sec-label">Recept toevoegen</span>
     <div class="form-card">
       <label class="form-lbl">Gerecht</label>
       <input class="form-input" type="text" id="rec-name" placeholder="bijv. Gehaktbal">
       <label class="form-lbl">Link</label>
       <input class="form-input" type="url" id="rec-url" placeholder="https://...">
-      <div class="form-row-2">
+      <div class="form-2col">
         <div><label class="form-lbl">Dag</label><select class="form-input" id="rec-day"></select></div>
         <div><label class="form-lbl">Week</label><select class="form-input" id="rec-week"><option value="0">Deze week</option><option value="1">Volgende week</option></select></div>
       </div>
-      <button class="save-btn" onclick="addRecipe()">+ Recept toevoegen</button>
+      <button class="save-btn" onclick="addRecipe()">+ Toevoegen</button>
     </div>
     <div id="rec-list"></div>
   </div>
 
-  <!-- TAKEN TAB -->
+  <!-- TAKEN -->
   <div id="mt-taken" class="scroll" style="display:none">
     <div id="fixed-list"></div>
-    <div class="sec-title">Nieuwe vaste taak</div>
+    <span class="sec-label" style="margin-top:.75rem;display:block">Nieuwe vaste taak</span>
     <div class="form-card">
       <label class="form-lbl">Omschrijving (NL)</label>
       <input class="form-input" type="text" id="ft-nl" placeholder="Taakomschrijving..." onblur="autoTranslate('ft-nl','ft-pt','nl')">
-      <div class="translate-hint">Portugese vertaling wordt automatisch ingevuld</div>
+      <div class="translate-hint">↳ Portugese vertaling wordt automatisch ingevuld</div>
       <label class="form-lbl">Descrição (PT)</label>
       <input class="form-input" type="text" id="ft-pt" placeholder="Automatisch vertaald...">
-      <div class="form-row-2">
+      <div class="form-2col">
         <div><label class="form-lbl">Locatie</label><select class="form-input" id="ft-loc"></select></div>
         <div><label class="form-lbl">Categorie</label>
           <select class="form-input" id="ft-cat">
@@ -318,38 +314,38 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
     </div>
   </div>
 
-  <!-- INSTELLINGEN TAB -->
+  <!-- INSTELLINGEN -->
   <div id="mt-inst" class="scroll" style="display:none">
-    <div class="sec-title">Mijn profiel</div>
+    <span class="sec-label">Mijn profiel</span>
     <div class="form-card">
       <label class="form-lbl">Naam</label>
       <input class="form-input" type="text" id="inst-name" placeholder="Jouw naam">
-      <label class="form-lbl">Nieuwe PIN (4 cijfers)</label>
-      <input class="form-input" type="password" id="inst-pin" placeholder="Laat leeg = ongewijzigd" maxlength="4" pattern="[0-9]{4}">
+      <label class="form-lbl">Nieuwe PIN</label>
+      <input class="form-input" type="password" id="inst-pin" placeholder="4 cijfers — laat leeg om niet te wijzigen" maxlength="4">
       <label class="form-lbl">PIN bevestigen</label>
-      <input class="form-input" type="password" id="inst-pin2" placeholder="Herhaal nieuwe PIN" maxlength="4">
+      <input class="form-input" type="password" id="inst-pin2" placeholder="Herhaal PIN" maxlength="4">
       <label class="form-lbl">Taal</label>
       <select class="form-input" id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Português</option></select>
       <button class="save-btn" onclick="saveProfile()">Opslaan</button>
       <div id="inst-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title">Werkdagen medewerker</div>
+    <span class="sec-label">Werkdagen medewerker</span>
     <div class="form-card">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">Selecteer de vaste werkdagen. De planning toont alleen deze dagen.</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem;font-weight:300">De planning toont alleen de geselecteerde werkdagen.</div>
       <div id="day-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
       <button class="save-btn" onclick="saveWorkdays()">Werkdagen opslaan</button>
       <div id="wd-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title">Locaties</div>
+    <span class="sec-label">Locaties</span>
     <div class="form-card">
       <div id="loc-list"></div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
         <input type="text" id="new-loc-name" placeholder="Naam locatie" class="form-input" style="flex:1;margin:0">
-        <input type="color" id="new-loc-color" value="#5c4a3a" style="width:40px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
+        <input type="color" id="new-loc-color" value="#C8722A" style="width:40px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
         <button class="btn-sm" onclick="addLocation()">+</button>
       </div>
     </div>
-    <div class="sec-title">Week beheren</div>
+    <span class="sec-label">Week beheren</span>
     <div class="form-card">
       <div class="set-row"><div><div class="set-lbl">Vinkjes wissen</div><div class="set-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()">Wissen</button></div>
     </div>
@@ -358,55 +354,44 @@ html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans'
 
 </div>
 <script>
-const SUPABASE_URL='https://imojddlvfkpbistifqav.supabase.co';
-const SUPABASE_KEY='sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const SB_URL='https://imojddlvfkpbistifqav.supabase.co';
+const SB_KEY='sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
+const sb=supabase.createClient(SB_URL,SB_KEY);
 const HID='11111111-1111-1111-1111-111111111111';
-
 const DAYS_NL=['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
 const DAYS_PT=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const CAT_NL={tuin:'Tuin & buiten',zwembad:'Zwembad',binnen:'Binnen',koken:'Koken',extra_tijd:'Extra indien tijd'};
 const CAT_PT={tuin:'Jardim & exterior',zwembad:'Piscina',binnen:'Interior',koken:'Cozinhar',extra_tijd:'Extra se houver tempo'};
-const USER_COLORS={tijn:'#2c5f8a',suzan:'#3a7a52'};
 
-let currentUser=null,weekOff=0,pinBuf='';
-let D={users:[],locations:[],fixedTasks:[],weekSchedule:[],extraTasks:[],checks:{},notes:{},recipes:[],workdays:[]};
-let realtimeSubs=[];
+let CU=null,weekOff=0,pinBuf='';
+let D={users:[],locations:[],fixedTasks:[],weekSchedule:[],extraTasks:[],checks:{},notes:{},recipes:[],workdays:[0,1,3,4]};
+let rtSubs=[];
 
-function tr(key){
-  const lang=currentUser?.language||'nl';
-  const map={
-    nl:{worker:'Medewerker',admin:'Beheerder',thisWeek:'Deze week',nextWeek:'Volgende week',prevWeek:'Vorige week',
-      progress:'Voortgang week',tasks:'taken',pct:'% afgerond',save:'Opslaan',saved:'Opgeslagen!',
-      notes:'Notities',notesPlaceholder:'Aantekeningen voor vandaag...',recipes:'Recepten vandaag',
-      extraBadge:'extra',noTasks:'Geen taken voor deze week.',days:DAYS_NL,cats:CAT_NL,pinWrong:'Onjuiste PIN'},
-    pt:{worker:'Colaboradora',admin:'Administrador',thisWeek:'Esta semana',nextWeek:'Próxima semana',prevWeek:'Semana passada',
-      progress:'Progresso da semana',tasks:'tarefas',pct:'% concluído',save:'Guardar',saved:'Guardado!',
-      notes:'Notas',notesPlaceholder:'Anotações para hoje...',recipes:'Receitas de hoje',
-      extraBadge:'extra',noTasks:'Sem tarefas para esta semana.',days:DAYS_PT,cats:CAT_PT,pinWrong:'PIN incorreto'}
-  };
-  return map[lang]?.[key]??key;
-}
+function lang(){return CU?.language||'nl';}
+function days(){return lang()==='pt'?DAYS_PT:DAYS_NL;}
+function cats(){return lang()==='pt'?CAT_PT:CAT_NL;}
+function txt(o){return lang()==='pt'&&o.text_pt?o.text_pt:o.text_nl;}
 
 function wkey(off=0){
-  const n=new Date();const m=new Date(n);
+  const n=new Date(),m=new Date(n);
   m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);
   return m.toISOString().slice(0,10);
 }
+function wlbl(off){
+  const map={nl:{0:'Deze week',1:'Volgende week','-1':'Vorige week'},pt:{0:'Esta semana',1:'Próxima semana','-1':'Semana passada'}};
+  return map[lang()][off]||`Week ${off}`;
+}
 
-function wlbl(off){return off===0?tr('thisWeek'):off===1?tr('nextWeek'):off===-1?tr('prevWeek'):`Week ${off}`;}
-
-function userColor(userId){
-  const u=D.users.find(x=>x.id===userId);
-  if(!u) return '#8a7e74';
+function ucolor(uid){
+  const u=D.users.find(x=>x.id===uid);if(!u)return '#7A5C3E';
   const n=u.name.toLowerCase();
-  if(n.includes('tijn')) return USER_COLORS.tijn;
-  if(n.includes('suzan')||n.includes('suzanne')) return USER_COLORS.suzan;
-  return '#8a7e74';
+  if(n.includes('tijn'))return '#2c5f8a';
+  if(n.includes('suzan'))return '#4A6741';
+  return '#7A5C3E';
 }
 
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,dn,rec,wd]=await Promise.all([
+  const [u,l,ft,ws,et,tc,dn,rec,hh]=await Promise.all([
     sb.from('users').select('*').eq('household_id',HID),
     sb.from('locations').select('*').eq('household_id',HID).order('sort_order'),
     sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order'),
@@ -419,33 +404,29 @@ async function loadAll(){
   ]);
   D.users=u.data||[];D.locations=l.data||[];D.fixedTasks=ft.data||[];
   D.weekSchedule=ws.data||[];D.extraTasks=et.data||[];D.recipes=rec.data||[];
-  D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={checked:true,by:c.checked_by};});
+  D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
-  D.workdays=(wd.data?.[0]?.workdays)||[0,1,3,4];
+  D.workdays=hh.data?.[0]?.workdays||[0,1,3,4];
 }
 
-function setupRealtime(){
-  realtimeSubs.forEach(s=>sb.removeChannel(s));realtimeSubs=[];
-  ['week_schedule','task_checks','extra_tasks','day_notes','recipes'].forEach(tbl=>{
-    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},async()=>{
+function setupRT(){
+  rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
+  ['week_schedule','task_checks','extra_tasks','day_notes','recipes'].forEach(t=>{
+    const ch=sb.channel('rt-'+t).on('postgres_changes',{event:'*',schema:'public',table:t},async()=>{
       await loadAll();
-      if(currentUser?.role==='worker') renderWorker();
-      else renderMgrWeek();
+      if(CU?.role==='worker')renderWorker();else renderMgrWeek();
     }).subscribe();
-    realtimeSubs.push(ch);
+    rtSubs.push(ch);
   });
 }
 
 async function init(){
   document.getElementById('loading').style.display='flex';
-  await loadAll();
-  setupRealtime();
-  // Add workdays column if missing
+  await loadAll();setupRT();
   document.getElementById('loading').style.display='none';
   showScr('pin');
 }
 
-// PIN
 function pp(d){if(pinBuf.length>=4)return;pinBuf+=d;updDots();if(pinBuf.length===4)setTimeout(chkPin,150);}
 function pdel(){pinBuf=pinBuf.slice(0,-1);updDots();document.getElementById('pin-err').textContent='';}
 function updDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length);}
@@ -453,149 +434,130 @@ function updDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).classList
 async function chkPin(){
   const user=D.users.find(u=>u.pin===pinBuf);
   if(user){
-    currentUser=user;pinBuf='';updDots();
+    CU=user;pinBuf='';updDots();
     if(user.pin==='0000'){
       const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 dígitos):':'Kies een nieuwe PIN (4 cijfers):');
-      if(np&&/^\d{4}$/.test(np)){await sb.from('users').update({pin:np}).eq('id',user.id);await loadAll();currentUser=D.users.find(u=>u.id===user.id);}
+      if(np&&/^\d{4}$/.test(np)){await sb.from('users').update({pin:np}).eq('id',user.id);await loadAll();CU=D.users.find(u=>u.id===user.id);}
     }
     showScr(user.role==='admin'?'manager':'worker');
   } else {
-    document.getElementById('pin-err').textContent=tr('pinWrong');
+    const msg=lang()==='pt'?'PIN incorreto':'Onjuiste PIN';
+    document.getElementById('pin-err').textContent=msg;
     pinBuf='';updDots();
   }
 }
 
-function logout(){currentUser=null;weekOff=0;pinBuf='';updDots();document.getElementById('pin-err').textContent='';showScr('pin');}
+function logout(){CU=null;weekOff=0;pinBuf='';updDots();document.getElementById('pin-err').textContent='';showScr('pin');}
 
 function showScr(n){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('s-'+n)?.classList.add('active');
-  if(n==='worker') renderWorker();
-  if(n==='manager') renderManager();
+  if(n==='worker')renderWorker();
+  if(n==='manager')renderManager();
 }
 
-function chWeek(d){weekOff+=d;updWeekLabels();if(currentUser?.role==='worker')renderWorker();else renderMgrWeek();}
-
-function updWeekLabels(){
-  const lbl=wlbl(weekOff);
-  document.getElementById('w-week-lbl').textContent=lbl;
-  const ml=document.getElementById('m-week-lbl');if(ml)ml.textContent=lbl;
+function chWeek(d){weekOff+=d;updWkLbls();if(CU?.role==='worker')renderWorker();else renderMgrWeek();}
+function updWkLbls(){
+  const l=wlbl(weekOff);
+  document.getElementById('w-week-lbl').textContent=l;
+  const m=document.getElementById('m-week-lbl');if(m)m.textContent=l;
 }
 
-// Ensure next week has schedule copied from current
-async function ensureWeekSchedule(off){
+async function ensureWeekSched(off){
   const wk=wkey(off);
-  const existing=D.weekSchedule.filter(s=>s.week_key===wk);
-  if(existing.length) return;
-  // Copy from previous week
-  const prevWk=wkey(off-1);
-  const prev=D.weekSchedule.filter(s=>s.week_key===prevWk);
-  if(!prev.length) return;
-  const inserts=prev.map(s=>({household_id:HID,location_id:s.location_id,week_key:wk,day_index:s.day_index}));
-  await sb.from('week_schedule').insert(inserts);
+  if(D.weekSchedule.filter(s=>s.week_key===wk).length)return;
+  const prev=D.weekSchedule.filter(s=>s.week_key===wkey(off-1));
+  if(!prev.length)return;
+  await sb.from('week_schedule').insert(prev.map(s=>({household_id:HID,location_id:s.location_id,week_key:wk,day_index:s.day_index})));
   await loadAll();
 }
 
-// WORKER RENDER
 function renderWorker(){
-  if(!currentUser) return;
-  const lang=currentUser.language||'nl';
-  const days=lang==='pt'?DAYS_PT:DAYS_NL;
-  const cats=lang==='pt'?CAT_PT:CAT_NL;
-  document.getElementById('w-name').textContent=currentUser.name;
-  document.getElementById('w-sub').textContent=tr('worker');
-  const col=userColor(currentUser.id);
+  if(!CU)return;
+  const col=ucolor(CU.id);
   document.getElementById('w-avatar').style.background=col;
-  document.getElementById('w-avatar').textContent=currentUser.name[0];
-  updWeekLabels();
-  ensureWeekSchedule(weekOff).then(()=>{
+  document.getElementById('w-avatar').textContent=CU.name[0];
+  document.getElementById('w-name').textContent=CU.name;
+  document.getElementById('w-sub').textContent=lang()==='pt'?'Colaboradora':'Medewerker';
+  updWkLbls();
+  ensureWeekSched(weekOff).then(()=>{
     const wk=wkey(weekOff);
-    const sched=D.weekSchedule.filter(s=>s.week_key===wk);
-    const byDay={};sched.forEach(s=>{if(!byDay[s.day_index])byDay[s.day_index]=[];byDay[s.day_index].push(s);});
-    const workdays=D.workdays||[0,1,3,4];
+    const byDay={};D.weekSchedule.filter(s=>s.week_key===wk).forEach(s=>{if(!byDay[s.day_index])byDay[s.day_index]=[];byDay[s.day_index].push(s);});
     let total=0,done=0,html='';
-    workdays.slice().sort((a,b)=>a-b).forEach(di=>{
+    D.workdays.slice().sort((a,b)=>a-b).forEach(di=>{
       const locs=byDay[di]||[];
       const extras=D.extraTasks.filter(e=>e.week_key===wk&&e.day_index===di);
-      const dayRecipes=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-      if(!locs.length&&!extras.length&&!dayRecipes.length) return;
-      let dt=0,dd=0,locHtml='';
-      if(dayRecipes.length){
-        locHtml+=`<div class="recipe-block"><div class="recipe-title">Recepten vandaag</div>`;
-        dayRecipes.forEach(r=>{locHtml+=`<div class="recipe-item"><a href="${r.url}" target="_blank">↗ ${r.name}</a></div>`;});
-        locHtml+='</div>';
+      const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+      if(!locs.length&&!extras.length&&!recs.length)return;
+      let dt=0,dd=0,body='';
+      if(recs.length){
+        body+=`<div class="recipe-block"><span class="recipe-lbl">Recepten vandaag</span>`;
+        recs.forEach(r=>{body+=`<div class="recipe-item"><a href="${r.url}" target="_blank">↗ ${r.name}</a></div>`;});
+        body+='</div>';
       }
       locs.forEach(sr=>{
         const loc=D.locations.find(l=>l.id===sr.location_id);if(!loc)return;
         const tasks=D.fixedTasks.filter(t=>t.location_id===loc.id);
-        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.checked)dd++;});
+        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         const locCats=[...new Set(tasks.map(t=>t.category))];
         const note=D.notes[loc.id+'_'+wk+'_'+di]||'';
         let lb='';
         locCats.forEach(cat=>{
-          const ct=tasks.filter(t=>t.category===cat);
-          lb+=`<div class="sec-lbl">${cats[cat]||cat}</div>`;
-          ct.forEach(t=>{
-            const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.checked;
-            const txt=lang==='pt'&&t.text_pt?t.text_pt:t.text_nl;
-            lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt}</span></div>`;
+          lb+=`<span class="sec-label">${cats()[cat]||cat}</span>`;
+          tasks.filter(t=>t.category===cat).forEach(t=>{
+            const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+            lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt(t)}</span></div>`;
           });
         });
-        lb+=`<div class="sec-lbl">${tr('notes')}</div><textarea class="notes-area" placeholder="${tr('notesPlaceholder')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
-        lb+=`<button class="save-btn" onclick="flashSave('day-flash-${di}-${loc.id.slice(0,4)}')">💾 ${tr('save')}</button><div id="day-flash-${di}-${loc.id.slice(0,4)}" class="flash" style="opacity:0">${tr('saved')}</div>`;
-        locHtml+=`<div class="loc-block"><div class="loc-hdr" style="background:${loc.color}18"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div><div class="loc-body">${lb}</div></div>`;
+        lb+=`<span class="sec-label" style="margin-top:.625rem">${lang()==='pt'?'Notas':'Notities'}</span>`;
+        lb+=`<textarea class="notes-area" placeholder="${lang()==='pt'?'Anotações...':'Aantekeningen...'}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
+        lb+=`<button class="save-btn" onclick="doFlash('fl-${di}-${loc.id.slice(0,4)}')">Opslaan</button><div id="fl-${di}-${loc.id.slice(0,4)}" class="flash" style="opacity:0">${lang()==='pt'?'Guardado!':'Opgeslagen!'}</div>`;
+        body+=`<div class="loc-block"><div class="loc-hdr" style="background:${loc.color}15"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div><div class="loc-body">${lb}</div></div>`;
       });
       if(extras.length){
-        dt+=extras.length;extras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.checked)dd++;});
-        locHtml+=`<div class="sec-lbl" style="color:var(--extra-text)">Extra deze week</div>`;
+        dt+=extras.length;extras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+        body+=`<span class="sec-label" style="color:var(--caramel)">Extra deze week</span>`;
         extras.forEach(e=>{
-          const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.checked;
-          const txt=lang==='pt'&&e.text_pt?e.text_pt:e.text_nl;
-          const by=D.users.find(u=>u.id===D.checks[e.id+'_'+wk+'_'+di]?.by);
-          locHtml+=`<div class="task-row extra-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt}<span class="badge-extra">${tr('extraBadge')}</span></span></div>`;
+          const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.on;
+          body+=`<div class="task-row extra-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt(e)}<span class="badge-extra">${lang()==='pt'?'extra':'extra'}</span></span></div>`;
         });
       }
       total+=dt;done+=dd;
-      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','chv${di}')"><div class="day-name">${days[di]}</div><div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dd}/${dt}</span><span class="day-chev open" id="chv${di}">▾</span></div></div><div id="wd${di}" class="day-body">${locHtml}</div></div>`;
+      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wc${di}')"><div class="day-name">${days()[di]}</div><div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dd}/${dt}</span><span class="day-chev open" id="wc${di}">▾</span></div></div><div id="wd${di}" class="day-body">${body}</div></div>`;
     });
     const pct=total?Math.round(done/total*100):0;
-    document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:500">${tr('progress')}</span><span style="font-size:13px;color:var(--muted)">${done}/${total} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px">${pct}${tr('pct')}</div></div>`;
-    document.getElementById('w-days').innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
+    document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${lang()==='pt'?'Progresso da semana':'Voortgang week'}</span><span class="prog-count">${done}/${total} ${lang()==='pt'?'tarefas':'taken'}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}% ${lang()==='pt'?'concluído':'afgerond'}</div></div>`;
+    document.getElementById('w-days').innerHTML=html||`<div class="empty" style="margin-top:1rem">${lang()==='pt'?'Sem tarefas para esta semana.':'Geen taken voor deze week.'}</div>`;
   });
 }
 
-function togDay(id,chevId){
-  const el=document.getElementById(id);const ch=document.getElementById(chevId);if(!el)return;
+function togDay(id,cid){
+  const el=document.getElementById(id),ch=document.getElementById(cid);if(!el)return;
   const open=el.style.display!=='none';el.style.display=open?'none':'block';if(ch)ch.classList.toggle('open',!open);
 }
 
-async function togTask(taskId,weekKey,dayIndex,isMgr){
-  const k=taskId+'_'+weekKey+'_'+dayIndex;
-  if(D.checks[k]?.checked){
-    await sb.from('task_checks').delete().eq('task_id',taskId).eq('week_key',weekKey).eq('day_index',dayIndex).eq('household_id',HID);
-  } else {
-    await sb.from('task_checks').upsert({household_id:HID,task_id:taskId,task_type:'fixed',week_key:weekKey,day_index:dayIndex,checked_by:currentUser?.id},{onConflict:'household_id,task_id,week_key,day_index'});
-  }
-  await loadAll();
-  if(isMgr)renderMgrWeek();else renderWorker();
+async function togTask(tid,wk,di,mgr){
+  const k=tid+'_'+wk+'_'+di;
+  if(D.checks[k]?.on){await sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
+  else{await sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
+  await loadAll();if(mgr)renderMgrWeek();else renderWorker();
 }
 
-async function saveNote(locId,weekKey,dayIndex,val){
-  await sb.from('day_notes').upsert({household_id:HID,location_id:locId,week_key:weekKey,day_index:dayIndex,note:val,updated_at:new Date().toISOString()},{onConflict:'household_id,location_id,week_key,day_index'});
+async function saveNote(lid,wk,di,val){
+  await sb.from('day_notes').upsert({household_id:HID,location_id:lid,week_key:wk,day_index:di,note:val,updated_at:new Date().toISOString()},{onConflict:'household_id,location_id,week_key,day_index'});
   await loadAll();
 }
 
-function flashSave(id){const fl=document.getElementById(id);if(!fl)return;fl.style.opacity='1';fl.textContent=tr('saved');setTimeout(()=>fl.style.opacity='0',2000);}
+function doFlash(id){const fl=document.getElementById(id);if(!fl)return;fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',2000);}
 
-// MANAGER
 function renderManager(){
-  if(!currentUser)return;
-  const col=userColor(currentUser.id);
+  if(!CU)return;
+  const col=ucolor(CU.id);
   document.getElementById('m-avatar').style.background=col;
-  document.getElementById('m-avatar').textContent=currentUser.name[0];
-  document.getElementById('m-name').textContent=currentUser.name;
-  document.getElementById('m-sub').textContent=tr('admin');
-  updWeekLabels();renderMgrWeek();
+  document.getElementById('m-avatar').textContent=CU.name[0];
+  document.getElementById('m-name').textContent=CU.name;
+  document.getElementById('m-sub').textContent='Beheerder';
+  updWkLbls();renderMgrWeek();
 }
 
 function mTab(n){
@@ -605,92 +567,84 @@ function mTab(n){
   });
   if(n==='week')renderMgrWeek();
   if(n==='plan')renderPlanGrid();
-  if(n==='extra'){populateSels();renderExList();}
-  if(n==='recipe'){populateRecSels();renderRecList();}
+  if(n==='extra'){popSels();renderExList();}
+  if(n==='recipe'){popRecSels();renderRecList();}
   if(n==='taken')renderFixedList();
   if(n==='inst'){renderLocList();loadInstForm();}
 }
 
 function renderMgrWeek(){
-  if(!currentUser)return;
-  ensureWeekSchedule(weekOff).then(()=>{
+  if(!CU)return;
+  ensureWeekSched(weekOff).then(()=>{
     const wk=wkey(weekOff);
-    const sched=D.weekSchedule.filter(s=>s.week_key===wk);
-    const byDay={};sched.forEach(s=>{if(!byDay[s.day_index])byDay[s.day_index]=[];byDay[s.day_index].push(s);});
-    const workdays=D.workdays||[0,1,3,4];
+    const byDay={};D.weekSchedule.filter(s=>s.week_key===wk).forEach(s=>{if(!byDay[s.day_index])byDay[s.day_index]=[];byDay[s.day_index].push(s);});
     let html='';
-    workdays.slice().sort((a,b)=>a-b).forEach(di=>{
+    D.workdays.slice().sort((a,b)=>a-b).forEach(di=>{
       const locs=byDay[di]||[];
       const extras=D.extraTasks.filter(e=>e.week_key===wk&&e.day_index===di);
-      const dayRecipes=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-      let dt=0,dd=0,locHtml='';
-      if(dayRecipes.length){
-        locHtml+=`<div class="recipe-block"><div class="recipe-title">Recepten</div>`;
-        dayRecipes.forEach(r=>{locHtml+=`<div class="recipe-item"><a href="${r.url}" target="_blank">↗ ${r.name}</a><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px">✕</button></div>`;});
-        locHtml+='</div>';
+      const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+      let dt=0,dd=0,body='';
+      if(recs.length){
+        body+=`<div class="recipe-block"><span class="recipe-lbl">Recepten</span>`;
+        recs.forEach(r=>{body+=`<div class="recipe-item"><a href="${r.url}" target="_blank">↗ ${r.name}</a><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px">✕</button></div>`;});
+        body+='</div>';
       }
       locs.forEach(sr=>{
         const loc=D.locations.find(l=>l.id===sr.location_id);if(!loc)return;
         const tasks=D.fixedTasks.filter(t=>t.location_id===loc.id);
-        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.checked)dd++;});
+        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         const locCats=[...new Set(tasks.map(t=>t.category))];
         const note=D.notes[loc.id+'_'+wk+'_'+di]||'';
         let lb='';
         locCats.forEach(cat=>{
-          const ct=tasks.filter(t=>t.category===cat);
-          lb+=`<div class="sec-lbl">${CAT_NL[cat]||cat}</div>`;
-          ct.forEach(t=>{
-            const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.checked;
-            const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
-            const byColor=by?userColor(by):'transparent';
-            const byName=by?D.users.find(u=>u.id===by)?.name:'';
-            lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl}${ck&&byName?`<span class="badge-user" style="background:${byColor}22;color:${byColor}">${byName}</span>`:''}</span></div>`;
+          lb+=`<span class="sec-label">${CAT_NL[cat]||cat}</span>`;
+          tasks.filter(t=>t.category===cat).forEach(t=>{
+            const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+            const byCol=D.checks[t.id+'_'+wk+'_'+di]?.by?ucolor(D.checks[t.id+'_'+wk+'_'+di].by):'';
+            const byNm=D.checks[t.id+'_'+wk+'_'+di]?.by?D.users.find(u=>u.id===D.checks[t.id+'_'+wk+'_'+di].by)?.name:'';
+            lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl}${ck&&byNm?`<span class="badge-user" style="background:${byCol}20;color:${byCol}">${byNm}</span>`:''}</span></div>`;
           });
         });
-        lb+=`<div class="sec-lbl">Notities Diana</div><div style="font-size:13px;color:var(--muted);min-height:20px;padding:.25rem 0">${note||'<em style="color:var(--hint)">Geen notities</em>'}</div>`;
-        locHtml+=`<div class="loc-block"><div class="loc-hdr" style="background:${loc.color}18;justify-content:space-between" draggable="true" ondragstart="dragStart(event,'${sr.id}',${di})" ondragover="ev.preventDefault()" ondrop="dragDrop(event,${di})"><div style="display:flex;align-items:center;gap:8px"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div><span style="color:var(--hint);cursor:grab">⠿</span></div><div class="loc-body">${lb}</div></div>`;
+        lb+=`<span class="sec-label" style="margin-top:.5rem">Notities Diana</span><div style="font-size:12px;color:var(--muted);padding:.25rem 0;min-height:18px;font-style:italic">${note||'—'}</div>`;
+        body+=`<div class="loc-block"><div class="loc-hdr" style="background:${loc.color}15;justify-content:space-between" draggable="true" ondragstart="dragStart(event,'${sr.id}',${di})" ondragover="event.preventDefault()" ondrop="dragDrop(event,${di})"><div style="display:flex;align-items:center;gap:8px"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div><span style="color:var(--muted);cursor:grab;font-size:16px">⠿</span></div><div class="loc-body">${lb}</div></div>`;
       });
       if(extras.length){
-        dt+=extras.length;extras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.checked)dd++;});
-        locHtml+=`<div class="sec-lbl" style="color:var(--extra-text)">Extra deze week</div>`;
+        dt+=extras.length;extras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+        body+=`<span class="sec-label" style="color:var(--caramel);margin-top:.5rem">Extra deze week</span>`;
         extras.forEach(e=>{
-          const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.checked;
-          const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
-          const byColor=by?userColor(by):'transparent';
-          const byName=by?D.users.find(u=>u.id===by)?.name:'';
-          locHtml+=`<div class="task-row extra-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${e.text_nl}<span class="badge-extra">extra</span>${ck&&byName?`<span class="badge-user" style="background:${byColor}22;color:${byColor}">${byName}</span>`:''}</span><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px;flex-shrink:0">✕</button></div>`;
+          const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.on;
+          const byCol=D.checks[e.id+'_'+wk+'_'+di]?.by?ucolor(D.checks[e.id+'_'+wk+'_'+di].by):'';
+          const byNm=D.checks[e.id+'_'+wk+'_'+di]?.by?D.users.find(u=>u.id===D.checks[e.id+'_'+wk+'_'+di].by)?.name:'';
+          body+=`<div class="task-row extra-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${e.text_nl}<span class="badge-extra">extra</span>${ck&&byNm?`<span class="badge-user" style="background:${byCol}20;color:${byCol}">${byNm}</span>`:''}</span><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);flex-shrink:0">✕</button></div>`;
         });
       }
-      html+=`<div class="day-card" ondragover="event.preventDefault()" ondrop="dragDrop(event,${di})"><div class="day-hdr" onclick="togDay('md${di}','mc${di}')"><div class="day-name">${DAYS_NL[di]}</div><div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dd}/${dt}</span><span class="day-chev open" id="mc${di}">▾</span></div></div><div id="md${di}" class="day-body">${locHtml||`<div class="empty">Geen locaties gepland. Ga naar Planning.</div>`}</div></div>`;
+      html+=`<div class="day-card" ondragover="event.preventDefault()" ondrop="dragDrop(event,${di})"><div class="day-hdr" onclick="togDay('md${di}','mc${di}')"><div class="day-name">${DAYS_NL[di]}</div><div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dd}/${dt}</span><span class="day-chev open" id="mc${di}">▾</span></div></div><div id="md${di}" class="day-body">${body||`<div class="empty">Geen locaties gepland — ga naar Planning.</div>`}</div></div>`;
     });
     const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">Geen werkdagen geconfigureerd.</div>`;
   });
 }
 
-// DRAG & DROP
 let dragData=null;
-function dragStart(e,schedId,fromDay){dragData={schedId,fromDay};e.dataTransfer.effectAllowed='move';}
-async function dragDrop(e,toDay){
-  e.preventDefault();if(!dragData||dragData.fromDay===toDay)return;
-  await sb.from('week_schedule').update({day_index:toDay}).eq('id',dragData.schedId);
+function dragStart(e,sid,fd){dragData={sid,fd};e.dataTransfer.effectAllowed='move';}
+async function dragDrop(e,td){
+  e.preventDefault();if(!dragData||dragData.fd===td)return;
+  await sb.from('week_schedule').update({day_index:td}).eq('id',dragData.sid);
   dragData=null;await loadAll();renderMgrWeek();renderPlanGrid();
 }
 
-// PLAN GRID
 function renderPlanGrid(){
   const el=document.getElementById('plan-grid');if(!el)return;
   const wk=wkey(weekOff);
-  const workdays=D.workdays||[0,1,3,4];
   let html='';
-  workdays.slice().sort((a,b)=>a-b).forEach(di=>{
-    const scheduled=D.weekSchedule.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id);
-    html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${DAYS_NL[di]}</div>`;
+  D.workdays.slice().sort((a,b)=>a-b).forEach(di=>{
+    const sched=D.weekSchedule.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id);
+    html+=`<div style="margin-bottom:16px"><div style="font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--espresso);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${DAYS_NL[di]}</div>`;
     D.locations.forEach(loc=>{
-      const on=scheduled.includes(loc.id);
-      html+=`<div onclick="togSchedule('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;margin-bottom:4px;border-radius:10px;border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'15':'var(--surface)'};cursor:pointer;transition:all .15s">
+      const on=sched.includes(loc.id);
+      html+=`<div onclick="togSched('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;margin-bottom:4px;border-radius:var(--radius-sm);border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'12':'var(--white)'};cursor:pointer;transition:all .15s">
         <div class="loc-dot" style="background:${loc.color}"></div>
-        <span style="font-size:13px;flex:1">${loc.name}</span>
-        ${on?`<span style="color:${loc.color};font-weight:500;font-size:14px">✓</span>`:''}
+        <span style="font-size:13px;flex:1;color:var(--text)">${loc.name}</span>
+        ${on?`<span style="color:${loc.color};font-weight:700">✓</span>`:''}
       </div>`;
     });
     html+='</div>';
@@ -698,24 +652,23 @@ function renderPlanGrid(){
   el.innerHTML=html;
 }
 
-async function togSchedule(locId,dayIndex,weekKey){
-  const ex=D.weekSchedule.find(s=>s.location_id===locId&&s.week_key===weekKey&&s.day_index===dayIndex);
-  if(ex){await sb.from('week_schedule').delete().eq('id',ex.id);}
-  else{await sb.from('week_schedule').insert({household_id:HID,location_id:locId,week_key:weekKey,day_index:dayIndex});}
+async function togSched(lid,di,wk){
+  const ex=D.weekSchedule.find(s=>s.location_id===lid&&s.week_key===wk&&s.day_index===di);
+  if(ex)await sb.from('week_schedule').delete().eq('id',ex.id);
+  else await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:wk,day_index:di});
   await loadAll();renderPlanGrid();renderMgrWeek();
 }
 
-// EXTRA TASKS
-function toggleRepeatDate(){
+function toggleRepeat(){
   const v=document.getElementById('ex-repeat').value;
-  document.getElementById('ex-repeat-weeks').style.display=v==='weeks'?'block':'none';
-  document.getElementById('ex-repeat-until').style.display=v==='until'?'block':'none';
+  document.getElementById('ex-rep-weeks').style.display=v==='weeks'?'block':'none';
+  document.getElementById('ex-rep-until').style.display=v==='until'?'block':'none';
 }
 
-function populateSels(){
-  const ls=document.getElementById('ex-loc');const ds=document.getElementById('ex-day');
+function popSels(){
+  const ls=document.getElementById('ex-loc'),ds=document.getElementById('ex-day');
   if(ls)ls.innerHTML=D.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
-  if(ds){const wd=D.workdays||[0,1,3,4];ds.innerHTML=wd.slice().sort((a,b)=>a-b).map(i=>`<option value="${i}">${DAYS_NL[i]}</option>`).join('');}
+  if(ds)ds.innerHTML=D.workdays.slice().sort((a,b)=>a-b).map(i=>`<option value="${i}">${DAYS_NL[i]}</option>`).join('');
 }
 
 async function addExtra(){
@@ -723,63 +676,39 @@ async function addExtra(){
   const pt=document.getElementById('ex-txt-pt').value.trim();
   const loc=document.getElementById('ex-loc').value;
   const day=parseInt(document.getElementById('ex-day').value);
-  const startOff=parseInt(document.getElementById('ex-week').value);
-  const repeat=document.getElementById('ex-repeat').value;
+  const sOff=parseInt(document.getElementById('ex-week').value);
+  const rep=document.getElementById('ex-repeat').value;
   if(!nl)return;
-  const weeksToInsert=[];
-  if(repeat==='once'){
-    weeksToInsert.push(wkey(startOff));
-  } else if(repeat==='weeks'){
-    const count=parseInt(document.getElementById('ex-weeks-count').value)||1;
-    for(let i=0;i<count;i++) weeksToInsert.push(wkey(startOff+i));
-  } else if(repeat==='until'){
-    const untilDate=document.getElementById('ex-until-date').value;
-    if(!untilDate)return;
-    let off=startOff;
-    while(true){const wk=wkey(off);if(wk>untilDate)break;weeksToInsert.push(wk);off++;if(off>52)break;}
-  }
-  const inserts=weeksToInsert.map(wk=>({household_id:HID,location_id:loc,week_key:wk,day_index:day,text_nl:nl,text_pt:pt||nl}));
-  await sb.from('extra_tasks').insert(inserts);
+  const wks=[];
+  if(rep==='once'){wks.push(wkey(sOff));}
+  else if(rep==='weeks'){const n=parseInt(document.getElementById('ex-weeks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
+  else if(rep==='until'){const ud=document.getElementById('ex-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>52)break;wks.push(w);o++;}}
+  await sb.from('extra_tasks').insert(wks.map(w=>({household_id:HID,location_id:loc,week_key:w,day_index:day,text_nl:nl,text_pt:pt||nl})));
   document.getElementById('ex-txt-nl').value='';document.getElementById('ex-txt-pt').value='';
   await loadAll();renderExList();mTab('week');
 }
 
-async function delExtra(id){
-  await sb.from('extra_tasks').delete().eq('id',id);
-  await loadAll();renderExList();renderMgrWeek();
-}
+async function delExtra(id){await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
 
 function renderExList(){
   const el=document.getElementById('ex-list');if(!el)return;
   const wk=wkey(weekOff);
   const up=D.extraTasks.filter(e=>e.week_key>=wk);
   if(!up.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen extra taken gepland.</div>';return;}
-  // Group by text_nl to show recurring tasks nicely
-  const grouped={};
-  up.forEach(e=>{if(!grouped[e.text_nl])grouped[e.text_nl]=[];grouped[e.text_nl].push(e);});
+  const gr={};up.forEach(e=>{if(!gr[e.text_nl])gr[e.text_nl]=[];gr[e.text_nl].push(e);});
   let html='<div class="sec-title">Geplande extra taken</div>';
-  Object.entries(grouped).forEach(([txt,tasks])=>{
-    const weeks=tasks.map(t=>t.week_key).sort();
-    const recurring=tasks.length>1;
-    html+=`<div class="task-row extra-row" style="margin-bottom:6px;align-items:flex-start">
-      <div style="flex:1"><div class="task-txt">${txt}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px">${DAYS_NL[tasks[0].day_index]} · ${recurring?`${weeks[0]} t/m ${weeks[weeks.length-1]} (${tasks.length}×)`:weeks[0]}</div></div>
-      <button onclick="delExtraGroup(${JSON.stringify(tasks.map(t=>t.id))})" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px">✕</button>
-    </div>`;
+  Object.entries(gr).forEach(([t,ts])=>{
+    const wks=ts.map(x=>x.week_key).sort();
+    html+=`<div class="task-row extra-row" style="margin-bottom:6px"><div style="flex:1"><div class="task-txt">${t}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${DAYS_NL[ts[0].day_index]} · ${ts.length>1?`${wks[0]} t/m ${wks[wks.length-1]} (${ts.length}×)`:wks[0]}</div></div><button onclick="delExGroup(${JSON.stringify(ts.map(x=>x.id))})" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button></div>`;
   });
   el.innerHTML=html;
 }
 
-async function delExtraGroup(ids){
-  for(const id of ids) await sb.from('extra_tasks').delete().eq('id',id);
-  await loadAll();renderExList();renderMgrWeek();
-}
+async function delExGroup(ids){for(const id of ids)await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
 
-// RECIPES
-function populateRecSels(){
+function popRecSels(){
   const ds=document.getElementById('rec-day');
-  const wd=D.workdays||[0,1,3,4];
-  if(ds)ds.innerHTML=wd.slice().sort((a,b)=>a-b).map(i=>`<option value="${i}">${DAYS_NL[i]}</option>`).join('');
+  if(ds)ds.innerHTML=D.workdays.slice().sort((a,b)=>a-b).map(i=>`<option value="${i}">${DAYS_NL[i]}</option>`).join('');
 }
 
 async function addRecipe(){
@@ -793,19 +722,15 @@ async function addRecipe(){
   await loadAll();renderRecList();mTab('week');
 }
 
-async function delRecipe(id){
-  await sb.from('recipes').delete().eq('id',id);
-  await loadAll();renderRecList();renderMgrWeek();
-}
+async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await loadAll();renderRecList();renderMgrWeek();}
 
 function renderRecList(){
   const el=document.getElementById('rec-list');if(!el)return;
   const wk=wkey(weekOff);const up=D.recipes.filter(r=>r.week_key>=wk);
   if(!up.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen recepten gepland.</div>';return;}
-  el.innerHTML='<div class="sec-title">Geplande recepten</div>'+up.map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="font-size:16px">↗</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${DAYS_NL[r.day_index]} · ${r.week_key}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint)">✕</button></div>`).join('');
+  el.innerHTML='<div class="sec-title">Geplande recepten</div>'+up.map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">↗</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${DAYS_NL[r.day_index]} · ${r.week_key}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button></div>`).join('');
 }
 
-// FIXED TASKS
 function renderFixedList(){
   const el=document.getElementById('fixed-list');if(!el)return;
   const ls=document.getElementById('ft-loc');if(ls)ls.innerHTML=D.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
@@ -813,8 +738,8 @@ function renderFixedList(){
   D.locations.forEach(loc=>{
     const tasks=D.fixedTasks.filter(t=>t.location_id===loc.id);
     html+=`<div class="sec-title" style="display:flex;align-items:center;gap:6px"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div>`;
-    if(!tasks.length){html+='<div class="empty">Geen vaste taken</div>';return;}
-    tasks.forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div><div style="font-size:11px;color:var(--hint)">${CAT_NL[t.category]||t.category}${t.text_pt?` · ${t.text_pt}`:''}</div></div><button onclick="delFixed('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint)">✕</button></div>`;});
+    if(!tasks.length){html+='<div class="empty">Geen vaste taken</div>';}
+    else tasks.forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div><div style="font-size:11px;color:var(--muted)">${CAT_NL[t.category]||t.category}${t.text_pt?` · ${t.text_pt}`:''}</div></div><button onclick="delFixed('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button></div>`;});
   });
   el.innerHTML=html;
 }
@@ -832,67 +757,60 @@ async function addFixed(){
 
 async function delFixed(id){await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
 
-// LOCATIONS
 function renderLocList(){
   const el=document.getElementById('loc-list');if(!el)return;
   if(!D.locations.length){el.innerHTML='<div class="empty">Nog geen locaties.</div>';return;}
-  el.innerHTML=D.locations.map(l=>`<div class="task-row" style="margin-bottom:4px"><div class="loc-dot" style="background:${l.color}"></div><span class="task-txt">${l.name}</span><button onclick="delLocation('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint)">✕</button></div>`).join('');
+  el.innerHTML=D.locations.map(l=>`<div class="task-row" style="margin-bottom:4px"><div class="loc-dot" style="background:${l.color}"></div><span class="task-txt">${l.name}</span><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">✕</button></div>`).join('');
 }
 
 async function addLocation(){
   const name=document.getElementById('new-loc-name').value.trim();
   const color=document.getElementById('new-loc-color').value;
   if(!name)return;
-  const maxO=Math.max(0,...D.locations.map(l=>l.sort_order));
-  await sb.from('locations').insert({household_id:HID,name,color,sort_order:maxO+1});
+  const mo=Math.max(0,...D.locations.map(l=>l.sort_order));
+  await sb.from('locations').insert({household_id:HID,name,color,sort_order:mo+1});
   document.getElementById('new-loc-name').value='';
   await loadAll();renderLocList();
 }
 
-async function delLocation(id){
-  if(!confirm('Locatie verwijderen? Dit verwijdert ook alle gekoppelde taken.'))return;
+async function delLoc(id){
+  if(!confirm('Locatie verwijderen inclusief alle taken?'))return;
   await sb.from('fixed_tasks').delete().eq('location_id',id);
   await sb.from('week_schedule').delete().eq('location_id',id);
   await sb.from('locations').delete().eq('id',id);
   await loadAll();renderLocList();renderMgrWeek();
 }
 
-// WORKDAYS
 function loadInstForm(){
-  if(!currentUser)return;
-  const ni=document.getElementById('inst-name');const li=document.getElementById('inst-lang');
-  if(ni)ni.value=currentUser.name;if(li)li.value=currentUser.language||'nl';
+  if(!CU)return;
+  const ni=document.getElementById('inst-name'),li=document.getElementById('inst-lang');
+  if(ni)ni.value=CU.name;if(li)li.value=CU.language||'nl';
   const dt=document.getElementById('day-toggles');if(!dt)return;dt.innerHTML='';
   DAYS_NL.forEach((d,i)=>{
     const b=document.createElement('button');b.className='day-pill'+(D.workdays.includes(i)?' on':'');
     b.textContent=d;b.onclick=()=>{
       if(D.workdays.includes(i))D.workdays=D.workdays.filter(x=>x!==i);else D.workdays.push(i);
-      renderLocList();loadInstForm();
+      loadInstForm();
     };dt.appendChild(b);
   });
 }
 
 async function saveWorkdays(){
   await sb.from('households').update({workdays:D.workdays}).eq('id',HID);
-  await loadAll();
-  const fl=document.getElementById('wd-flash');if(fl){fl.style.opacity='1';fl.textContent='Werkdagen opgeslagen!';setTimeout(()=>fl.style.opacity='0',2000);}
+  await loadAll();doFlash('wd-flash');
 }
 
 async function saveProfile(){
   const name=document.getElementById('inst-name').value.trim();
-  const lang=document.getElementById('inst-lang').value;
+  const lang2=document.getElementById('inst-lang').value;
   const pin=document.getElementById('inst-pin').value;
   const pin2=document.getElementById('inst-pin2').value;
-  if(pin){
-    if(!/^\d{4}$/.test(pin)){alert('PIN moet 4 cijfers zijn.');return;}
-    if(pin!==pin2){alert('PINs komen niet overeen.');return;}
-  }
-  const updates={name,language:lang};if(pin)updates.pin=pin;
-  await sb.from('users').update(updates).eq('id',currentUser.id);
-  await loadAll();currentUser=D.users.find(u=>u.id===currentUser.id);
+  if(pin){if(!/^\d{4}$/.test(pin)){alert('PIN moet 4 cijfers zijn.');return;}if(pin!==pin2){alert('PINs komen niet overeen.');return;}}
+  const upd={name,language:lang2};if(pin)upd.pin=pin;
+  await sb.from('users').update(upd).eq('id',CU.id);
+  await loadAll();CU=D.users.find(u=>u.id===CU.id);
   document.getElementById('inst-pin').value='';document.getElementById('inst-pin2').value='';
-  const fl=document.getElementById('inst-flash');if(fl){fl.style.opacity='1';fl.textContent='Opgeslagen!';setTimeout(()=>fl.style.opacity='0',2000);}
-  renderManager();
+  doFlash('inst-flash');renderManager();
 }
 
 async function clearChecks(){
@@ -901,36 +819,22 @@ async function clearChecks(){
   await loadAll();renderMgrWeek();
 }
 
-// AUTO-TRANSLATE
-async function autoTranslate(fromId,toId,fromLang){
-  const fromEl=document.getElementById(fromId);const toEl=document.getElementById(toId);
-  if(!fromEl||!toEl)return;
-  const text=fromEl.value.trim();if(!text||toEl.value.trim())return;
-  const toLang=fromLang==='nl'?'pt':'nl';
-  const langName=toLang==='pt'?'Europees Portugees':'Nederlands';
-  toEl.placeholder='Vertalen...';
+async function autoTranslate(fId,tId){
+  const fEl=document.getElementById(fId),tEl=document.getElementById(tId);
+  if(!fEl||!tEl||!fEl.value.trim()||tEl.value.trim())return;
+  tEl.placeholder='Vertalen...';
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:100,
-        system:`Vertaal de volgende huishoudtaak naar ${langName}. Geef ALLEEN de vertaling terug, geen uitleg, geen aanhalingstekens.`,
-        messages:[{role:'user',content:text}]})});
-    const data=await res.json();
-    const translated=data.content?.[0]?.text?.trim();
-    if(translated)toEl.value=translated;
+        system:'Vertaal de volgende huishoudtaak naar Europees Portugees. Geef ALLEEN de vertaling terug, geen uitleg, geen aanhalingstekens.',
+        messages:[{role:'user',content:fEl.value.trim()}]})});
+    const d=await res.json();const t=d.content?.[0]?.text?.trim();
+    if(t)tEl.value=t;
   }catch(e){}
-  toEl.placeholder='Automatisch vertaald...';
+  tEl.placeholder='Automatisch vertaald...';
 }
 
-// ADD WORKDAYS COLUMN + SUZAN USER (first run)
-async function ensureSetup(){
-  // Add Suzan if not exists
-  const suzan=D.users.find(u=>u.name.toLowerCase().includes('suzan'));
-  if(!suzan){
-    await sb.from('users').insert({household_id:HID,name:'Suzan',role:'admin',pin:'9999',language:'nl'});
-  }
-}
-
-init().then(()=>ensureSetup());
+init();
 </script>
 </body>
 </html>
