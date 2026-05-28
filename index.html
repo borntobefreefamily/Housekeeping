@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f9f5f0">
+<title>Huisplanner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --cr:#7a5c3a;--cr-light:#f5efe6;--cr-mid:#c4956a;--cr-dark:#4a3520;
+  --cg:#4a7c59;--cg-light:#e8f2eb;--cg-mid:#7aad8a;
+  --cs:#f9f5f0;--cb:#e8ddd0;--cw:#ffffff;
+  --danger:#c0392b;
+}
+html,body{height:100%;overflow:hidden;background:var(--cs)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--cr-dark)}
+.app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--cw)}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;height:100%}
+.screen.active{display:flex}
+
+/* PIN SCREEN */
+.pin-screen{align-items:center;justify-content:center;gap:1.25rem;padding:2rem 1.5rem;background:var(--cs)}
+.app-logo{width:64px;height:64px;border-radius:50%;background:var(--cg-light);display:flex;align-items:center;justify-content:center;font-size:28px}
+.app-name{font-size:22px;font-weight:600;color:var(--cr-dark)}
+.app-sub{font-size:13px;color:var(--cr);margin-top:-10px}
+.pin-dots{display:flex;gap:12px;margin:8px 0}
+.pdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--cb);background:transparent;transition:all .15s}
+.pdot.on{background:var(--cr);border-color:var(--cr)}
+.pin-err{font-size:12px;color:var(--danger);height:16px;text-align:center}
+.keypad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
+.key{width:72px;height:56px;border-radius:14px;border:1px solid var(--cb);background:var(--cw);font-size:20px;font-weight:500;color:var(--cr-dark);cursor:pointer;transition:background .1s;display:flex;align-items:center;justify-content:center}
+.key:active{background:var(--cs)}
+.key.del{font-size:18px}
+.pin-hint{font-size:11px;color:#aaa;text-align:center}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--cb);background:var(--cw);flex-shrink:0}
+.hdr-l{display:flex;align-items:center;gap:10px}
+.hdr-avatar{width:36px;height:36px;border-radius:50%;background:var(--cg-light);display:flex;align-items:center;justify-content:center;font-size:16px}
+.hdr-name{font-size:16px;font-weight:600;color:var(--cr-dark)}
+.hdr-role{font-size:11px;color:var(--cr)}
+.btn-out{font-size:12px;color:#888;background:none;border:1px solid var(--cb);border-radius:8px;padding:5px 10px;cursor:pointer}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--cb);background:var(--cw);flex-shrink:0}
+.tab{flex:1;padding:10px 4px;font-size:12px;font-weight:500;color:#888;background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s}
+.tab.on{color:var(--cr-dark);border-bottom-color:var(--cr)}
+
+/* SCROLL BODY */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem 1.25rem}
+
+/* WEEK NAV */
+.week-nav{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1.25rem;background:var(--cs);border-bottom:1px solid var(--cb);flex-shrink:0}
+.week-lbl{font-size:13px;font-weight:600;color:var(--cr-dark)}
+.wbtn{background:none;border:1px solid var(--cb);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--cr-dark);font-size:16px;line-height:1}
+
+/* DAY CARDS */
+.day-card{border:1px solid var(--cb);border-radius:14px;margin-bottom:12px;overflow:hidden;background:var(--cw)}
+.day-hdr{padding:.75rem 1rem;background:var(--cs);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.day-hdr-l{display:flex;align-items:center;gap:8px}
+.day-name{font-size:14px;font-weight:600;color:var(--cr-dark)}
+.day-prog{font-size:11px;color:#888}
+.day-body{padding:.75rem 1rem}
+.day-chev{font-size:18px;color:#aaa;transition:transform .2s}
+.day-chev.open{transform:rotate(180deg)}
+
+/* LOCATIE BLOK */
+.loc-block{border-radius:10px;margin-bottom:10px;overflow:hidden;border:1px solid var(--cb)}
+.loc-hdr{padding:.5rem .875rem;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.loc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.loc-body{padding:.5rem .875rem}
+
+/* TAKEN */
+.sec-lbl{font-size:10px;font-weight:600;color:var(--cr);text-transform:uppercase;letter-spacing:.06em;margin:.625rem 0 .3rem}
+.sec-lbl:first-child{margin-top:0}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid #f5f0ea}
+.task-row:last-child{border-bottom:none}
+.cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--cb);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s;font-size:13px}
+.cb.on{background:var(--cg);border-color:var(--cg);color:#fff}
+.cb.skip{background:#e8e0d8;border-color:#ccc;color:#aaa}
+.task-txt{font-size:13px;color:var(--cr-dark);flex:1;line-height:1.4}
+.task-txt.done{text-decoration:line-through;color:#aaa}
+.task-txt.skipped{color:#bbb;font-style:italic}
+.badge{font-size:10px;padding:2px 7px;border-radius:8px;margin-left:4px;white-space:nowrap}
+.badge-extra{background:var(--cr-light);color:var(--cr)}
+.badge-skip{background:#f0ebe4;color:#aaa}
+
+/* RECEPTEN */
+.recipe-section{background:var(--cr-light);border-radius:10px;padding:.625rem .875rem;margin-bottom:.75rem}
+.recipe-title{font-size:11px;font-weight:600;color:var(--cr);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
+.recipe-link{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(122,92,58,.1)}
+.recipe-link:last-child{border-bottom:none}
+.recipe-link a{font-size:13px;color:var(--cr-dark);text-decoration:none;flex:1}
+.recipe-link a:hover{text-decoration:underline}
+.btn-del-recipe{background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px}
+
+/* NOTITIES */
+.notes-wrap{margin-top:.75rem}
+.notes-area{width:100%;border:1px solid var(--cb);border-radius:8px;padding:.5rem .75rem;font-size:13px;background:var(--cw);color:var(--cr-dark);resize:none;min-height:60px;font-family:inherit;line-height:1.5}
+.notes-area:focus{outline:none;border-color:var(--cr-mid)}
+
+/* SAVE BTN */
+.save-btn{width:100%;padding:11px;background:var(--cr);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.75rem}
+.save-btn:active{background:var(--cr-dark)}
+.flash{font-size:12px;color:var(--cg);text-align:center;margin-top:5px;height:15px;transition:opacity .4s}
+
+/* PROGRESS */
+.prog-card{background:var(--cs);border-radius:12px;padding:.875rem 1rem;margin-bottom:1rem;border:1px solid var(--cb)}
+.prog-bar{height:8px;background:var(--cb);border-radius:4px;margin-top:6px;overflow:hidden}
+.prog-fill{height:100%;background:var(--cg);border-radius:4px;transition:width .3s}
+
+/* FORMS */
+.form-card{background:var(--cs);border-radius:12px;padding:.875rem 1rem;margin-bottom:1rem;border:1px solid var(--cb)}
+.form-row{margin-bottom:8px}
+.form-row:last-child{margin-bottom:0}
+.form-row input,.form-row select,.form-row textarea{width:100%;border:1px solid var(--cb);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--cw);color:var(--cr-dark);font-family:inherit}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--cr-mid)}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lbl{font-size:11px;font-weight:600;color:var(--cr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+
+/* SETTINGS */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid #f0ebe4}
+.set-lbl{font-size:14px;color:var(--cr-dark)}
+.set-sub{font-size:12px;color:#999}
+.btn-sm{padding:6px 14px;border:1px solid var(--cb);border-radius:8px;font-size:12px;background:none;color:var(--cr-dark);cursor:pointer}
+.btn-danger{padding:6px 12px;border:1px solid #e8c5c5;border-radius:8px;font-size:12px;background:none;color:var(--danger);cursor:pointer}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;height:100vh;font-size:14px;color:var(--cr);background:var(--cs)}
+.spinner{width:32px;height:32px;border:3px solid var(--cb);border-top-color:var(--cr);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* DRAG */
+.dragging{opacity:.5}
+.drag-over{border:2px dashed var(--cr-mid) !important}
+
+.empty{font-size:13px;color:#bbb;font-style:italic;padding:.5rem 0}
+.sec-title{font-size:13px;font-weight:600;color:var(--cr-dark);margin:.875rem 0 .5rem;padding-bottom:.375rem;border-bottom:1px solid var(--cb)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading" id="loading">
+    <div style="text-align:center">
+      <div class="spinner"></div>
+      <div>Laden...</div>
+    </div>
+  </div>
+
+  <!-- PIN SCREEN -->
+  <div class="screen pin-screen" id="s-pin">
+    <div class="app-logo">🏡</div>
+    <div class="app-name">Huisplanner</div>
+    <div class="app-sub">Structuur met warmte</div>
+    <div class="pin-dots">
+      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
+      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    </div>
+    <div id="pin-err" class="pin-err"></div>
+    <div class="keypad">
+      <button class="key" onclick="pp('1')">1</button>
+      <button class="key" onclick="pp('2')">2</button>
+      <button class="key" onclick="pp('3')">3</button>
+      <button class="key" onclick="pp('4')">4</button>
+      <button class="key" onclick="pp('5')">5</button>
+      <button class="key" onclick="pp('6')">6</button>
+      <button class="key" onclick="pp('7')">7</button>
+      <button class="key" onclick="pp('8')">8</button>
+      <button class="key" onclick="pp('9')">9</button>
+      <button class="key" style="visibility:hidden"></button>
+      <button class="key" onclick="pp('0')">0</button>
+      <button class="key del" onclick="pdel()">⌫</button>
+    </div>
+    <div class="pin-hint" id="pin-hint">Voer je PIN in</div>
+  </div>
+
+  <!-- WORKER SCREEN -->
+  <div class="screen" id="s-worker">
+    <div class="hdr">
+      <div class="hdr-l">
+        <div class="hdr-avatar">🌿</div>
+        <div>
+          <div class="hdr-name" id="w-name">Diana</div>
+          <div class="hdr-role" id="w-role">Medewerker</div>
+        </div>
+      </div>
+      <button class="btn-out" onclick="logout()">↩</button>
+    </div>
+    <div class="week-nav">
+      <button class="wbtn" onclick="chWeek(-1)">‹</button>
+      <div class="week-lbl" id="w-week-lbl"></div>
+      <button class="wbtn" onclick="chWeek(1)">›</button>
+    </div>
+    <div class="scroll" id="w-scroll">
+      <div id="w-prog"></div>
+      <div id="w-days"></div>
+    </div>
+  </div>
+
+  <!-- MANAGER SCREEN -->
+  <div class="screen" id="s-manager">
+    <div class="hdr">
+      <div class="hdr-l">
+        <div class="hdr-avatar">⚙️</div>
+        <div>
+          <div class="hdr-name" id="m-name">Beheerder</div>
+          <div class="hdr-role" id="m-role">Beheerder</div>
+        </div>
+      </div>
+      <button class="btn-out" onclick="logout()">↩</button>
+    </div>
+    <div class="tabs">
+      <button class="tab on" id="t-week" onclick="mTab('week')" id="t-week">📅</button>
+      <button class="tab" id="t-extra" onclick="mTab('extra')">➕</button>
+      <button class="tab" id="t-recipe" onclick="mTab('recipe')">🍳</button>
+      <button class="tab" id="t-taken" onclick="mTab('taken')">📋</button>
+      <button class="tab" id="t-inst" onclick="mTab('inst')">⚙️</button>
+    </div>
+    <div id="mt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="week-nav">
+        <button class="wbtn" onclick="chWeek(-1)">‹</button>
+        <div class="week-lbl" id="m-week-lbl"></div>
+        <button class="wbtn" onclick="chWeek(1)">›</button>
+      </div>
+      <div class="scroll" id="m-days-scroll">
+        <div id="m-days"></div>
+      </div>
+    </div>
+    <div id="mt-extra" class="scroll" style="display:none">
+      <div class="lbl" style="margin-bottom:8px">Extra taak toevoegen</div>
+      <div class="form-card">
+        <div class="form-row"><input type="text" id="ex-txt-nl" placeholder="Omschrijving (NL)"></div>
+        <div class="form-row"><input type="text" id="ex-txt-pt" placeholder="Descrição (PT)"></div>
+        <div class="form-2col form-row">
+          <select id="ex-loc"></select>
+          <select id="ex-day"></select>
+        </div>
+        <div class="form-row">
+          <select id="ex-week">
+            <option value="0" id="ex-w0">Deze week</option>
+            <option value="1" id="ex-w1">Volgende week</option>
+            <option value="2" id="ex-w2">Over 2 weken</option>
+          </select>
+        </div>
+        <button class="save-btn" onclick="addExtra()">➕ <span id="lbl-plan">Inplannen</span></button>
+      </div>
+      <div id="ex-list"></div>
+    </div>
+    <div id="mt-recipe" class="scroll" style="display:none">
+      <div class="lbl" style="margin-bottom:8px">Recept toevoegen</div>
+      <div class="form-card">
+        <div class="form-row"><input type="text" id="rec-name" placeholder="Gerecht (bijv. Gehaktbal)"></div>
+        <div class="form-row"><input type="url" id="rec-url" placeholder="https://..."></div>
+        <div class="form-2col form-row">
+          <select id="rec-day"></select>
+          <select id="rec-week">
+            <option value="0">Deze week</option>
+            <option value="1">Volgende week</option>
+          </select>
+        </div>
+        <button class="save-btn" onclick="addRecipe()">🍳 <span id="lbl-recipe-add">Recept toevoegen</span></button>
+      </div>
+      <div id="rec-list"></div>
+    </div>
+    <div id="mt-taken" class="scroll" style="display:none">
+      <div id="fixed-list"></div>
+      <div class="lbl" style="margin:.75rem 0 8px">Nieuwe vaste taak</div>
+      <div class="form-card">
+        <div class="form-row"><input type="text" id="ft-nl" placeholder="Omschrijving (NL)"></div>
+        <div class="form-row"><input type="text" id="ft-pt" placeholder="Descrição (PT)"></div>
+        <div class="form-2col form-row">
+          <select id="ft-loc"></select>
+          <select id="ft-cat">
+            <option value="tuin">Tuin & buiten</option>
+            <option value="zwembad">Zwembad</option>
+            <option value="binnen">Binnen</option>
+            <option value="koken">Koken</option>
+            <option value="extra_tijd">Extra indien tijd</option>
+          </select>
+        </div>
+        <button class="save-btn" onclick="addFixed()">➕ Toevoegen</button>
+      </div>
+    </div>
+    <div id="mt-inst" class="scroll" style="display:none">
+      <div class="lbl" style="margin-bottom:8px">Mijn gegevens</div>
+      <div class="form-card">
+        <div class="form-row"><div class="lbl">Naam</div><input type="text" id="inst-name" placeholder="Jouw naam"></div>
+        <div class="form-row"><div class="lbl">Nieuwe PIN (4 cijfers)</div><input type="password" id="inst-pin" placeholder="Laat leeg = ongewijzigd" maxlength="4" pattern="[0-9]{4}"></div>
+        <div class="form-row"><div class="lbl">Taal</div>
+          <select id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Português</option></select>
+        </div>
+        <button class="save-btn" onclick="saveProfile()">💾 <span id="lbl-save">Opslaan</span></button>
+        <div id="inst-flash" class="flash" style="opacity:0"></div>
+      </div>
+      <div class="lbl" style="margin:.75rem 0 8px">Locaties beheren</div>
+      <div class="form-card">
+        <div id="loc-list"></div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <input type="text" id="new-loc-name" placeholder="Naam locatie" style="flex:1;border:1px solid var(--cb);border-radius:8px;padding:7px 9px;font-size:13px;background:var(--cw);color:var(--cr-dark)">
+          <input type="color" id="new-loc-color" value="#7a5c3a" style="width:40px;height:36px;border:1px solid var(--cb);border-radius:8px;padding:2px;cursor:pointer">
+          <button class="btn-sm" onclick="addLocation()">+</button>
+        </div>
+      </div>
+      <div class="lbl" style="margin:.75rem 0 8px">Week beheren</div>
+      <div class="form-card">
+        <div class="set-row"><div><div class="set-lbl" id="lbl-clear">Vinkjes wissen</div><div class="set-sub" id="lbl-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="btn-clear">Wissen</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://imojddlvfkpbistifqav.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const DAYS_NL = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
+const DAYS_PT = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const CAT_NL = {tuin:'Tuin & buiten',zwembad:'Zwembad',binnen:'Binnen',koken:'Koken',extra_tijd:'Extra indien tijd'};
+const CAT_PT = {tuin:'Jardim & exterior',zwembad:'Piscina',binnen:'Interior',koken:'Cozinhar',extra_tijd:'Extra se houver tempo'};
+
+const I18N = {
+  nl: {
+    enterPin:'Voer je PIN in',pinWrong:'Onjuiste PIN, probeer opnieuw',
+    worker:'Medewerker',admin:'Beheerder',
+    thisWeek:'Deze week',nextWeek:'Volgende week',prevWeek:'Vorige week',week:'Week',
+    progress:'Voortgang week',tasks:'taken',pct:'% afgerond',
+    save:'Opslaan',saved:'Opgeslagen!',
+    notes:'Notities',notesPlaceholder:'Aantekeningen voor vandaag...',
+    recipes:'Recepten vandaag',extraThis:'Extra deze week',
+    skipped:'Overgeslagen',markSkip:'Overslaan',
+    plan:'Inplannen',recipeAdd:'Recept toevoegen',
+    clearChecks:'Vinkjes wissen',clearSub:'Begin nieuwe week opgeschoond',clear:'Wissen',
+    tabWeek:'Week',tabExtra:'Extra',tabRecipe:'Recepten',tabTaken:'Taken',tabInst:'Instellingen',
+    days:DAYS_NL,cats:CAT_NL,
+    noTasks:'Geen taken voor deze week.',
+    weekLabel:(off)=>off===0?'Deze week':off===1?'Volgende week':off===-1?'Vorige week':`Week ${off}`,
+  },
+  pt: {
+    enterPin:'Introduza o seu PIN',pinWrong:'PIN incorreto, tente novamente',
+    worker:'Colaboradora',admin:'Administrador',
+    thisWeek:'Esta semana',nextWeek:'Próxima semana',prevWeek:'Semana passada',week:'Semana',
+    progress:'Progresso da semana',tasks:'tarefas',pct:'% concluído',
+    save:'Guardar',saved:'Guardado!',
+    notes:'Notas',notesPlaceholder:'Anotações para hoje...',
+    recipes:'Receitas de hoje',extraThis:'Extra esta semana',
+    skipped:'Ignorado',markSkip:'Ignorar',
+    plan:'Agendar',recipeAdd:'Adicionar receita',
+    clearChecks:'Limpar marcações',clearSub:'Começar semana a limpo',clear:'Limpar',
+    tabWeek:'Semana',tabExtra:'Extra',tabRecipe:'Receitas',tabTaken:'Tarefas',tabInst:'Definições',
+    days:DAYS_PT,cats:CAT_PT,
+    noTasks:'Sem tarefas para esta semana.',
+    weekLabel:(off)=>off===0?'Esta semana':off===1?'Próxima semana':off===-1?'Semana passada':`Semana ${off}`,
+  }
+};
+
+let currentUser = null;
+let weekOff = 0;
+let pinBuf = '';
+let allData = {users:[],locations:[],fixedTasks:[],weekSchedule:[],extraTasks:[],checks:{},notes:{},recipes:[]};
+let realtimeSubs = [];
+let HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
+
+function t(key){ return (I18N[currentUser?.language||'nl'][key])||key; }
+function days(){ return t('days'); }
+function cats(){ return t('cats'); }
+function weekLabel(off){ return I18N[currentUser?.language||'nl'].weekLabel(off); }
+
+function wkey(off=0){
+  const n=new Date();
+  const m=new Date(n);
+  m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);
+  return m.toISOString().slice(0,10);
+}
+
+// --- INIT ---
+async function init(){
+  document.getElementById('loading').style.display='flex';
+  await loadAllData();
+  setupRealtime();
+  document.getElementById('loading').style.display='none';
+  showScr('pin');
+}
+
+async function loadAllData(){
+  const hid = HOUSEHOLD_ID;
+  const [u,l,ft,ws,et,tc,dn,rec] = await Promise.all([
+    sb.from('users').select('*').eq('household_id',hid),
+    sb.from('locations').select('*').eq('household_id',hid).order('sort_order'),
+    sb.from('fixed_tasks').select('*').eq('household_id',hid).order('sort_order'),
+    sb.from('week_schedule').select('*').eq('household_id',hid),
+    sb.from('extra_tasks').select('*').eq('household_id',hid),
+    sb.from('task_checks').select('*').eq('household_id',hid),
+    sb.from('day_notes').select('*').eq('household_id',hid),
+    sb.from('recipes').select('*').eq('household_id',hid),
+  ]);
+  allData.users = u.data||[];
+  allData.locations = l.data||[];
+  allData.fixedTasks = ft.data||[];
+  allData.weekSchedule = ws.data||[];
+  allData.extraTasks = et.data||[];
+  allData.checks = {};
+  (tc.data||[]).forEach(c=>{ allData.checks[c.task_id+'_'+c.week_key+'_'+c.day_index] = c; });
+  allData.notes = {};
+  (dn.data||[]).forEach(n=>{ allData.notes[n.location_id+'_'+n.week_key+'_'+n.day_index] = n; });
+  allData.recipes = rec.data||[];
+}
+
+function setupRealtime(){
+  realtimeSubs.forEach(s=>sb.removeChannel(s));
+  realtimeSubs = [];
+  const tables = ['week_schedule','task_checks','extra_tasks','day_notes','recipes'];
+  tables.forEach(tbl=>{
+    const ch = sb.channel('rt-'+tbl)
+      .on('postgres_changes',{event:'*',schema:'public',table:tbl},async()=>{
+        await loadAllData();
+        if(currentUser?.role==='worker') renderWorker();
+        else if(currentUser?.role==='admin') renderMgrWeek();
+      })
+      .subscribe();
+    realtimeSubs.push(ch);
+  });
+}
+
+// --- PIN ---
+function pp(d){
+  if(pinBuf.length>=4)return;
+  pinBuf+=d;
+  updDots();
+  if(pinBuf.length===4)setTimeout(checkPin,150);
+}
+function pdel(){ pinBuf=pinBuf.slice(0,-1); updDots(); document.getElementById('pin-err').textContent=''; }
+function updDots(){ for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length); }
+
+async function checkPin(){
+  const user = allData.users.find(u=>u.pin===pinBuf);
+  if(user){
+    currentUser = user;
+    pinBuf=''; updDots();
+    if(user.pin==='0000'){
+      // First login - prompt to set PIN
+      setTimeout(()=>{ const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 dígitos):':'Kies een nieuwe PIN (4 cijfers):'); if(np&&/^\d{4}$/.test(np)){ updatePin(user.id,np); } },200);
+    }
+    showScr(user.role==='admin'?'manager':'worker');
+  } else {
+    document.getElementById('pin-err').textContent = I18N[currentUser?.language||'nl'].pinWrong;
+    pinBuf=''; updDots();
+  }
+}
+
+async function updatePin(userId, newPin){
+  await sb.from('users').update({pin:newPin}).eq('id',userId);
+  await loadAllData();
+  currentUser = allData.users.find(u=>u.id===userId);
+}
+
+function logout(){ currentUser=null; weekOff=0; pinBuf=''; updDots(); showScr('pin'); }
+
+function showScr(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('s-'+name);
+  if(el) el.classList.add('active');
+  if(name==='worker') renderWorker();
+  if(name==='manager') renderManager();
+}
+
+function chWeek(d){ weekOff+=d; renderWorker(); renderMgrWeek(); updateWeekLabels(); }
+function updateWeekLabels(){
+  const lbl = weekLabel(weekOff);
+  const wl = document.getElementById('w-week-lbl');
+  const ml = document.getElementById('m-week-lbl');
+  if(wl) wl.textContent = lbl;
+  if(ml) ml.textContent = lbl;
+}
+
+// --- WORKER VIEW ---
+function renderWorker(){
+  if(!currentUser) return;
+  const lang = currentUser.language||'nl';
+  const tr = I18N[lang];
+  document.getElementById('w-name').textContent = currentUser.name;
+  document.getElementById('w-role').textContent = tr.worker;
+  updateWeekLabels();
+  const wk = wkey(weekOff);
+  const schedule = allData.weekSchedule.filter(s=>s.week_key===wk).sort((a,b)=>a.day_index-b.day_index);
+
+  // Group by day
+  const byDay = {};
+  schedule.forEach(s=>{ if(!byDay[s.day_index]) byDay[s.day_index]=[];  byDay[s.day_index].push(s); });
+
+  let total=0,done=0;
+  let html='';
+
+  Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
+    const diN = parseInt(di);
+    const locs = byDay[di];
+    const dayRecipes = allData.recipes.filter(r=>r.week_key===wk&&r.day_index===diN);
+    const extras = allData.extraTasks.filter(e=>e.week_key===wk&&e.day_index===diN);
+
+    let dayDone=0,dayTotal=0;
+    let locHtml='';
+
+    locs.forEach(schedRow=>{
+      const loc = allData.locations.find(l=>l.id===schedRow.location_id);
+      if(!loc) return;
+      const tasks = allData.fixedTasks.filter(t=>t.location_id===loc.id);
+      const cats = [...new Set(tasks.map(t=>t.category))];
+      dayTotal+=tasks.length;
+      tasks.forEach(t=>{ if(allData.checks[t.id+'_'+wk+'_'+diN]) dayDone++; });
+
+      const noteKey = loc.id+'_'+wk+'_'+diN;
+      const noteVal = allData.notes[noteKey]?.note||'';
+
+      let locBody='';
+      cats.forEach(cat=>{
+        const catTasks = tasks.filter(t=>t.category===cat);
+        if(!catTasks.length) return;
+        locBody+=`<div class="sec-lbl">${tr.cats[cat]||cat}</div>`;
+        catTasks.forEach(t=>{
+          const ck = !!allData.checks[t.id+'_'+wk+'_'+diN];
+          const txt = lang==='pt'&&t.text_pt ? t.text_pt : t.text_nl;
+          locBody+=`<div class="task-row">
+            <div class="cb${ck?' on':''}" onclick="toggleTask('${t.id}','${wk}',${diN},false)">${ck?'✓':''}</div>
+            <span class="task-txt${ck?' done':''}">${txt}</span>
+          </div>`;
+        });
+      });
+
+      locBody+=`<div class="notes-wrap"><div class="sec-lbl">${tr.notes}</div>
+        <textarea class="notes-area" placeholder="${tr.notesPlaceholder}" onchange="saveNote('${loc.id}','${wk}',${diN},this.value)">${noteVal}</textarea>
+      </div>`;
+      locBody+=`<button class="save-btn" onclick="saveDay('${loc.id}','${wk}',${diN},'day-flash-${diN}-${loc.id}')">💾 ${tr.save}</button>
+      <div id="day-flash-${diN}-${loc.id.slice(0,4)}" class="flash" style="opacity:0">${tr.saved}</div>`;
+
+      locHtml+=`<div class="loc-block">
+        <div class="loc-hdr" style="background:${loc.color}22">
+          <div class="loc-dot" style="background:${loc.color}"></div>
+          <span>${loc.name}</span>
+        </div>
+        <div class="loc-body">${locBody}</div>
+      </div>`;
+    });
+
+    if(dayRecipes.length){
+      let rHtml=`<div class="recipe-section"><div class="recipe-title">🍳 ${tr.recipes}</div>`;
+      dayRecipes.forEach(r=>{ rHtml+=`<div class="recipe-link"><a href="${r.url}" target="_blank">🔗 ${r.name}</a></div>`; });
+      rHtml+='</div>';
+      locHtml = rHtml + locHtml;
+    }
+
+    if(extras.length){
+      dayTotal+=extras.length;
+      extras.forEach(e=>{ if(allData.checks[e.id+'_'+wk+'_'+diN]) dayDone++; });
+      let eHtml=`<div class="sec-lbl">${tr.extraThis}</div>`;
+      extras.forEach(e=>{
+        const ck=!!allData.checks[e.id+'_'+wk+'_'+diN];
+        const txt = lang==='pt'&&e.text_pt ? e.text_pt : e.text_nl;
+        eHtml+=`<div class="task-row"><div class="cb${ck?' on':''}" onclick="toggleTask('${e.id}','${wk}',${diN},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt}<span class="badge badge-extra">extra</span></span></div>`;
+      });
+      locHtml+=`<div class="day-card" style="margin-bottom:8px"><div class="day-body">${eHtml}</div></div>`;
+    }
+
+    total+=dayTotal; done+=dayDone;
+    const chev = `<span class="day-chev open" id="chev-w${diN}">▾</span>`;
+    html+=`<div class="day-card">
+      <div class="day-hdr" onclick="togDay('wd${diN}','chev-w${diN}')">
+        <div class="day-hdr-l"><span style="font-size:16px">📅</span><span class="day-name">${tr.days[diN]}</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dayDone}/${dayTotal}</span>${chev}</div>
+      </div>
+      <div id="wd${diN}" class="day-body">${locHtml||`<div class="empty">${tr.noTasks}</div>`}</div>
+    </div>`;
+  });
+
+  if(!Object.keys(byDay).length) html=`<div class="empty" style="margin-top:1rem">${tr.noTasks}</div>`;
+
+  const pct = total ? Math.round(done/total*100) : 0;
+  document.getElementById('w-prog').innerHTML=`<div class="prog-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:600;color:var(--cr-dark)">${tr.progress}</span>
+      <span style="font-size:13px;color:#888">${done}/${total} ${tr.tasks}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+    <div style="font-size:11px;color:#999;margin-top:4px">${pct}${tr.pct}</div>
+  </div>`;
+  document.getElementById('w-days').innerHTML = html;
+}
+
+function togDay(id, chevId){
+  const el=document.getElementById(id);
+  const ch=document.getElementById(chevId);
+  if(!el) return;
+  const open = el.style.display!=='none';
+  el.style.display = open?'none':'block';
+  if(ch) ch.classList.toggle('open',!open);
+}
+
+async function toggleTask(taskId, weekKey, dayIndex, isMgr){
+  const k = taskId+'_'+weekKey+'_'+dayIndex;
+  if(allData.checks[k]){
+    await sb.from('task_checks').delete().eq('task_id',taskId).eq('week_key',weekKey).eq('day_index',dayIndex).eq('household_id',HOUSEHOLD_ID);
+  } else {
+    await sb.from('task_checks').upsert({household_id:HOUSEHOLD_ID,task_id:taskId,task_type:'fixed',week_key:weekKey,day_index:dayIndex,checked_by:currentUser?.id},{onConflict:'household_id,task_id,week_key,day_index'});
+  }
+  await loadAllData();
+  if(isMgr) renderMgrWeek(); else renderWorker();
+}
+
+async function saveNote(locId, weekKey, dayIndex, val){
+  await sb.from('day_notes').upsert({household_id:HOUSEHOLD_ID,location_id:locId,week_key:weekKey,day_index:dayIndex,note:val,updated_at:new Date().toISOString()},{onConflict:'household_id,location_id,week_key,day_index'});
+  await loadAllData();
+}
+
+function saveDay(locId, weekKey, dayIndex, flashId){
+  const noteEl = document.querySelector(`#wd${dayIndex} textarea, #mwd${dayIndex} textarea`);
+  if(noteEl) saveNote(locId, weekKey, dayIndex, noteEl.value);
+  const fl = document.getElementById(flashId);
+  if(!fl){
+    const all = document.querySelectorAll('.flash');
+    all.forEach(f=>{ f.style.opacity='1'; f.textContent=t('saved'); setTimeout(()=>f.style.opacity='0',2000); });
+    return;
+  }
+  fl.style.opacity='1'; fl.textContent=t('saved');
+  setTimeout(()=>fl.style.opacity='0',2000);
+}
+
+// --- MANAGER VIEW ---
+function renderManager(){
+  if(!currentUser) return;
+  document.getElementById('m-name').textContent = currentUser.name;
+  document.getElementById('m-role').textContent = I18N[currentUser.language||'nl'].admin;
+  updateWeekLabels();
+  renderMgrWeek();
+  populateSelects();
+  renderLocList();
+}
+
+function mTab(name){
+  ['week','extra','recipe','taken','inst'].forEach(n=>{
+    const el=document.getElementById('mt-'+n);
+    if(el) el.style.display= n===name?(n==='week'?'flex':'block'):'none';
+    const tb=document.getElementById('t-'+n);
+    if(tb) tb.classList.toggle('on',n===name);
+  });
+  if(name==='extra'){populateSelects();renderExList();}
+  if(name==='recipe'){populateRecipeSelects();renderRecipeList();}
+  if(name==='taken') renderFixedList();
+  if(name==='inst'){renderLocList();loadInstForm();}
+}
+
+function renderMgrWeek(){
+  if(!currentUser) return;
+  const tr = I18N[currentUser.language||'nl'];
+  const wk = wkey(weekOff);
+  const schedule = allData.weekSchedule.filter(s=>s.week_key===wk).sort((a,b)=>a.day_index-b.day_index);
+  const byDay={};
+  schedule.forEach(s=>{ if(!byDay[s.day_index]) byDay[s.day_index]=[]; byDay[s.day_index].push(s); });
+
+  let html='';
+
+  // Show all days 0-6, highlight work days
+  for(let di=0;di<7;di++){
+    const locs = byDay[di]||[];
+    const extras = allData.extraTasks.filter(e=>e.week_key===wk&&e.day_index===di);
+    const dayRecipes = allData.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+    if(!locs.length&&!extras.length&&!dayRecipes.length) continue;
+
+    let dayTotal=0,dayDone=0;
+    let locHtml='';
+
+    dayRecipes.forEach(r=>{
+      locHtml+=`<div class="recipe-section"><div class="recipe-title">🍳 ${r.name}</div><div style="font-size:12px;color:var(--cr-mid)">${r.url}</div><button onclick="delRecipe('${r.id}')" style="font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;margin-top:4px">🗑 Verwijderen</button></div>`;
+    });
+
+    locs.forEach(schedRow=>{
+      const loc=allData.locations.find(l=>l.id===schedRow.location_id);
+      if(!loc) return;
+      const tasks=allData.fixedTasks.filter(t=>t.location_id===loc.id);
+      dayTotal+=tasks.length;
+      tasks.forEach(t=>{ if(allData.checks[t.id+'_'+wk+'_'+di]) dayDone++; });
+      const locCats=[...new Set(tasks.map(t=>t.category))];
+      const noteVal=allData.notes[loc.id+'_'+wk+'_'+di]?.note||'';
+      let lb='';
+      locCats.forEach(cat=>{
+        const ct=tasks.filter(t=>t.category===cat);
+        lb+=`<div class="sec-lbl">${tr.cats[cat]||cat}</div>`;
+        ct.forEach(t=>{
+          const ck=!!allData.checks[t.id+'_'+wk+'_'+di];
+          lb+=`<div class="task-row"><div class="cb${ck?' on':''}" onclick="toggleTask('${t.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl}</span></div>`;
+        });
+      });
+      lb+=`<div class="notes-wrap"><div class="sec-lbl">${tr.notes}</div><div style="font-size:13px;color:#888;padding:.25rem 0;min-height:20px">${noteVal||'<em style="color:#ccc">Geen notities</em>'}</div></div>`;
+      locHtml+=`<div class="loc-block">
+        <div class="loc-hdr" style="background:${loc.color}22;justify-content:space-between" draggable="true" ondragstart="dragStart(event,'${schedRow.id}',${di})" ondragover="dragOver(event)" ondrop="dragDrop(event,${di})">
+          <div style="display:flex;align-items:center;gap:8px"><div class="loc-dot" style="background:${loc.color}"></div><span>${loc.name}</span></div>
+          <span style="color:#ccc;font-size:18px;cursor:grab">⠿</span>
+        </div>
+        <div class="loc-body">${lb}</div>
+      </div>`;
+    });
+
+    if(extras.length){
+      dayTotal+=extras.length;
+      extras.forEach(e=>{ if(allData.checks[e.id+'_'+wk+'_'+di]) dayDone++; });
+      let eH=`<div class="sec-lbl">${tr.extraThis}</div>`;
+      extras.forEach(e=>{
+        const ck=!!allData.checks[e.id+'_'+wk+'_'+di];
+        eH+=`<div class="task-row"><div class="cb${ck?' on':''}" onclick="toggleTask('${e.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${e.text_nl}<span class="badge badge-extra">extra</span></span><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:#ddd;font-size:14px">🗑</button></div>`;
+      });
+      locHtml+=`<div style="margin-top:8px">${eH}</div>`;
+    }
+
+    html+=`<div class="day-card" ondragover="dragOver(event)" ondrop="dragDrop(event,${di})">
+      <div class="day-hdr" onclick="togDay('mwd${di}','mchev${di}')">
+        <div class="day-hdr-l"><span>📅</span><span class="day-name">${tr.days[di]}</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dayDone}/${dayTotal}</span><span class="day-chev open" id="mchev${di}">▾</span></div>
+      </div>
+      <div id="mwd${di}" class="day-body">${locHtml}</div>
+    </div>`;
+  }
+
+  const el=document.getElementById('m-days');
+  if(el) el.innerHTML = html||`<div class="empty" style="margin-top:1rem">Geen taken gepland. Voeg locaties toe via de weekplanning.</div>`;
+}
+
+// --- DRAG & DROP locaties tussen dagen ---
+let dragData = null;
+function dragStart(e, scheduleId, fromDay){
+  dragData = {scheduleId, fromDay};
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
+async function dragDrop(e, toDay){
+  e.preventDefault();
+  if(!dragData||dragData.fromDay===toDay) return;
+  const wk=wkey(weekOff);
+  // Move this location to new day
+  await sb.from('week_schedule').update({day_index:toDay}).eq('id',dragData.scheduleId);
+  dragData=null;
+  await loadAllData();
+  renderMgrWeek();
+}
+
+// --- EXTRA TASKS ---
+function populateSelects(){
+  const locSel=document.getElementById('ex-loc');
+  const daySel=document.getElementById('ex-day');
+  if(!locSel||!daySel) return;
+  locSel.innerHTML=allData.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  daySel.innerHTML=DAYS_NL.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+}
+
+async function addExtra(){
+  const nl=document.getElementById('ex-txt-nl').value.trim();
+  const pt=document.getElementById('ex-txt-pt').value.trim();
+  const loc=document.getElementById('ex-loc').value;
+  const day=parseInt(document.getElementById('ex-day').value);
+  const off=parseInt(document.getElementById('ex-week').value);
+  if(!nl) return;
+  await sb.from('extra_tasks').insert({household_id:HOUSEHOLD_ID,location_id:loc,week_key:wkey(off),day_index:day,text_nl:nl,text_pt:pt||nl});
+  document.getElementById('ex-txt-nl').value='';
+  document.getElementById('ex-txt-pt').value='';
+  await loadAllData();
+  renderExList();
+  mTab('week');
+}
+
+async function delExtra(id){
+  await sb.from('extra_tasks').delete().eq('id',id);
+  await loadAllData();
+  renderExList();
+  renderMgrWeek();
+}
+
+function renderExList(){
+  const el=document.getElementById('ex-list');
+  if(!el) return;
+  const wk=wkey(weekOff);
+  const upcoming=allData.extraTasks.filter(e=>e.week_key>=wk);
+  if(!upcoming.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen extra taken gepland.</div>';return;}
+  el.innerHTML='<div class="sec-title">Geplande extra taken</div>'+upcoming.map(e=>`<div class="task-row"><span style="font-size:16px">📌</span><div style="flex:1"><div class="task-txt">${e.text_nl}</div><div style="font-size:11px;color:#aaa">${DAYS_NL[e.day_index]} · ${e.week_key}</div></div><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`).join('');
+}
+
+// --- RECIPES ---
+function populateRecipeSelects(){
+  const ds=document.getElementById('rec-day');
+  if(ds) ds.innerHTML=DAYS_NL.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+}
+
+async function addRecipe(){
+  const name=document.getElementById('rec-name').value.trim();
+  const url=document.getElementById('rec-url').value.trim();
+  const day=parseInt(document.getElementById('rec-day').value);
+  const off=parseInt(document.getElementById('rec-week').value);
+  if(!name||!url) return;
+  await sb.from('recipes').insert({household_id:HOUSEHOLD_ID,week_key:wkey(off),day_index:day,name,url});
+  document.getElementById('rec-name').value='';
+  document.getElementById('rec-url').value='';
+  await loadAllData();
+  renderRecipeList();
+  mTab('week');
+}
+
+async function delRecipe(id){
+  await sb.from('recipes').delete().eq('id',id);
+  await loadAllData();
+  renderRecipeList();
+  renderMgrWeek();
+}
+
+function renderRecipeList(){
+  const el=document.getElementById('rec-list');
+  if(!el) return;
+  const wk=wkey(weekOff);
+  const upcoming=allData.recipes.filter(r=>r.week_key>=wk);
+  if(!upcoming.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen recepten gepland.</div>';return;}
+  el.innerHTML='<div class="sec-title">Geplande recepten</div>'+upcoming.map(r=>`<div class="task-row"><span>🍳</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:#aaa">${DAYS_NL[r.day_index]} · ${r.week_key}</div><div style="font-size:11px;color:var(--cr-mid)">${r.url}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`).join('');
+}
+
+// --- FIXED TASKS ---
+function renderFixedList(){
+  const el=document.getElementById('fixed-list');
+  if(!el) return;
+  const locSel=document.getElementById('ft-loc');
+  if(locSel) locSel.innerHTML=allData.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  let html='';
+  allData.locations.forEach(loc=>{
+    const tasks=allData.fixedTasks.filter(t=>t.location_id===loc.id);
+    html+=`<div class="sec-title" style="display:flex;align-items:center;gap:6px"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div>`;
+    if(!tasks.length){html+='<div class="empty">Geen vaste taken</div>';return;}
+    tasks.forEach(t=>{
+      html+=`<div class="task-row"><div style="flex:1"><div class="task-txt">${t.text_nl}</div><div style="font-size:11px;color:#aaa">${CAT_NL[t.category]||t.category}</div></div><button onclick="delFixed('${t.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+async function addFixed(){
+  const nl=document.getElementById('ft-nl').value.trim();
+  const pt=document.getElementById('ft-pt').value.trim();
+  const loc=document.getElementById('ft-loc').value;
+  const cat=document.getElementById('ft-cat').value;
+  if(!nl||!loc) return;
+  await sb.from('fixed_tasks').insert({household_id:HOUSEHOLD_ID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
+  document.getElementById('ft-nl').value='';
+  document.getElementById('ft-pt').value='';
+  await loadAllData();
+  renderFixedList();
+}
+
+async function delFixed(id){
+  await sb.from('fixed_tasks').delete().eq('id',id);
+  await loadAllData();
+  renderFixedList();
+}
+
+// --- LOCATIES ---
+function renderLocList(){
+  const el=document.getElementById('loc-list');
+  if(!el) return;
+  if(!allData.locations.length){el.innerHTML='<div class="empty">Nog geen locaties.</div>';return;}
+  el.innerHTML=allData.locations.map(l=>`<div class="task-row"><div class="loc-dot" style="background:${l.color}"></div><span class="task-txt">${l.name}</span><button onclick="delLocation('${l.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`).join('');
+}
+
+async function addLocation(){
+  const name=document.getElementById('new-loc-name').value.trim();
+  const color=document.getElementById('new-loc-color').value;
+  if(!name) return;
+  const maxOrder=Math.max(0,...allData.locations.map(l=>l.sort_order));
+  await sb.from('locations').insert({household_id:HOUSEHOLD_ID,name,color,sort_order:maxOrder+1});
+  document.getElementById('new-loc-name').value='';
+  await loadAllData();
+  renderLocList();
+}
+
+async function delLocation(id){
+  if(!confirm('Locatie verwijderen? Dit verwijdert ook alle gekoppelde taken.')) return;
+  await sb.from('fixed_tasks').delete().eq('location_id',id);
+  await sb.from('week_schedule').delete().eq('location_id',id);
+  await sb.from('locations').delete().eq('id',id);
+  await loadAllData();
+  renderLocList();
+  renderMgrWeek();
+}
+
+// --- WEEK SCHEDULE ---
+// For manager to add a location to a day
+async function scheduleLocation(locId, dayIndex){
+  const wk=wkey(weekOff);
+  const exists=allData.weekSchedule.find(s=>s.location_id===locId&&s.week_key===wk);
+  if(exists){
+    await sb.from('week_schedule').update({day_index:dayIndex}).eq('id',exists.id);
+  } else {
+    await sb.from('week_schedule').insert({household_id:HOUSEHOLD_ID,location_id:locId,week_key:wk,day_index:dayIndex});
+  }
+  await loadAllData();
+  renderMgrWeek();
+}
+
+// --- PROFILE ---
+function loadInstForm(){
+  if(!currentUser) return;
+  const ni=document.getElementById('inst-name');
+  const li=document.getElementById('inst-lang');
+  if(ni) ni.value=currentUser.name;
+  if(li) li.value=currentUser.language||'nl';
+}
+
+async function saveProfile(){
+  const name=document.getElementById('inst-name').value.trim();
+  const lang=document.getElementById('inst-lang').value;
+  const pin=document.getElementById('inst-pin').value;
+  const updates={name,language:lang};
+  if(pin&&/^\d{4}$/.test(pin)) updates.pin=pin;
+  await sb.from('users').update(updates).eq('id',currentUser.id);
+  await loadAllData();
+  currentUser=allData.users.find(u=>u.id===currentUser.id);
+  document.getElementById('inst-pin').value='';
+  const fl=document.getElementById('inst-flash');
+  if(fl){fl.style.opacity='1';fl.textContent=t('saved');setTimeout(()=>fl.style.opacity='0',2000);}
+  renderManager();
+}
+
+async function clearChecks(){
+  if(!confirm(t('clearChecks')+'?')) return;
+  const wk=wkey(weekOff);
+  await sb.from('task_checks').delete().eq('household_id',HOUSEHOLD_ID).eq('week_key',wk);
+  await loadAllData();
+  renderMgrWeek();
+}
+
+// --- START ---
+init();
+</script>
+</body>
+</html>
