@@ -4,295 +4,308 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f9f5f0">
+<meta name="theme-color" content="#f7f3ee">
 <title>Huisplanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --cr:#7a5c3a;--cr-light:#f5efe6;--cr-mid:#c4956a;--cr-dark:#4a3520;
-  --cg:#4a7c59;--cg-light:#e8f2eb;--cg-mid:#7aad8a;
-  --cs:#f9f5f0;--cb:#e8ddd0;--cw:#ffffff;
+  --bg:#f7f3ee;
+  --surface:#ffffff;
+  --border:#e5ddd3;
+  --text:#1a1612;
+  --muted:#8a7e74;
+  --hint:#b5aca3;
+  --tijn:#2c5f8a;
+  --tijn-light:#e8f0f7;
+  --suzan:#3a7a52;
+  --suzan-light:#e8f3ec;
+  --extra-bg:#fef3e8;
+  --extra-border:#f0c080;
+  --extra-text:#7a4a0a;
+  --done-bg:#edf7f1;
   --danger:#c0392b;
+  --accent:#5c4a3a;
+  --accent-light:#f0ebe4;
 }
-html,body{height:100%;overflow:hidden;background:var(--cs)}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--cr-dark)}
-.app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--cw)}
-
-/* SCREENS */
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text)}
+.app{height:100vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--surface)}
 .screen{display:none;flex-direction:column;height:100%}
 .screen.active{display:flex}
 
-/* PIN SCREEN */
-.pin-screen{align-items:center;justify-content:center;gap:1.25rem;padding:2rem 1.5rem;background:var(--cs)}
-.app-logo{width:64px;height:64px;border-radius:50%;background:var(--cg-light);display:flex;align-items:center;justify-content:center;font-size:28px}
-.app-name{font-size:22px;font-weight:600;color:var(--cr-dark)}
-.app-sub{font-size:13px;color:var(--cr);margin-top:-10px}
-.pin-dots{display:flex;gap:12px;margin:8px 0}
-.pdot{width:14px;height:14px;border-radius:50%;border:2px solid var(--cb);background:transparent;transition:all .15s}
-.pdot.on{background:var(--cr);border-color:var(--cr)}
+/* PIN */
+.pin-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.25rem;padding:2rem 2rem;background:var(--bg)}
+.pin-logo{width:68px;height:68px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:30px}
+.pin-appname{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text)}
+.pin-sub{font-size:13px;color:var(--muted);margin-top:-10px;letter-spacing:.02em}
+.pin-dots{display:flex;gap:12px}
+.pdot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--border);background:transparent;transition:all .2s}
+.pdot.on{background:var(--accent);border-color:var(--accent)}
 .pin-err{font-size:12px;color:var(--danger);height:16px;text-align:center}
-.keypad{display:grid;grid-template-columns:repeat(3,72px);gap:10px}
-.key{width:72px;height:56px;border-radius:14px;border:1px solid var(--cb);background:var(--cw);font-size:20px;font-weight:500;color:var(--cr-dark);cursor:pointer;transition:background .1s;display:flex;align-items:center;justify-content:center}
-.key:active{background:var(--cs)}
-.key.del{font-size:18px}
-.pin-hint{font-size:11px;color:#aaa;text-align:center}
+.keypad{display:grid;grid-template-columns:repeat(3,70px);gap:10px}
+.key{width:70px;height:54px;border-radius:12px;border:1px solid var(--border);background:var(--surface);font-size:20px;font-weight:400;color:var(--text);cursor:pointer;transition:background .1s;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}
+.key:active{background:var(--bg)}
+.pin-hint{font-size:11px;color:var(--hint);text-align:center}
 
 /* HEADER */
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--cb);background:var(--cw);flex-shrink:0}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .hdr-l{display:flex;align-items:center;gap:10px}
-.hdr-avatar{width:36px;height:36px;border-radius:50%;background:var(--cg-light);display:flex;align-items:center;justify-content:center;font-size:16px}
-.hdr-name{font-size:16px;font-weight:600;color:var(--cr-dark)}
-.hdr-role{font-size:11px;color:var(--cr)}
-.btn-out{font-size:12px;color:#888;background:none;border:1px solid var(--cb);border-radius:8px;padding:5px 10px;cursor:pointer}
+.hdr-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#fff}
+.hdr-name{font-size:16px;font-weight:500;color:var(--text)}
+.hdr-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.btn-out{font-size:12px;color:var(--muted);background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif}
 
 /* TABS */
-.tabs{display:flex;border-bottom:1px solid var(--cb);background:var(--cw);flex-shrink:0}
-.tab{flex:1;padding:10px 4px;font-size:12px;font-weight:500;color:#888;background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s}
-.tab.on{color:var(--cr-dark);border-bottom-color:var(--cr)}
-
-/* SCROLL BODY */
-.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem 1.25rem}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;overflow-x:auto}
+.tab{flex:1;white-space:nowrap;padding:10px 6px;font-size:12px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;min-width:0}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
 
 /* WEEK NAV */
-.week-nav{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1.25rem;background:var(--cs);border-bottom:1px solid var(--cb);flex-shrink:0}
-.week-lbl{font-size:13px;font-weight:600;color:var(--cr-dark)}
-.wbtn{background:none;border:1px solid var(--cb);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--cr-dark);font-size:16px;line-height:1}
+.week-nav{display:flex;align-items:center;justify-content:space-between;padding:.625rem 1.25rem;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0}
+.week-lbl{font-size:13px;font-weight:500;color:var(--text)}
+.wbtn{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;cursor:pointer;color:var(--text);font-size:16px;line-height:1;font-family:'DM Sans',sans-serif}
 
-/* DAY CARDS */
-.day-card{border:1px solid var(--cb);border-radius:14px;margin-bottom:12px;overflow:hidden;background:var(--cw)}
-.day-hdr{padding:.75rem 1rem;background:var(--cs);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
-.day-hdr-l{display:flex;align-items:center;gap:8px}
-.day-name{font-size:14px;font-weight:600;color:var(--cr-dark)}
-.day-prog{font-size:11px;color:#888}
-.day-body{padding:.75rem 1rem}
-.day-chev{font-size:18px;color:#aaa;transition:transform .2s}
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem 1.25rem}
+
+/* CARDS */
+.day-card{border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;background:var(--surface)}
+.day-hdr{padding:.75rem 1rem;background:var(--bg);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.day-name{font-size:14px;font-weight:500;color:var(--text)}
+.day-prog{font-size:11px;color:var(--muted)}
+.day-chev{font-size:16px;color:var(--hint);transition:transform .2s;display:inline-block}
 .day-chev.open{transform:rotate(180deg)}
+.day-body{padding:.75rem 1rem}
 
-/* LOCATIE BLOK */
-.loc-block{border-radius:10px;margin-bottom:10px;overflow:hidden;border:1px solid var(--cb)}
-.loc-hdr{padding:.5rem .875rem;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+/* LOC BLOCK */
+.loc-block{border-radius:10px;margin-bottom:10px;overflow:hidden;border:1px solid var(--border)}
+.loc-hdr{padding:.5rem .875rem;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
 .loc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.loc-body{padding:.5rem .875rem}
+.loc-body{padding:.5rem .875rem .75rem}
 
-/* TAKEN */
-.sec-lbl{font-size:10px;font-weight:600;color:var(--cr);text-transform:uppercase;letter-spacing:.06em;margin:.625rem 0 .3rem}
+/* TASKS */
+.sec-lbl{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin:.625rem 0 .3rem}
 .sec-lbl:first-child{margin-top:0}
-.task-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid #f5f0ea}
-.task-row:last-child{border-bottom:none}
-.cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--cb);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s;font-size:13px}
-.cb.on{background:var(--cg);border-color:var(--cg);color:#fff}
-.cb.skip{background:#e8e0d8;border-color:#ccc;color:#aaa}
-.task-txt{font-size:13px;color:var(--cr-dark);flex:1;line-height:1.4}
-.task-txt.done{text-decoration:line-through;color:#aaa}
-.task-txt.skipped{color:#bbb;font-style:italic}
-.badge{font-size:10px;padding:2px 7px;border-radius:8px;margin-left:4px;white-space:nowrap}
-.badge-extra{background:var(--cr-light);color:var(--cr)}
-.badge-skip{background:#f0ebe4;color:#aaa}
+.task-row{display:flex;align-items:flex-start;gap:10px;padding:6px 8px;margin-bottom:3px;border-radius:8px;transition:background .15s}
+.task-row.done-row{background:var(--done-bg)}
+.task-row.extra-row{background:var(--extra-bg);border:1px solid var(--extra-border);border-radius:8px}
+.cb{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s;font-size:12px}
+.cb.on{background:#3a7a52;border-color:#3a7a52;color:#fff}
+.task-txt{font-size:13px;color:var(--text);flex:1;line-height:1.45}
+.task-txt.done{text-decoration:line-through;color:var(--hint)}
+.badge-extra{font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px;background:var(--extra-border);color:var(--extra-text);margin-left:5px;white-space:nowrap}
+.badge-user{font-size:10px;font-weight:500;padding:2px 7px;border-radius:6px;margin-left:5px;white-space:nowrap}
 
-/* RECEPTEN */
-.recipe-section{background:var(--cr-light);border-radius:10px;padding:.625rem .875rem;margin-bottom:.75rem}
-.recipe-title{font-size:11px;font-weight:600;color:var(--cr);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
-.recipe-link{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(122,92,58,.1)}
-.recipe-link:last-child{border-bottom:none}
-.recipe-link a{font-size:13px;color:var(--cr-dark);text-decoration:none;flex:1}
-.recipe-link a:hover{text-decoration:underline}
-.btn-del-recipe{background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px}
-
-/* NOTITIES */
-.notes-wrap{margin-top:.75rem}
-.notes-area{width:100%;border:1px solid var(--cb);border-radius:8px;padding:.5rem .75rem;font-size:13px;background:var(--cw);color:var(--cr-dark);resize:none;min-height:60px;font-family:inherit;line-height:1.5}
-.notes-area:focus{outline:none;border-color:var(--cr-mid)}
-
-/* SAVE BTN */
-.save-btn{width:100%;padding:11px;background:var(--cr);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.75rem}
-.save-btn:active{background:var(--cr-dark)}
-.flash{font-size:12px;color:var(--cg);text-align:center;margin-top:5px;height:15px;transition:opacity .4s}
+/* RECIPES */
+.recipe-block{background:#fef9f3;border:1px solid #f0d9b5;border-radius:10px;padding:.625rem .875rem;margin-bottom:.75rem}
+.recipe-title{font-size:10px;font-weight:500;color:#8a5a1a;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+.recipe-item{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f0d9b515}
+.recipe-item:last-child{border-bottom:none}
+.recipe-item a{font-size:13px;color:var(--text);text-decoration:none;flex:1}
+.recipe-item a:hover{color:var(--accent)}
 
 /* PROGRESS */
-.prog-card{background:var(--cs);border-radius:12px;padding:.875rem 1rem;margin-bottom:1rem;border:1px solid var(--cb)}
-.prog-bar{height:8px;background:var(--cb);border-radius:4px;margin-top:6px;overflow:hidden}
-.prog-fill{height:100%;background:var(--cg);border-radius:4px;transition:width .3s}
+.prog-card{background:var(--bg);border-radius:12px;padding:.875rem 1rem;margin-bottom:1rem;border:1px solid var(--border)}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;margin-top:6px;overflow:hidden}
+.prog-fill{height:100%;background:#3a7a52;border-radius:3px;transition:width .4s}
+
+/* NOTES */
+.notes-area{width:100%;border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;font-size:13px;background:var(--surface);color:var(--text);resize:none;min-height:56px;font-family:'DM Sans',sans-serif;line-height:1.5;margin-top:.25rem}
+.notes-area:focus{outline:none;border-color:var(--accent)}
+
+/* SAVE BTN */
+.save-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.75rem;font-family:'DM Sans',sans-serif;letter-spacing:.01em}
+.save-btn:active{opacity:.85}
+.save-btn.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.flash{font-size:12px;color:#3a7a52;text-align:center;margin-top:5px;height:15px;transition:opacity .4s}
 
 /* FORMS */
-.form-card{background:var(--cs);border-radius:12px;padding:.875rem 1rem;margin-bottom:1rem;border:1px solid var(--cb)}
-.form-row{margin-bottom:8px}
-.form-row:last-child{margin-bottom:0}
-.form-row input,.form-row select,.form-row textarea{width:100%;border:1px solid var(--cb);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--cw);color:var(--cr-dark);font-family:inherit}
-.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--cr-mid)}
-.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lbl{font-size:11px;font-weight:600;color:var(--cr);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.form-section{margin-bottom:1.25rem}
+.form-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.5rem;display:block}
+.form-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:8px}
+.form-input:focus{outline:none;border-color:var(--accent)}
+.form-input:last-child{margin-bottom:0}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.form-card{background:var(--bg);border-radius:12px;padding:1rem;margin-bottom:1rem;border:1px solid var(--border)}
 
 /* SETTINGS */
-.set-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid #f0ebe4}
-.set-lbl{font-size:14px;color:var(--cr-dark)}
-.set-sub{font-size:12px;color:#999}
-.btn-sm{padding:6px 14px;border:1px solid var(--cb);border-radius:8px;font-size:12px;background:none;color:var(--cr-dark);cursor:pointer}
-.btn-danger{padding:6px 12px;border:1px solid #e8c5c5;border-radius:8px;font-size:12px;background:none;color:var(--danger);cursor:pointer}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.set-row:last-child{border-bottom:none}
+.set-lbl{font-size:14px;color:var(--text)}
+.set-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.btn-sm{padding:6px 14px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:none;color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-danger{padding:6px 12px;border:1px solid #f0c5c5;border-radius:8px;font-size:12px;background:none;color:var(--danger);cursor:pointer;font-family:'DM Sans',sans-serif}
 
-/* LOADING */
-.loading{display:flex;align-items:center;justify-content:center;height:100vh;font-size:14px;color:var(--cr);background:var(--cs)}
-.spinner{width:32px;height:32px;border:3px solid var(--cb);border-top-color:var(--cr);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+/* WORKDAYS */
+.day-pill{display:inline-flex;align-items:center;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:13px;font-weight:400;color:var(--muted);cursor:pointer;transition:all .15s;margin:3px;font-family:'DM Sans',sans-serif}
+.day-pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* SECTION TITLE */
+.sec-title{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);margin:.875rem 0 .5rem;padding-bottom:.375rem;border-bottom:1px solid var(--border)}
+
+.empty{font-size:13px;color:var(--hint);font-style:italic;padding:.5rem 0}
+.loading-wrap{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;background:var(--bg)}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* DRAG */
-.dragging{opacity:.5}
-.drag-over{border:2px dashed var(--cr-mid) !important}
-
-.empty{font-size:13px;color:#bbb;font-style:italic;padding:.5rem 0}
-.sec-title{font-size:13px;font-weight:600;color:var(--cr-dark);margin:.875rem 0 .5rem;padding-bottom:.375rem;border-bottom:1px solid var(--cb)}
+.translate-hint{font-size:11px;color:var(--hint);margin-top:-4px;margin-bottom:4px}
 </style>
 </head>
 <body>
 <div class="app" id="app">
-  <div class="loading" id="loading">
-    <div style="text-align:center">
-      <div class="spinner"></div>
-      <div>Laden...</div>
-    </div>
-  </div>
 
-  <!-- PIN SCREEN -->
-  <div class="screen pin-screen" id="s-pin">
-    <div class="app-logo">🏡</div>
-    <div class="app-name">Huisplanner</div>
-    <div class="app-sub">Structuur met warmte</div>
+<div class="loading-wrap" id="loading">
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:var(--muted)">Laden...</div>
+</div>
+
+<!-- PIN -->
+<div class="screen" id="s-pin" style="background:var(--bg)">
+  <div class="pin-wrap">
+    <div class="pin-logo">🏡</div>
+    <div class="pin-appname">Huisplanner</div>
+    <div class="pin-sub">Structuur met warmte</div>
     <div class="pin-dots">
       <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
       <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
     </div>
     <div id="pin-err" class="pin-err"></div>
     <div class="keypad">
-      <button class="key" onclick="pp('1')">1</button>
-      <button class="key" onclick="pp('2')">2</button>
-      <button class="key" onclick="pp('3')">3</button>
-      <button class="key" onclick="pp('4')">4</button>
-      <button class="key" onclick="pp('5')">5</button>
-      <button class="key" onclick="pp('6')">6</button>
-      <button class="key" onclick="pp('7')">7</button>
-      <button class="key" onclick="pp('8')">8</button>
-      <button class="key" onclick="pp('9')">9</button>
-      <button class="key" style="visibility:hidden"></button>
-      <button class="key" onclick="pp('0')">0</button>
-      <button class="key del" onclick="pdel()">⌫</button>
+      <button class="key" onclick="pp('1')">1</button><button class="key" onclick="pp('2')">2</button><button class="key" onclick="pp('3')">3</button>
+      <button class="key" onclick="pp('4')">4</button><button class="key" onclick="pp('5')">5</button><button class="key" onclick="pp('6')">6</button>
+      <button class="key" onclick="pp('7')">7</button><button class="key" onclick="pp('8')">8</button><button class="key" onclick="pp('9')">9</button>
+      <button class="key" style="visibility:hidden"></button><button class="key" onclick="pp('0')">0</button><button class="key" onclick="pdel()" style="font-size:18px">⌫</button>
     </div>
-    <div class="pin-hint" id="pin-hint">Voer je PIN in</div>
+    <div class="pin-hint">Voer je PIN in</div>
+  </div>
+</div>
+
+<!-- WORKER -->
+<div class="screen" id="s-worker">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="hdr-avatar" id="w-avatar" style="background:#3a7a52">D</div>
+      <div><div class="hdr-name" id="w-name">Diana</div><div class="hdr-sub" id="w-sub">Medewerker</div></div>
+    </div>
+    <button class="btn-out" onclick="logout()">Uitloggen</button>
+  </div>
+  <div class="week-nav">
+    <button class="wbtn" onclick="chWeek(-1)">‹</button>
+    <div class="week-lbl" id="w-week-lbl">Deze week</div>
+    <button class="wbtn" onclick="chWeek(1)">›</button>
+  </div>
+  <div class="scroll" id="w-scroll">
+    <div id="w-prog"></div>
+    <div id="w-days"></div>
+  </div>
+</div>
+
+<!-- MANAGER -->
+<div class="screen" id="s-manager">
+  <div class="hdr">
+    <div class="hdr-l">
+      <div class="hdr-avatar" id="m-avatar" style="background:var(--tijn)">T</div>
+      <div><div class="hdr-name" id="m-name">Beheerder</div><div class="hdr-sub" id="m-sub">Beheerder</div></div>
+    </div>
+    <button class="btn-out" onclick="logout()">Uitloggen</button>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="t-week" onclick="mTab('week')">Week</button>
+    <button class="tab" id="t-plan" onclick="mTab('plan')">Planning</button>
+    <button class="tab" id="t-extra" onclick="mTab('extra')">Extra taak</button>
+    <button class="tab" id="t-recipe" onclick="mTab('recipe')">Recepten</button>
+    <button class="tab" id="t-taken" onclick="mTab('taken')">Taken</button>
+    <button class="tab" id="t-inst" onclick="mTab('inst')">Instellingen</button>
   </div>
 
-  <!-- WORKER SCREEN -->
-  <div class="screen" id="s-worker">
-    <div class="hdr">
-      <div class="hdr-l">
-        <div class="hdr-avatar">🌿</div>
-        <div>
-          <div class="hdr-name" id="w-name">Diana</div>
-          <div class="hdr-role" id="w-role">Medewerker</div>
-        </div>
-      </div>
-      <button class="btn-out" onclick="logout()">↩</button>
-    </div>
+  <!-- WEEK TAB -->
+  <div id="mt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div class="week-nav">
       <button class="wbtn" onclick="chWeek(-1)">‹</button>
-      <div class="week-lbl" id="w-week-lbl"></div>
+      <div class="week-lbl" id="m-week-lbl">Deze week</div>
       <button class="wbtn" onclick="chWeek(1)">›</button>
     </div>
-    <div class="scroll" id="w-scroll">
-      <div id="w-prog"></div>
-      <div id="w-days"></div>
-    </div>
+    <div class="scroll"><div id="m-days"></div></div>
   </div>
 
-  <!-- MANAGER SCREEN -->
-  <div class="screen" id="s-manager">
-    <div class="hdr">
-      <div class="hdr-l">
-        <div class="hdr-avatar">⚙️</div>
-        <div>
-          <div class="hdr-name" id="m-name">Beheerder</div>
-          <div class="hdr-role" id="m-role">Beheerder</div>
-        </div>
+  <!-- PLANNING TAB -->
+  <div id="mt-plan" class="scroll" style="display:none">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:1rem">Kies per dag welke locaties Diana schoonmaakt deze week. Sleep locaties tussen dagen voor verschuivingen.</div>
+    <div id="plan-grid"></div>
+  </div>
+
+  <!-- EXTRA TAAK TAB -->
+  <div id="mt-extra" class="scroll" style="display:none">
+    <div class="sec-title">Extra taak toevoegen</div>
+    <div class="form-card">
+      <label class="form-lbl">Omschrijving (NL)</label>
+      <input class="form-input" type="text" id="ex-txt-nl" placeholder="bijv. Zwembad grondig schoonmaken" onblur="autoTranslate('ex-txt-nl','ex-txt-pt','nl')">
+      <div class="translate-hint">Portugese vertaling wordt automatisch ingevuld</div>
+      <label class="form-lbl">Descrição (PT)</label>
+      <input class="form-input" type="text" id="ex-txt-pt" placeholder="Automatisch vertaald...">
+      <div class="form-row-2">
+        <div><label class="form-lbl">Locatie</label><select class="form-input" id="ex-loc"></select></div>
+        <div><label class="form-lbl">Dag</label><select class="form-input" id="ex-day"></select></div>
       </div>
-      <button class="btn-out" onclick="logout()">↩</button>
-    </div>
-    <div class="tabs">
-      <button class="tab on" id="t-week" onclick="mTab('week')">📅</button>
-      <button class="tab" id="t-plan" onclick="mTab('plan')">🗓</button>
-      <button class="tab" id="t-extra" onclick="mTab('extra')">➕</button>
-      <button class="tab" id="t-recipe" onclick="mTab('recipe')">🍳</button>
-      <button class="tab" id="t-taken" onclick="mTab('taken')">📋</button>
-      <button class="tab" id="t-inst" onclick="mTab('inst')">⚙️</button>
-    </div>
-    <div id="mt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-      <div class="week-nav">
-        <button class="wbtn" onclick="chWeek(-1)">‹</button>
-        <div class="week-lbl" id="m-week-lbl"></div>
-        <button class="wbtn" onclick="chWeek(1)">›</button>
+      <label class="form-lbl">Herhaling</label>
+      <select class="form-input" id="ex-repeat" onchange="toggleRepeatDate()">
+        <option value="once">Eenmalig</option>
+        <option value="weeks">Aantal weken herhalen</option>
+        <option value="until">Herhalen tot datum</option>
+      </select>
+      <div id="ex-repeat-weeks" style="display:none;margin-top:8px">
+        <label class="form-lbl">Aantal weken (incl. deze week)</label>
+        <input class="form-input" type="number" id="ex-weeks-count" min="1" max="52" value="2">
       </div>
-      <div class="scroll" id="m-days-scroll">
-        <div id="m-days"></div>
+      <div id="ex-repeat-until" style="display:none;margin-top:8px">
+        <label class="form-lbl">Herhalen tot en met</label>
+        <input class="form-input" type="date" id="ex-until-date">
       </div>
-    </div>
-    <div id="mt-plan" class="scroll" style="display:none">
-      <div class="lbl" style="margin-bottom:8px">Weekplanning instellen</div>
-      <div style="font-size:12px;color:#999;margin-bottom:12px">Kies per dag welke locaties Diana schoonmaakt deze week.</div>
-      <div id="plan-grid"></div>
-    </div>
-    <div id="mt-extra" class="scroll" style="display:none">
-      <div class="lbl" style="margin-bottom:8px">Extra taak toevoegen</div>
-      <div class="form-card">
-        <div class="form-row">
-          <input type="text" id="ex-txt-nl" placeholder="Omschrijving (NL)" onblur="autoTranslate('ex-txt-nl','ex-txt-pt','nl')">
-        </div>
-        <div class="form-row" style="display:flex;align-items:center;gap:8px">
-          <input type="text" id="ex-txt-pt" placeholder="Vertaling PT (automatisch)..." style="flex:1">
-          <span id="ex-txt-pt-loading" style="font-size:12px;color:var(--cr-mid);display:none">⏳</span>
-        </div>
-        <div class="form-2col form-row">
-          <select id="ex-loc"></select>
-          <select id="ex-day"></select>
-        </div>
-        <div class="form-row">
-          <select id="ex-week">
-            <option value="0" id="ex-w0">Deze week</option>
-            <option value="1" id="ex-w1">Volgende week</option>
-            <option value="2" id="ex-w2">Over 2 weken</option>
-          </select>
-        </div>
-        <button class="save-btn" onclick="addExtra()">➕ <span id="lbl-plan">Inplannen</span></button>
+      <div style="margin-top:4px"><label class="form-lbl">Startweek</label>
+        <select class="form-input" id="ex-week">
+          <option value="0">Deze week</option>
+          <option value="1">Volgende week</option>
+          <option value="2">Over 2 weken</option>
+        </select>
       </div>
-      <div id="ex-list"></div>
+      <button class="save-btn" onclick="addExtra()">+ Inplannen</button>
     </div>
-    <div id="mt-recipe" class="scroll" style="display:none">
-      <div class="lbl" style="margin-bottom:8px">Recept toevoegen</div>
-      <div class="form-card">
-        <div class="form-row"><input type="text" id="rec-name" placeholder="Gerecht (bijv. Gehaktbal)"></div>
-        <div class="form-row"><input type="url" id="rec-url" placeholder="https://..."></div>
-        <div class="form-2col form-row">
-          <select id="rec-day"></select>
-          <select id="rec-week">
-            <option value="0">Deze week</option>
-            <option value="1">Volgende week</option>
-          </select>
-        </div>
-        <button class="save-btn" onclick="addRecipe()">🍳 <span id="lbl-recipe-add">Recept toevoegen</span></button>
+    <div id="ex-list"></div>
+  </div>
+
+  <!-- RECEPTEN TAB -->
+  <div id="mt-recipe" class="scroll" style="display:none">
+    <div class="sec-title">Recept toevoegen</div>
+    <div class="form-card">
+      <label class="form-lbl">Gerecht</label>
+      <input class="form-input" type="text" id="rec-name" placeholder="bijv. Gehaktbal">
+      <label class="form-lbl">Link</label>
+      <input class="form-input" type="url" id="rec-url" placeholder="https://...">
+      <div class="form-row-2">
+        <div><label class="form-lbl">Dag</label><select class="form-input" id="rec-day"></select></div>
+        <div><label class="form-lbl">Week</label><select class="form-input" id="rec-week"><option value="0">Deze week</option><option value="1">Volgende week</option></select></div>
       </div>
-      <div id="rec-list"></div>
+      <button class="save-btn" onclick="addRecipe()">+ Recept toevoegen</button>
     </div>
-    <div id="mt-taken" class="scroll" style="display:none">
-      <div id="fixed-list"></div>
-      <div class="lbl" style="margin:.75rem 0 8px">Nieuwe vaste taak</div>
-      <div class="form-card">
-        <div class="form-row">
-          <input type="text" id="ft-nl" placeholder="Omschrijving (NL)" onblur="autoTranslate('ft-nl','ft-pt','nl')">
-        </div>
-        <div class="form-row" style="display:flex;align-items:center;gap:8px">
-          <input type="text" id="ft-pt" placeholder="Vertaling PT (automatisch)..." style="flex:1">
-          <span id="ft-pt-loading" style="font-size:12px;color:var(--cr-mid);display:none">⏳</span>
-        </div>
-        <div class="form-2col form-row">
-          <select id="ft-loc"></select>
-          <select id="ft-cat">
+    <div id="rec-list"></div>
+  </div>
+
+  <!-- TAKEN TAB -->
+  <div id="mt-taken" class="scroll" style="display:none">
+    <div id="fixed-list"></div>
+    <div class="sec-title">Nieuwe vaste taak</div>
+    <div class="form-card">
+      <label class="form-lbl">Omschrijving (NL)</label>
+      <input class="form-input" type="text" id="ft-nl" placeholder="Taakomschrijving..." onblur="autoTranslate('ft-nl','ft-pt','nl')">
+      <div class="translate-hint">Portugese vertaling wordt automatisch ingevuld</div>
+      <label class="form-lbl">Descrição (PT)</label>
+      <input class="form-input" type="text" id="ft-pt" placeholder="Automatisch vertaald...">
+      <div class="form-row-2">
+        <div><label class="form-lbl">Locatie</label><select class="form-input" id="ft-loc"></select></div>
+        <div><label class="form-lbl">Categorie</label>
+          <select class="form-input" id="ft-cat">
             <option value="tuin">Tuin & buiten</option>
             <option value="zwembad">Zwembad</option>
             <option value="binnen">Binnen</option>
@@ -300,391 +313,384 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
             <option value="extra_tijd">Extra indien tijd</option>
           </select>
         </div>
-        <button class="save-btn" onclick="addFixed()">➕ Toevoegen</button>
+      </div>
+      <button class="save-btn" onclick="addFixed()">+ Taak toevoegen</button>
+    </div>
+  </div>
+
+  <!-- INSTELLINGEN TAB -->
+  <div id="mt-inst" class="scroll" style="display:none">
+    <div class="sec-title">Mijn profiel</div>
+    <div class="form-card">
+      <label class="form-lbl">Naam</label>
+      <input class="form-input" type="text" id="inst-name" placeholder="Jouw naam">
+      <label class="form-lbl">Nieuwe PIN (4 cijfers)</label>
+      <input class="form-input" type="password" id="inst-pin" placeholder="Laat leeg = ongewijzigd" maxlength="4" pattern="[0-9]{4}">
+      <label class="form-lbl">PIN bevestigen</label>
+      <input class="form-input" type="password" id="inst-pin2" placeholder="Herhaal nieuwe PIN" maxlength="4">
+      <label class="form-lbl">Taal</label>
+      <select class="form-input" id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Português</option></select>
+      <button class="save-btn" onclick="saveProfile()">Opslaan</button>
+      <div id="inst-flash" class="flash" style="opacity:0"></div>
+    </div>
+    <div class="sec-title">Werkdagen medewerker</div>
+    <div class="form-card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:.75rem">Selecteer de vaste werkdagen. De planning toont alleen deze dagen.</div>
+      <div id="day-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
+      <button class="save-btn" onclick="saveWorkdays()">Werkdagen opslaan</button>
+      <div id="wd-flash" class="flash" style="opacity:0"></div>
+    </div>
+    <div class="sec-title">Locaties</div>
+    <div class="form-card">
+      <div id="loc-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <input type="text" id="new-loc-name" placeholder="Naam locatie" class="form-input" style="flex:1;margin:0">
+        <input type="color" id="new-loc-color" value="#5c4a3a" style="width:40px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
+        <button class="btn-sm" onclick="addLocation()">+</button>
       </div>
     </div>
-    <div id="mt-inst" class="scroll" style="display:none">
-      <div class="lbl" style="margin-bottom:8px">Mijn gegevens</div>
-      <div class="form-card">
-        <div class="form-row"><div class="lbl">Naam</div><input type="text" id="inst-name" placeholder="Jouw naam"></div>
-        <div class="form-row"><div class="lbl">Nieuwe PIN (4 cijfers)</div><input type="password" id="inst-pin" placeholder="Laat leeg = ongewijzigd" maxlength="4" pattern="[0-9]{4}"></div>
-        <div class="form-row"><div class="lbl">Taal</div>
-          <select id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Português</option></select>
-        </div>
-        <button class="save-btn" onclick="saveProfile()">💾 <span id="lbl-save">Opslaan</span></button>
-        <div id="inst-flash" class="flash" style="opacity:0"></div>
-      </div>
-      <div class="lbl" style="margin:.75rem 0 8px">Locaties beheren</div>
-      <div class="form-card">
-        <div id="loc-list"></div>
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <input type="text" id="new-loc-name" placeholder="Naam locatie" style="flex:1;border:1px solid var(--cb);border-radius:8px;padding:7px 9px;font-size:13px;background:var(--cw);color:var(--cr-dark)">
-          <input type="color" id="new-loc-color" value="#7a5c3a" style="width:40px;height:36px;border:1px solid var(--cb);border-radius:8px;padding:2px;cursor:pointer">
-          <button class="btn-sm" onclick="addLocation()">+</button>
-        </div>
-      </div>
-      <div class="lbl" style="margin:.75rem 0 8px">Week beheren</div>
-      <div class="form-card">
-        <div class="set-row"><div><div class="set-lbl" id="lbl-clear">Vinkjes wissen</div><div class="set-sub" id="lbl-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="btn-clear">Wissen</button></div>
-      </div>
+    <div class="sec-title">Week beheren</div>
+    <div class="form-card">
+      <div class="set-row"><div><div class="set-lbl">Vinkjes wissen</div><div class="set-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()">Wissen</button></div>
     </div>
   </div>
 </div>
 
+</div>
 <script>
-const SUPABASE_URL = 'https://imojddlvfkpbistifqav.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL='https://imojddlvfkpbistifqav.supabase.co';
+const SUPABASE_KEY='sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const HID='11111111-1111-1111-1111-111111111111';
 
-const DAYS_NL = ['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
-const DAYS_PT = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
-const CAT_NL = {tuin:'Tuin & buiten',zwembad:'Zwembad',binnen:'Binnen',koken:'Koken',extra_tijd:'Extra indien tijd'};
-const CAT_PT = {tuin:'Jardim & exterior',zwembad:'Piscina',binnen:'Interior',koken:'Cozinhar',extra_tijd:'Extra se houver tempo'};
+const DAYS_NL=['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
+const DAYS_PT=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const CAT_NL={tuin:'Tuin & buiten',zwembad:'Zwembad',binnen:'Binnen',koken:'Koken',extra_tijd:'Extra indien tijd'};
+const CAT_PT={tuin:'Jardim & exterior',zwembad:'Piscina',binnen:'Interior',koken:'Cozinhar',extra_tijd:'Extra se houver tempo'};
+const USER_COLORS={tijn:'#2c5f8a',suzan:'#3a7a52'};
 
-const I18N = {
-  nl: {
-    enterPin:'Voer je PIN in',pinWrong:'Onjuiste PIN, probeer opnieuw',
-    worker:'Medewerker',admin:'Beheerder',
-    thisWeek:'Deze week',nextWeek:'Volgende week',prevWeek:'Vorige week',week:'Week',
-    progress:'Voortgang week',tasks:'taken',pct:'% afgerond',
-    save:'Opslaan',saved:'Opgeslagen!',
-    notes:'Notities',notesPlaceholder:'Aantekeningen voor vandaag...',
-    recipes:'Recepten vandaag',extraThis:'Extra deze week',
-    skipped:'Overgeslagen',markSkip:'Overslaan',
-    plan:'Inplannen',recipeAdd:'Recept toevoegen',
-    clearChecks:'Vinkjes wissen',clearSub:'Begin nieuwe week opgeschoond',clear:'Wissen',
-    tabWeek:'Week',tabExtra:'Extra',tabRecipe:'Recepten',tabTaken:'Taken',tabInst:'Instellingen',
-    days:DAYS_NL,cats:CAT_NL,
-    noTasks:'Geen taken voor deze week.',
-    weekLabel:(off)=>off===0?'Deze week':off===1?'Volgende week':off===-1?'Vorige week':`Week ${off}`,
-  },
-  pt: {
-    enterPin:'Introduza o seu PIN',pinWrong:'PIN incorreto, tente novamente',
-    worker:'Colaboradora',admin:'Administrador',
-    thisWeek:'Esta semana',nextWeek:'Próxima semana',prevWeek:'Semana passada',week:'Semana',
-    progress:'Progresso da semana',tasks:'tarefas',pct:'% concluído',
-    save:'Guardar',saved:'Guardado!',
-    notes:'Notas',notesPlaceholder:'Anotações para hoje...',
-    recipes:'Receitas de hoje',extraThis:'Extra esta semana',
-    skipped:'Ignorado',markSkip:'Ignorar',
-    plan:'Agendar',recipeAdd:'Adicionar receita',
-    clearChecks:'Limpar marcações',clearSub:'Começar semana a limpo',clear:'Limpar',
-    tabWeek:'Semana',tabExtra:'Extra',tabRecipe:'Receitas',tabTaken:'Tarefas',tabInst:'Definições',
-    days:DAYS_PT,cats:CAT_PT,
-    noTasks:'Sem tarefas para esta semana.',
-    weekLabel:(off)=>off===0?'Esta semana':off===1?'Próxima semana':off===-1?'Semana passada':`Semana ${off}`,
-  }
-};
+let currentUser=null,weekOff=0,pinBuf='';
+let D={users:[],locations:[],fixedTasks:[],weekSchedule:[],extraTasks:[],checks:{},notes:{},recipes:[],workdays:[]};
+let realtimeSubs=[];
 
-let currentUser = null;
-let weekOff = 0;
-let pinBuf = '';
-let allData = {users:[],locations:[],fixedTasks:[],weekSchedule:[],extraTasks:[],checks:{},notes:{},recipes:[]};
-let realtimeSubs = [];
-let HOUSEHOLD_ID = '11111111-1111-1111-1111-111111111111';
-
-function t(key){ return (I18N[currentUser?.language||'nl'][key])||key; }
-function days(){ return t('days'); }
-function cats(){ return t('cats'); }
-function weekLabel(off){ return I18N[currentUser?.language||'nl'].weekLabel(off); }
+function tr(key){
+  const lang=currentUser?.language||'nl';
+  const map={
+    nl:{worker:'Medewerker',admin:'Beheerder',thisWeek:'Deze week',nextWeek:'Volgende week',prevWeek:'Vorige week',
+      progress:'Voortgang week',tasks:'taken',pct:'% afgerond',save:'Opslaan',saved:'Opgeslagen!',
+      notes:'Notities',notesPlaceholder:'Aantekeningen voor vandaag...',recipes:'Recepten vandaag',
+      extraBadge:'extra',noTasks:'Geen taken voor deze week.',days:DAYS_NL,cats:CAT_NL,pinWrong:'Onjuiste PIN'},
+    pt:{worker:'Colaboradora',admin:'Administrador',thisWeek:'Esta semana',nextWeek:'Próxima semana',prevWeek:'Semana passada',
+      progress:'Progresso da semana',tasks:'tarefas',pct:'% concluído',save:'Guardar',saved:'Guardado!',
+      notes:'Notas',notesPlaceholder:'Anotações para hoje...',recipes:'Receitas de hoje',
+      extraBadge:'extra',noTasks:'Sem tarefas para esta semana.',days:DAYS_PT,cats:CAT_PT,pinWrong:'PIN incorreto'}
+  };
+  return map[lang]?.[key]??key;
+}
 
 function wkey(off=0){
-  const n=new Date();
-  const m=new Date(n);
+  const n=new Date();const m=new Date(n);
   m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);
   return m.toISOString().slice(0,10);
 }
 
-// --- INIT ---
-async function init(){
-  document.getElementById('loading').style.display='flex';
-  await loadAllData();
-  setupRealtime();
-  document.getElementById('loading').style.display='none';
-  showScr('pin');
+function wlbl(off){return off===0?tr('thisWeek'):off===1?tr('nextWeek'):off===-1?tr('prevWeek'):`Week ${off}`;}
+
+function userColor(userId){
+  const u=D.users.find(x=>x.id===userId);
+  if(!u) return '#8a7e74';
+  const n=u.name.toLowerCase();
+  if(n.includes('tijn')) return USER_COLORS.tijn;
+  if(n.includes('suzan')||n.includes('suzanne')) return USER_COLORS.suzan;
+  return '#8a7e74';
 }
 
-async function loadAllData(){
-  const hid = HOUSEHOLD_ID;
-  const [u,l,ft,ws,et,tc,dn,rec] = await Promise.all([
-    sb.from('users').select('*').eq('household_id',hid),
-    sb.from('locations').select('*').eq('household_id',hid).order('sort_order'),
-    sb.from('fixed_tasks').select('*').eq('household_id',hid).order('sort_order'),
-    sb.from('week_schedule').select('*').eq('household_id',hid),
-    sb.from('extra_tasks').select('*').eq('household_id',hid),
-    sb.from('task_checks').select('*').eq('household_id',hid),
-    sb.from('day_notes').select('*').eq('household_id',hid),
-    sb.from('recipes').select('*').eq('household_id',hid),
+async function loadAll(){
+  const [u,l,ft,ws,et,tc,dn,rec,wd]=await Promise.all([
+    sb.from('users').select('*').eq('household_id',HID),
+    sb.from('locations').select('*').eq('household_id',HID).order('sort_order'),
+    sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order'),
+    sb.from('week_schedule').select('*').eq('household_id',HID),
+    sb.from('extra_tasks').select('*').eq('household_id',HID),
+    sb.from('task_checks').select('*').eq('household_id',HID),
+    sb.from('day_notes').select('*').eq('household_id',HID),
+    sb.from('recipes').select('*').eq('household_id',HID),
+    sb.from('households').select('workdays').eq('id',HID),
   ]);
-  allData.users = u.data||[];
-  allData.locations = l.data||[];
-  allData.fixedTasks = ft.data||[];
-  allData.weekSchedule = ws.data||[];
-  allData.extraTasks = et.data||[];
-  allData.checks = {};
-  (tc.data||[]).forEach(c=>{ allData.checks[c.task_id+'_'+c.week_key+'_'+c.day_index] = c; });
-  allData.notes = {};
-  (dn.data||[]).forEach(n=>{ allData.notes[n.location_id+'_'+n.week_key+'_'+n.day_index] = n; });
-  allData.recipes = rec.data||[];
+  D.users=u.data||[];D.locations=l.data||[];D.fixedTasks=ft.data||[];
+  D.weekSchedule=ws.data||[];D.extraTasks=et.data||[];D.recipes=rec.data||[];
+  D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={checked:true,by:c.checked_by};});
+  D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
+  D.workdays=(wd.data?.[0]?.workdays)||[0,1,3,4];
 }
 
 function setupRealtime(){
-  realtimeSubs.forEach(s=>sb.removeChannel(s));
-  realtimeSubs = [];
-  const tables = ['week_schedule','task_checks','extra_tasks','day_notes','recipes'];
-  tables.forEach(tbl=>{
-    const ch = sb.channel('rt-'+tbl)
-      .on('postgres_changes',{event:'*',schema:'public',table:tbl},async()=>{
-        await loadAllData();
-        if(currentUser?.role==='worker') renderWorker();
-        else if(currentUser?.role==='admin') renderMgrWeek();
-      })
-      .subscribe();
+  realtimeSubs.forEach(s=>sb.removeChannel(s));realtimeSubs=[];
+  ['week_schedule','task_checks','extra_tasks','day_notes','recipes'].forEach(tbl=>{
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},async()=>{
+      await loadAll();
+      if(currentUser?.role==='worker') renderWorker();
+      else renderMgrWeek();
+    }).subscribe();
     realtimeSubs.push(ch);
   });
 }
 
-// --- PIN ---
-function pp(d){
-  if(pinBuf.length>=4)return;
-  pinBuf+=d;
-  updDots();
-  if(pinBuf.length===4)setTimeout(checkPin,150);
+async function init(){
+  document.getElementById('loading').style.display='flex';
+  await loadAll();
+  setupRealtime();
+  // Add workdays column if missing
+  document.getElementById('loading').style.display='none';
+  showScr('pin');
 }
-function pdel(){ pinBuf=pinBuf.slice(0,-1); updDots(); document.getElementById('pin-err').textContent=''; }
-function updDots(){ for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length); }
 
-async function checkPin(){
-  const user = allData.users.find(u=>u.pin===pinBuf);
+// PIN
+function pp(d){if(pinBuf.length>=4)return;pinBuf+=d;updDots();if(pinBuf.length===4)setTimeout(chkPin,150);}
+function pdel(){pinBuf=pinBuf.slice(0,-1);updDots();document.getElementById('pin-err').textContent='';}
+function updDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length);}
+
+async function chkPin(){
+  const user=D.users.find(u=>u.pin===pinBuf);
   if(user){
-    currentUser = user;
-    pinBuf=''; updDots();
+    currentUser=user;pinBuf='';updDots();
     if(user.pin==='0000'){
-      // First login - prompt to set PIN
-      setTimeout(()=>{ const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 dígitos):':'Kies een nieuwe PIN (4 cijfers):'); if(np&&/^\d{4}$/.test(np)){ updatePin(user.id,np); } },200);
+      const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 dígitos):':'Kies een nieuwe PIN (4 cijfers):');
+      if(np&&/^\d{4}$/.test(np)){await sb.from('users').update({pin:np}).eq('id',user.id);await loadAll();currentUser=D.users.find(u=>u.id===user.id);}
     }
     showScr(user.role==='admin'?'manager':'worker');
   } else {
-    document.getElementById('pin-err').textContent = I18N[currentUser?.language||'nl'].pinWrong;
-    pinBuf=''; updDots();
+    document.getElementById('pin-err').textContent=tr('pinWrong');
+    pinBuf='';updDots();
   }
 }
 
-async function updatePin(userId, newPin){
-  await sb.from('users').update({pin:newPin}).eq('id',userId);
-  await loadAllData();
-  currentUser = allData.users.find(u=>u.id===userId);
-}
+function logout(){currentUser=null;weekOff=0;pinBuf='';updDots();document.getElementById('pin-err').textContent='';showScr('pin');}
 
-function logout(){ currentUser=null; weekOff=0; pinBuf=''; updDots(); showScr('pin'); }
-
-function showScr(name){
+function showScr(n){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const el = document.getElementById('s-'+name);
-  if(el) el.classList.add('active');
-  if(name==='worker') renderWorker();
-  if(name==='manager') renderManager();
+  document.getElementById('s-'+n)?.classList.add('active');
+  if(n==='worker') renderWorker();
+  if(n==='manager') renderManager();
 }
 
-function chWeek(d){ weekOff+=d; renderWorker(); renderMgrWeek(); updateWeekLabels(); }
-function updateWeekLabels(){
-  const lbl = weekLabel(weekOff);
-  const wl = document.getElementById('w-week-lbl');
-  const ml = document.getElementById('m-week-lbl');
-  if(wl) wl.textContent = lbl;
-  if(ml) ml.textContent = lbl;
+function chWeek(d){weekOff+=d;updWeekLabels();if(currentUser?.role==='worker')renderWorker();else renderMgrWeek();}
+
+function updWeekLabels(){
+  const lbl=wlbl(weekOff);
+  document.getElementById('w-week-lbl').textContent=lbl;
+  const ml=document.getElementById('m-week-lbl');if(ml)ml.textContent=lbl;
 }
 
-// --- WORKER VIEW ---
+// Ensure next week has schedule copied from current
+async function ensureWeekSchedule(off){
+  const wk=wkey(off);
+  const existing=D.weekSchedule.filter(s=>s.week_key===wk);
+  if(existing.length) return;
+  // Copy from previous week
+  const prevWk=wkey(off-1);
+  const prev=D.weekSchedule.filter(s=>s.week_key===prevWk);
+  if(!prev.length) return;
+  const inserts=prev.map(s=>({household_id:HID,location_id:s.location_id,week_key:wk,day_index:s.day_index}));
+  await sb.from('week_schedule').insert(inserts);
+  await loadAll();
+}
+
+// WORKER RENDER
 function renderWorker(){
   if(!currentUser) return;
-  const lang = currentUser.language||'nl';
-  const tr = I18N[lang];
-  document.getElementById('w-name').textContent = currentUser.name;
-  document.getElementById('w-role').textContent = tr.worker;
-  updateWeekLabels();
-  const wk = wkey(weekOff);
-  const schedule = allData.weekSchedule.filter(s=>s.week_key===wk).sort((a,b)=>a.day_index-b.day_index);
-
-  // Group by day
-  const byDay = {};
-  schedule.forEach(s=>{ if(!byDay[s.day_index]) byDay[s.day_index]=[];  byDay[s.day_index].push(s); });
-
-  let total=0,done=0;
-  let html='';
-
-  Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
-    const diN = parseInt(di);
-    const locs = byDay[di];
-    const dayRecipes = allData.recipes.filter(r=>r.week_key===wk&&r.day_index===diN);
-    const extras = allData.extraTasks.filter(e=>e.week_key===wk&&e.day_index===diN);
-
-    let dayDone=0,dayTotal=0;
-    let locHtml='';
-
-    locs.forEach(schedRow=>{
-      const loc = allData.locations.find(l=>l.id===schedRow.location_id);
-      if(!loc) return;
-      const tasks = allData.fixedTasks.filter(t=>t.location_id===loc.id);
-      const cats = [...new Set(tasks.map(t=>t.category))];
-      dayTotal+=tasks.length;
-      tasks.forEach(t=>{ if(allData.checks[t.id+'_'+wk+'_'+diN]) dayDone++; });
-
-      const noteKey = loc.id+'_'+wk+'_'+diN;
-      const noteVal = allData.notes[noteKey]?.note||'';
-
-      let locBody='';
-      cats.forEach(cat=>{
-        const catTasks = tasks.filter(t=>t.category===cat);
-        if(!catTasks.length) return;
-        locBody+=`<div class="sec-lbl">${tr.cats[cat]||cat}</div>`;
-        catTasks.forEach(t=>{
-          const ck = !!allData.checks[t.id+'_'+wk+'_'+diN];
-          const txt = lang==='pt'&&t.text_pt ? t.text_pt : t.text_nl;
-          locBody+=`<div class="task-row">
-            <div class="cb${ck?' on':''}" onclick="toggleTask('${t.id}','${wk}',${diN},false)">${ck?'✓':''}</div>
-            <span class="task-txt${ck?' done':''}">${txt}</span>
-          </div>`;
+  const lang=currentUser.language||'nl';
+  const days=lang==='pt'?DAYS_PT:DAYS_NL;
+  const cats=lang==='pt'?CAT_PT:CAT_NL;
+  document.getElementById('w-name').textContent=currentUser.name;
+  document.getElementById('w-sub').textContent=tr('worker');
+  const col=userColor(currentUser.id);
+  document.getElementById('w-avatar').style.background=col;
+  document.getElementById('w-avatar').textContent=currentUser.name[0];
+  updWeekLabels();
+  ensureWeekSchedule(weekOff).then(()=>{
+    const wk=wkey(weekOff);
+    const sched=D.weekSchedule.filter(s=>s.week_key===wk);
+    const byDay={};sched.forEach(s=>{if(!byDay[s.day_index])byDay[s.day_index]=[];byDay[s.day_index].push(s);});
+    const workdays=D.workdays||[0,1,3,4];
+    let total=0,done=0,html='';
+    workdays.slice().sort((a,b)=>a-b).forEach(di=>{
+      const locs=byDay[di]||[];
+      const extras=D.extraTasks.filter(e=>e.week_key===wk&&e.day_index===di);
+      const dayRecipes=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+      if(!locs.length&&!extras.length&&!dayRecipes.length) return;
+      let dt=0,dd=0,locHtml='';
+      if(dayRecipes.length){
+        locHtml+=`<div class="recipe-block"><div class="recipe-title">Recepten vandaag</div>`;
+        dayRecipes.forEach(r=>{locHtml+=`<div class="recipe-item"><a href="${r.url}" target="_blank">↗ ${r.name}</a></div>`;});
+        locHtml+='</div>';
+      }
+      locs.forEach(sr=>{
+        const loc=D.locations.find(l=>l.id===sr.location_id);if(!loc)return;
+        const tasks=D.fixedTasks.filter(t=>t.location_id===loc.id);
+        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.checked)dd++;});
+        const locCats=[...new Set(tasks.map(t=>t.category))];
+        const note=D.notes[loc.id+'_'+wk+'_'+di]||'';
+        let lb='';
+        locCats.forEach(cat=>{
+          const ct=tasks.filter(t=>t.category===cat);
+          lb+=`<div class="sec-lbl">${cats[cat]||cat}</div>`;
+          ct.forEach(t=>{
+            const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.checked;
+            const txt=lang==='pt'&&t.text_pt?t.text_pt:t.text_nl;
+            lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt}</span></div>`;
+          });
         });
+        lb+=`<div class="sec-lbl">${tr('notes')}</div><textarea class="notes-area" placeholder="${tr('notesPlaceholder')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
+        lb+=`<button class="save-btn" onclick="flashSave('day-flash-${di}-${loc.id.slice(0,4)}')">💾 ${tr('save')}</button><div id="day-flash-${di}-${loc.id.slice(0,4)}" class="flash" style="opacity:0">${tr('saved')}</div>`;
+        locHtml+=`<div class="loc-block"><div class="loc-hdr" style="background:${loc.color}18"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div><div class="loc-body">${lb}</div></div>`;
       });
-
-      locBody+=`<div class="notes-wrap"><div class="sec-lbl">${tr.notes}</div>
-        <textarea class="notes-area" placeholder="${tr.notesPlaceholder}" onchange="saveNote('${loc.id}','${wk}',${diN},this.value)">${noteVal}</textarea>
-      </div>`;
-      locBody+=`<button class="save-btn" onclick="saveDay('${loc.id}','${wk}',${diN},'day-flash-${diN}-${loc.id}')">💾 ${tr.save}</button>
-      <div id="day-flash-${diN}-${loc.id.slice(0,4)}" class="flash" style="opacity:0">${tr.saved}</div>`;
-
-      locHtml+=`<div class="loc-block">
-        <div class="loc-hdr" style="background:${loc.color}22">
-          <div class="loc-dot" style="background:${loc.color}"></div>
-          <span>${loc.name}</span>
-        </div>
-        <div class="loc-body">${locBody}</div>
-      </div>`;
+      if(extras.length){
+        dt+=extras.length;extras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.checked)dd++;});
+        locHtml+=`<div class="sec-lbl" style="color:var(--extra-text)">Extra deze week</div>`;
+        extras.forEach(e=>{
+          const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.checked;
+          const txt=lang==='pt'&&e.text_pt?e.text_pt:e.text_nl;
+          const by=D.users.find(u=>u.id===D.checks[e.id+'_'+wk+'_'+di]?.by);
+          locHtml+=`<div class="task-row extra-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt}<span class="badge-extra">${tr('extraBadge')}</span></span></div>`;
+        });
+      }
+      total+=dt;done+=dd;
+      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','chv${di}')"><div class="day-name">${days[di]}</div><div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dd}/${dt}</span><span class="day-chev open" id="chv${di}">▾</span></div></div><div id="wd${di}" class="day-body">${locHtml}</div></div>`;
     });
-
-    if(dayRecipes.length){
-      let rHtml=`<div class="recipe-section"><div class="recipe-title">🍳 ${tr.recipes}</div>`;
-      dayRecipes.forEach(r=>{ rHtml+=`<div class="recipe-link"><a href="${r.url}" target="_blank">🔗 ${r.name}</a></div>`; });
-      rHtml+='</div>';
-      locHtml = rHtml + locHtml;
-    }
-
-    if(extras.length){
-      dayTotal+=extras.length;
-      extras.forEach(e=>{ if(allData.checks[e.id+'_'+wk+'_'+diN]) dayDone++; });
-      let eHtml=`<div class="sec-lbl">${tr.extraThis}</div>`;
-      extras.forEach(e=>{
-        const ck=!!allData.checks[e.id+'_'+wk+'_'+diN];
-        const txt = lang==='pt'&&e.text_pt ? e.text_pt : e.text_nl;
-        eHtml+=`<div class="task-row"><div class="cb${ck?' on':''}" onclick="toggleTask('${e.id}','${wk}',${diN},false)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${txt}<span class="badge badge-extra">extra</span></span></div>`;
-      });
-      locHtml+=`<div class="day-card" style="margin-bottom:8px"><div class="day-body">${eHtml}</div></div>`;
-    }
-
-    total+=dayTotal; done+=dayDone;
-    const chev = `<span class="day-chev open" id="chev-w${diN}">▾</span>`;
-    html+=`<div class="day-card">
-      <div class="day-hdr" onclick="togDay('wd${diN}','chev-w${diN}')">
-        <div class="day-hdr-l"><span style="font-size:16px">📅</span><span class="day-name">${tr.days[diN]}</span></div>
-        <div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dayDone}/${dayTotal}</span>${chev}</div>
-      </div>
-      <div id="wd${diN}" class="day-body">${locHtml||`<div class="empty">${tr.noTasks}</div>`}</div>
-    </div>`;
+    const pct=total?Math.round(done/total*100):0;
+    document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:500">${tr('progress')}</span><span style="font-size:13px;color:var(--muted)">${done}/${total} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:11px;color:var(--muted);margin-top:4px">${pct}${tr('pct')}</div></div>`;
+    document.getElementById('w-days').innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
   });
-
-  if(!Object.keys(byDay).length) html=`<div class="empty" style="margin-top:1rem">${tr.noTasks}</div>`;
-
-  const pct = total ? Math.round(done/total*100) : 0;
-  document.getElementById('w-prog').innerHTML=`<div class="prog-card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;font-weight:600;color:var(--cr-dark)">${tr.progress}</span>
-      <span style="font-size:13px;color:#888">${done}/${total} ${tr.tasks}</span>
-    </div>
-    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-    <div style="font-size:11px;color:#999;margin-top:4px">${pct}${tr.pct}</div>
-  </div>`;
-  document.getElementById('w-days').innerHTML = html;
 }
 
-function togDay(id, chevId){
-  const el=document.getElementById(id);
-  const ch=document.getElementById(chevId);
-  if(!el) return;
-  const open = el.style.display!=='none';
-  el.style.display = open?'none':'block';
-  if(ch) ch.classList.toggle('open',!open);
+function togDay(id,chevId){
+  const el=document.getElementById(id);const ch=document.getElementById(chevId);if(!el)return;
+  const open=el.style.display!=='none';el.style.display=open?'none':'block';if(ch)ch.classList.toggle('open',!open);
 }
 
-async function toggleTask(taskId, weekKey, dayIndex, isMgr){
-  const k = taskId+'_'+weekKey+'_'+dayIndex;
-  if(allData.checks[k]){
-    await sb.from('task_checks').delete().eq('task_id',taskId).eq('week_key',weekKey).eq('day_index',dayIndex).eq('household_id',HOUSEHOLD_ID);
+async function togTask(taskId,weekKey,dayIndex,isMgr){
+  const k=taskId+'_'+weekKey+'_'+dayIndex;
+  if(D.checks[k]?.checked){
+    await sb.from('task_checks').delete().eq('task_id',taskId).eq('week_key',weekKey).eq('day_index',dayIndex).eq('household_id',HID);
   } else {
-    await sb.from('task_checks').upsert({household_id:HOUSEHOLD_ID,task_id:taskId,task_type:'fixed',week_key:weekKey,day_index:dayIndex,checked_by:currentUser?.id},{onConflict:'household_id,task_id,week_key,day_index'});
+    await sb.from('task_checks').upsert({household_id:HID,task_id:taskId,task_type:'fixed',week_key:weekKey,day_index:dayIndex,checked_by:currentUser?.id},{onConflict:'household_id,task_id,week_key,day_index'});
   }
-  await loadAllData();
-  if(isMgr) renderMgrWeek(); else renderWorker();
+  await loadAll();
+  if(isMgr)renderMgrWeek();else renderWorker();
 }
 
-async function saveNote(locId, weekKey, dayIndex, val){
-  await sb.from('day_notes').upsert({household_id:HOUSEHOLD_ID,location_id:locId,week_key:weekKey,day_index:dayIndex,note:val,updated_at:new Date().toISOString()},{onConflict:'household_id,location_id,week_key,day_index'});
-  await loadAllData();
+async function saveNote(locId,weekKey,dayIndex,val){
+  await sb.from('day_notes').upsert({household_id:HID,location_id:locId,week_key:weekKey,day_index:dayIndex,note:val,updated_at:new Date().toISOString()},{onConflict:'household_id,location_id,week_key,day_index'});
+  await loadAll();
 }
 
-function saveDay(locId, weekKey, dayIndex, flashId){
-  const noteEl = document.querySelector(`#wd${dayIndex} textarea, #mwd${dayIndex} textarea`);
-  if(noteEl) saveNote(locId, weekKey, dayIndex, noteEl.value);
-  const fl = document.getElementById(flashId);
-  if(!fl){
-    const all = document.querySelectorAll('.flash');
-    all.forEach(f=>{ f.style.opacity='1'; f.textContent=t('saved'); setTimeout(()=>f.style.opacity='0',2000); });
-    return;
-  }
-  fl.style.opacity='1'; fl.textContent=t('saved');
-  setTimeout(()=>fl.style.opacity='0',2000);
-}
+function flashSave(id){const fl=document.getElementById(id);if(!fl)return;fl.style.opacity='1';fl.textContent=tr('saved');setTimeout(()=>fl.style.opacity='0',2000);}
 
-// --- MANAGER VIEW ---
+// MANAGER
 function renderManager(){
-  if(!currentUser) return;
-  document.getElementById('m-name').textContent = currentUser.name;
-  document.getElementById('m-role').textContent = I18N[currentUser.language||'nl'].admin;
-  updateWeekLabels();
-  renderMgrWeek();
-  populateSelects();
-  renderLocList();
+  if(!currentUser)return;
+  const col=userColor(currentUser.id);
+  document.getElementById('m-avatar').style.background=col;
+  document.getElementById('m-avatar').textContent=currentUser.name[0];
+  document.getElementById('m-name').textContent=currentUser.name;
+  document.getElementById('m-sub').textContent=tr('admin');
+  updWeekLabels();renderMgrWeek();
 }
 
-function mTab(name){
-  ['week','plan','extra','recipe','taken','inst'].forEach(n=>{
-    const el=document.getElementById('mt-'+n);
-    if(el) el.style.display= n===name?(n==='week'?'flex':'block'):'none';
-    const tb=document.getElementById('t-'+n);
-    if(tb) tb.classList.toggle('on',n===name);
+function mTab(n){
+  ['week','plan','extra','recipe','taken','inst'].forEach(t=>{
+    const el=document.getElementById('mt-'+t);if(el)el.style.display=t===n?(t==='week'?'flex':'block'):'none';
+    document.getElementById('t-'+t)?.classList.toggle('on',t===n);
   });
-  if(name==='week') renderMgrWeek();
-  if(name==='plan') renderPlanGrid();
-  if(name==='extra'){populateSelects();renderExList();}
-  if(name==='recipe'){populateRecipeSelects();renderRecipeList();}
-  if(name==='taken') renderFixedList();
-  if(name==='inst'){renderLocList();loadInstForm();}
+  if(n==='week')renderMgrWeek();
+  if(n==='plan')renderPlanGrid();
+  if(n==='extra'){populateSels();renderExList();}
+  if(n==='recipe'){populateRecSels();renderRecList();}
+  if(n==='taken')renderFixedList();
+  if(n==='inst'){renderLocList();loadInstForm();}
 }
 
+function renderMgrWeek(){
+  if(!currentUser)return;
+  ensureWeekSchedule(weekOff).then(()=>{
+    const wk=wkey(weekOff);
+    const sched=D.weekSchedule.filter(s=>s.week_key===wk);
+    const byDay={};sched.forEach(s=>{if(!byDay[s.day_index])byDay[s.day_index]=[];byDay[s.day_index].push(s);});
+    const workdays=D.workdays||[0,1,3,4];
+    let html='';
+    workdays.slice().sort((a,b)=>a-b).forEach(di=>{
+      const locs=byDay[di]||[];
+      const extras=D.extraTasks.filter(e=>e.week_key===wk&&e.day_index===di);
+      const dayRecipes=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+      let dt=0,dd=0,locHtml='';
+      if(dayRecipes.length){
+        locHtml+=`<div class="recipe-block"><div class="recipe-title">Recepten</div>`;
+        dayRecipes.forEach(r=>{locHtml+=`<div class="recipe-item"><a href="${r.url}" target="_blank">↗ ${r.name}</a><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px">✕</button></div>`;});
+        locHtml+='</div>';
+      }
+      locs.forEach(sr=>{
+        const loc=D.locations.find(l=>l.id===sr.location_id);if(!loc)return;
+        const tasks=D.fixedTasks.filter(t=>t.location_id===loc.id);
+        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.checked)dd++;});
+        const locCats=[...new Set(tasks.map(t=>t.category))];
+        const note=D.notes[loc.id+'_'+wk+'_'+di]||'';
+        let lb='';
+        locCats.forEach(cat=>{
+          const ct=tasks.filter(t=>t.category===cat);
+          lb+=`<div class="sec-lbl">${CAT_NL[cat]||cat}</div>`;
+          ct.forEach(t=>{
+            const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.checked;
+            const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
+            const byColor=by?userColor(by):'transparent';
+            const byName=by?D.users.find(u=>u.id===by)?.name:'';
+            lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl}${ck&&byName?`<span class="badge-user" style="background:${byColor}22;color:${byColor}">${byName}</span>`:''}</span></div>`;
+          });
+        });
+        lb+=`<div class="sec-lbl">Notities Diana</div><div style="font-size:13px;color:var(--muted);min-height:20px;padding:.25rem 0">${note||'<em style="color:var(--hint)">Geen notities</em>'}</div>`;
+        locHtml+=`<div class="loc-block"><div class="loc-hdr" style="background:${loc.color}18;justify-content:space-between" draggable="true" ondragstart="dragStart(event,'${sr.id}',${di})" ondragover="ev.preventDefault()" ondrop="dragDrop(event,${di})"><div style="display:flex;align-items:center;gap:8px"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div><span style="color:var(--hint);cursor:grab">⠿</span></div><div class="loc-body">${lb}</div></div>`;
+      });
+      if(extras.length){
+        dt+=extras.length;extras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.checked)dd++;});
+        locHtml+=`<div class="sec-lbl" style="color:var(--extra-text)">Extra deze week</div>`;
+        extras.forEach(e=>{
+          const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.checked;
+          const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
+          const byColor=by?userColor(by):'transparent';
+          const byName=by?D.users.find(u=>u.id===by)?.name:'';
+          locHtml+=`<div class="task-row extra-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${e.text_nl}<span class="badge-extra">extra</span>${ck&&byName?`<span class="badge-user" style="background:${byColor}22;color:${byColor}">${byName}</span>`:''}</span><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px;flex-shrink:0">✕</button></div>`;
+        });
+      }
+      html+=`<div class="day-card" ondragover="event.preventDefault()" ondrop="dragDrop(event,${di})"><div class="day-hdr" onclick="togDay('md${di}','mc${di}')"><div class="day-name">${DAYS_NL[di]}</div><div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dd}/${dt}</span><span class="day-chev open" id="mc${di}">▾</span></div></div><div id="md${di}" class="day-body">${locHtml||`<div class="empty">Geen locaties gepland. Ga naar Planning.</div>`}</div></div>`;
+    });
+    const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">Geen werkdagen geconfigureerd.</div>`;
+  });
+}
+
+// DRAG & DROP
+let dragData=null;
+function dragStart(e,schedId,fromDay){dragData={schedId,fromDay};e.dataTransfer.effectAllowed='move';}
+async function dragDrop(e,toDay){
+  e.preventDefault();if(!dragData||dragData.fromDay===toDay)return;
+  await sb.from('week_schedule').update({day_index:toDay}).eq('id',dragData.schedId);
+  dragData=null;await loadAll();renderMgrWeek();renderPlanGrid();
+}
+
+// PLAN GRID
 function renderPlanGrid(){
-  const el=document.getElementById('plan-grid');
-  if(!el) return;
+  const el=document.getElementById('plan-grid');if(!el)return;
   const wk=wkey(weekOff);
+  const workdays=D.workdays||[0,1,3,4];
   let html='';
-  DAYS_NL.forEach((day,di)=>{
-    const scheduledLocs = allData.weekSchedule.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id);
-    html+=`<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:600;color:var(--cr-dark);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--cb)">${day}</div>`;
-    allData.locations.forEach(loc=>{
-      const isOn = scheduledLocs.includes(loc.id);
-      html+=`<div onclick="toggleSchedule('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:4px;border-radius:10px;border:1px solid ${isOn?loc.color:'var(--cb)'};background:${isOn?loc.color+'18':'var(--cw)'};cursor:pointer">
-        <div style="width:12px;height:12px;border-radius:50%;background:${loc.color};flex-shrink:0"></div>
-        <span style="font-size:13px;flex:1;color:var(--cr-dark)">${loc.name}</span>
-        <span style="font-size:16px">${isOn?'✓':''}</span>
+  workdays.slice().sort((a,b)=>a-b).forEach(di=>{
+    const scheduled=D.weekSchedule.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id);
+    html+=`<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${DAYS_NL[di]}</div>`;
+    D.locations.forEach(loc=>{
+      const on=scheduled.includes(loc.id);
+      html+=`<div onclick="togSchedule('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:9px 12px;margin-bottom:4px;border-radius:10px;border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'15':'var(--surface)'};cursor:pointer;transition:all .15s">
+        <div class="loc-dot" style="background:${loc.color}"></div>
+        <span style="font-size:13px;flex:1">${loc.name}</span>
+        ${on?`<span style="color:${loc.color};font-weight:500;font-size:14px">✓</span>`:''}
       </div>`;
     });
     html+='</div>';
@@ -692,118 +698,24 @@ function renderPlanGrid(){
   el.innerHTML=html;
 }
 
-async function toggleSchedule(locId, dayIndex, weekKey){
-  const existing = allData.weekSchedule.find(s=>s.location_id===locId&&s.week_key===weekKey&&s.day_index===dayIndex);
-  if(existing){
-    await sb.from('week_schedule').delete().eq('id',existing.id);
-  } else {
-    await sb.from('week_schedule').insert({household_id:HOUSEHOLD_ID,location_id:locId,week_key:weekKey,day_index:dayIndex});
-  }
-  await loadAllData();
-  renderPlanGrid();
-  renderMgrWeek();
+async function togSchedule(locId,dayIndex,weekKey){
+  const ex=D.weekSchedule.find(s=>s.location_id===locId&&s.week_key===weekKey&&s.day_index===dayIndex);
+  if(ex){await sb.from('week_schedule').delete().eq('id',ex.id);}
+  else{await sb.from('week_schedule').insert({household_id:HID,location_id:locId,week_key:weekKey,day_index:dayIndex});}
+  await loadAll();renderPlanGrid();renderMgrWeek();
 }
 
-function renderMgrWeek(){
-  if(!currentUser) return;
-  const tr = I18N[currentUser.language||'nl'];
-  const wk = wkey(weekOff);
-  const schedule = allData.weekSchedule.filter(s=>s.week_key===wk).sort((a,b)=>a.day_index-b.day_index);
-  const byDay={};
-  schedule.forEach(s=>{ if(!byDay[s.day_index]) byDay[s.day_index]=[]; byDay[s.day_index].push(s); });
-
-  let html='';
-
-  // Show all days 0-6, highlight work days
-  for(let di=0;di<7;di++){
-    const locs = byDay[di]||[];
-    const extras = allData.extraTasks.filter(e=>e.week_key===wk&&e.day_index===di);
-    const dayRecipes = allData.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-    if(!locs.length&&!extras.length&&!dayRecipes.length) continue;
-
-    let dayTotal=0,dayDone=0;
-    let locHtml='';
-
-    dayRecipes.forEach(r=>{
-      locHtml+=`<div class="recipe-section"><div class="recipe-title">🍳 ${r.name}</div><div style="font-size:12px;color:var(--cr-mid)">${r.url}</div><button onclick="delRecipe('${r.id}')" style="font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;margin-top:4px">🗑 Verwijderen</button></div>`;
-    });
-
-    locs.forEach(schedRow=>{
-      const loc=allData.locations.find(l=>l.id===schedRow.location_id);
-      if(!loc) return;
-      const tasks=allData.fixedTasks.filter(t=>t.location_id===loc.id);
-      dayTotal+=tasks.length;
-      tasks.forEach(t=>{ if(allData.checks[t.id+'_'+wk+'_'+di]) dayDone++; });
-      const locCats=[...new Set(tasks.map(t=>t.category))];
-      const noteVal=allData.notes[loc.id+'_'+wk+'_'+di]?.note||'';
-      let lb='';
-      locCats.forEach(cat=>{
-        const ct=tasks.filter(t=>t.category===cat);
-        lb+=`<div class="sec-lbl">${tr.cats[cat]||cat}</div>`;
-        ct.forEach(t=>{
-          const ck=!!allData.checks[t.id+'_'+wk+'_'+di];
-          lb+=`<div class="task-row"><div class="cb${ck?' on':''}" onclick="toggleTask('${t.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl}</span></div>`;
-        });
-      });
-      lb+=`<div class="notes-wrap"><div class="sec-lbl">${tr.notes}</div><div style="font-size:13px;color:#888;padding:.25rem 0;min-height:20px">${noteVal||'<em style="color:#ccc">Geen notities</em>'}</div></div>`;
-      locHtml+=`<div class="loc-block">
-        <div class="loc-hdr" style="background:${loc.color}22;justify-content:space-between" draggable="true" ondragstart="dragStart(event,'${schedRow.id}',${di})" ondragover="dragOver(event)" ondrop="dragDrop(event,${di})">
-          <div style="display:flex;align-items:center;gap:8px"><div class="loc-dot" style="background:${loc.color}"></div><span>${loc.name}</span></div>
-          <span style="color:#ccc;font-size:18px;cursor:grab">⠿</span>
-        </div>
-        <div class="loc-body">${lb}</div>
-      </div>`;
-    });
-
-    if(extras.length){
-      dayTotal+=extras.length;
-      extras.forEach(e=>{ if(allData.checks[e.id+'_'+wk+'_'+di]) dayDone++; });
-      let eH=`<div class="sec-lbl">${tr.extraThis}</div>`;
-      extras.forEach(e=>{
-        const ck=!!allData.checks[e.id+'_'+wk+'_'+di];
-        eH+=`<div class="task-row"><div class="cb${ck?' on':''}" onclick="toggleTask('${e.id}','${wk}',${di},true)">${ck?'✓':''}</div><span class="task-txt${ck?' done':''}">${e.text_nl}<span class="badge badge-extra">extra</span></span><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:#ddd;font-size:14px">🗑</button></div>`;
-      });
-      locHtml+=`<div style="margin-top:8px">${eH}</div>`;
-    }
-
-    html+=`<div class="day-card" ondragover="dragOver(event)" ondrop="dragDrop(event,${di})">
-      <div class="day-hdr" onclick="togDay('mwd${di}','mchev${di}')">
-        <div class="day-hdr-l"><span>📅</span><span class="day-name">${tr.days[di]}</span></div>
-        <div style="display:flex;align-items:center;gap:8px"><span class="day-prog">${dayDone}/${dayTotal}</span><span class="day-chev open" id="mchev${di}">▾</span></div>
-      </div>
-      <div id="mwd${di}" class="day-body">${locHtml}</div>
-    </div>`;
-  }
-
-  const el=document.getElementById('m-days');
-  if(el) el.innerHTML = html||`<div class="empty" style="margin-top:1rem">Geen taken gepland. Voeg locaties toe via de weekplanning.</div>`;
+// EXTRA TASKS
+function toggleRepeatDate(){
+  const v=document.getElementById('ex-repeat').value;
+  document.getElementById('ex-repeat-weeks').style.display=v==='weeks'?'block':'none';
+  document.getElementById('ex-repeat-until').style.display=v==='until'?'block':'none';
 }
 
-// --- DRAG & DROP locaties tussen dagen ---
-let dragData = null;
-function dragStart(e, scheduleId, fromDay){
-  dragData = {scheduleId, fromDay};
-  e.dataTransfer.effectAllowed = 'move';
-}
-function dragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; }
-async function dragDrop(e, toDay){
-  e.preventDefault();
-  if(!dragData||dragData.fromDay===toDay) return;
-  const wk=wkey(weekOff);
-  // Move this location to new day
-  await sb.from('week_schedule').update({day_index:toDay}).eq('id',dragData.scheduleId);
-  dragData=null;
-  await loadAllData();
-  renderMgrWeek();
-}
-
-// --- EXTRA TASKS ---
-function populateSelects(){
-  const locSel=document.getElementById('ex-loc');
-  const daySel=document.getElementById('ex-day');
-  if(!locSel||!daySel) return;
-  locSel.innerHTML=allData.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
-  daySel.innerHTML=DAYS_NL.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+function populateSels(){
+  const ls=document.getElementById('ex-loc');const ds=document.getElementById('ex-day');
+  if(ls)ls.innerHTML=D.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  if(ds){const wd=D.workdays||[0,1,3,4];ds.innerHTML=wd.slice().sort((a,b)=>a-b).map(i=>`<option value="${i}">${DAYS_NL[i]}</option>`).join('');}
 }
 
 async function addExtra(){
@@ -811,36 +723,63 @@ async function addExtra(){
   const pt=document.getElementById('ex-txt-pt').value.trim();
   const loc=document.getElementById('ex-loc').value;
   const day=parseInt(document.getElementById('ex-day').value);
-  const off=parseInt(document.getElementById('ex-week').value);
-  if(!nl) return;
-  await sb.from('extra_tasks').insert({household_id:HOUSEHOLD_ID,location_id:loc,week_key:wkey(off),day_index:day,text_nl:nl,text_pt:pt||nl});
-  document.getElementById('ex-txt-nl').value='';
-  document.getElementById('ex-txt-pt').value='';
-  await loadAllData();
-  renderExList();
-  mTab('week');
+  const startOff=parseInt(document.getElementById('ex-week').value);
+  const repeat=document.getElementById('ex-repeat').value;
+  if(!nl)return;
+  const weeksToInsert=[];
+  if(repeat==='once'){
+    weeksToInsert.push(wkey(startOff));
+  } else if(repeat==='weeks'){
+    const count=parseInt(document.getElementById('ex-weeks-count').value)||1;
+    for(let i=0;i<count;i++) weeksToInsert.push(wkey(startOff+i));
+  } else if(repeat==='until'){
+    const untilDate=document.getElementById('ex-until-date').value;
+    if(!untilDate)return;
+    let off=startOff;
+    while(true){const wk=wkey(off);if(wk>untilDate)break;weeksToInsert.push(wk);off++;if(off>52)break;}
+  }
+  const inserts=weeksToInsert.map(wk=>({household_id:HID,location_id:loc,week_key:wk,day_index:day,text_nl:nl,text_pt:pt||nl}));
+  await sb.from('extra_tasks').insert(inserts);
+  document.getElementById('ex-txt-nl').value='';document.getElementById('ex-txt-pt').value='';
+  await loadAll();renderExList();mTab('week');
 }
 
 async function delExtra(id){
   await sb.from('extra_tasks').delete().eq('id',id);
-  await loadAllData();
-  renderExList();
-  renderMgrWeek();
+  await loadAll();renderExList();renderMgrWeek();
 }
 
 function renderExList(){
-  const el=document.getElementById('ex-list');
-  if(!el) return;
+  const el=document.getElementById('ex-list');if(!el)return;
   const wk=wkey(weekOff);
-  const upcoming=allData.extraTasks.filter(e=>e.week_key>=wk);
-  if(!upcoming.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen extra taken gepland.</div>';return;}
-  el.innerHTML='<div class="sec-title">Geplande extra taken</div>'+upcoming.map(e=>`<div class="task-row"><span style="font-size:16px">📌</span><div style="flex:1"><div class="task-txt">${e.text_nl}</div><div style="font-size:11px;color:#aaa">${DAYS_NL[e.day_index]} · ${e.week_key}</div></div><button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`).join('');
+  const up=D.extraTasks.filter(e=>e.week_key>=wk);
+  if(!up.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen extra taken gepland.</div>';return;}
+  // Group by text_nl to show recurring tasks nicely
+  const grouped={};
+  up.forEach(e=>{if(!grouped[e.text_nl])grouped[e.text_nl]=[];grouped[e.text_nl].push(e);});
+  let html='<div class="sec-title">Geplande extra taken</div>';
+  Object.entries(grouped).forEach(([txt,tasks])=>{
+    const weeks=tasks.map(t=>t.week_key).sort();
+    const recurring=tasks.length>1;
+    html+=`<div class="task-row extra-row" style="margin-bottom:6px;align-items:flex-start">
+      <div style="flex:1"><div class="task-txt">${txt}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${DAYS_NL[tasks[0].day_index]} · ${recurring?`${weeks[0]} t/m ${weeks[weeks.length-1]} (${tasks.length}×)`:weeks[0]}</div></div>
+      <button onclick="delExtraGroup(${JSON.stringify(tasks.map(t=>t.id))})" style="background:none;border:none;cursor:pointer;color:var(--hint);font-size:13px">✕</button>
+    </div>`;
+  });
+  el.innerHTML=html;
 }
 
-// --- RECIPES ---
-function populateRecipeSelects(){
+async function delExtraGroup(ids){
+  for(const id of ids) await sb.from('extra_tasks').delete().eq('id',id);
+  await loadAll();renderExList();renderMgrWeek();
+}
+
+// RECIPES
+function populateRecSels(){
   const ds=document.getElementById('rec-day');
-  if(ds) ds.innerHTML=DAYS_NL.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  const wd=D.workdays||[0,1,3,4];
+  if(ds)ds.innerHTML=wd.slice().sort((a,b)=>a-b).map(i=>`<option value="${i}">${DAYS_NL[i]}</option>`).join('');
 }
 
 async function addRecipe(){
@@ -848,45 +787,34 @@ async function addRecipe(){
   const url=document.getElementById('rec-url').value.trim();
   const day=parseInt(document.getElementById('rec-day').value);
   const off=parseInt(document.getElementById('rec-week').value);
-  if(!name||!url) return;
-  await sb.from('recipes').insert({household_id:HOUSEHOLD_ID,week_key:wkey(off),day_index:day,name,url});
-  document.getElementById('rec-name').value='';
-  document.getElementById('rec-url').value='';
-  await loadAllData();
-  renderRecipeList();
-  mTab('week');
+  if(!name||!url)return;
+  await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url});
+  document.getElementById('rec-name').value='';document.getElementById('rec-url').value='';
+  await loadAll();renderRecList();mTab('week');
 }
 
 async function delRecipe(id){
   await sb.from('recipes').delete().eq('id',id);
-  await loadAllData();
-  renderRecipeList();
-  renderMgrWeek();
+  await loadAll();renderRecList();renderMgrWeek();
 }
 
-function renderRecipeList(){
-  const el=document.getElementById('rec-list');
-  if(!el) return;
-  const wk=wkey(weekOff);
-  const upcoming=allData.recipes.filter(r=>r.week_key>=wk);
-  if(!upcoming.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen recepten gepland.</div>';return;}
-  el.innerHTML='<div class="sec-title">Geplande recepten</div>'+upcoming.map(r=>`<div class="task-row"><span>🍳</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:#aaa">${DAYS_NL[r.day_index]} · ${r.week_key}</div><div style="font-size:11px;color:var(--cr-mid)">${r.url}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`).join('');
+function renderRecList(){
+  const el=document.getElementById('rec-list');if(!el)return;
+  const wk=wkey(weekOff);const up=D.recipes.filter(r=>r.week_key>=wk);
+  if(!up.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen recepten gepland.</div>';return;}
+  el.innerHTML='<div class="sec-title">Geplande recepten</div>'+up.map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="font-size:16px">↗</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${DAYS_NL[r.day_index]} · ${r.week_key}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint)">✕</button></div>`).join('');
 }
 
-// --- FIXED TASKS ---
+// FIXED TASKS
 function renderFixedList(){
-  const el=document.getElementById('fixed-list');
-  if(!el) return;
-  const locSel=document.getElementById('ft-loc');
-  if(locSel) locSel.innerHTML=allData.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  const el=document.getElementById('fixed-list');if(!el)return;
+  const ls=document.getElementById('ft-loc');if(ls)ls.innerHTML=D.locations.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
   let html='';
-  allData.locations.forEach(loc=>{
-    const tasks=allData.fixedTasks.filter(t=>t.location_id===loc.id);
+  D.locations.forEach(loc=>{
+    const tasks=D.fixedTasks.filter(t=>t.location_id===loc.id);
     html+=`<div class="sec-title" style="display:flex;align-items:center;gap:6px"><div class="loc-dot" style="background:${loc.color}"></div>${loc.name}</div>`;
     if(!tasks.length){html+='<div class="empty">Geen vaste taken</div>';return;}
-    tasks.forEach(t=>{
-      html+=`<div class="task-row"><div style="flex:1"><div class="task-txt">${t.text_nl}</div><div style="font-size:11px;color:#aaa">${CAT_NL[t.category]||t.category}</div></div><button onclick="delFixed('${t.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`;
-    });
+    tasks.forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div><div style="font-size:11px;color:var(--hint)">${CAT_NL[t.category]||t.category}${t.text_pt?` · ${t.text_pt}`:''}</div></div><button onclick="delFixed('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint)">✕</button></div>`;});
   });
   el.innerHTML=html;
 }
@@ -896,132 +824,113 @@ async function addFixed(){
   const pt=document.getElementById('ft-pt').value.trim();
   const loc=document.getElementById('ft-loc').value;
   const cat=document.getElementById('ft-cat').value;
-  if(!nl||!loc) return;
-  await sb.from('fixed_tasks').insert({household_id:HOUSEHOLD_ID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
-  document.getElementById('ft-nl').value='';
-  document.getElementById('ft-pt').value='';
-  await loadAllData();
-  renderFixedList();
+  if(!nl||!loc)return;
+  await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
+  document.getElementById('ft-nl').value='';document.getElementById('ft-pt').value='';
+  await loadAll();renderFixedList();
 }
 
-async function delFixed(id){
-  await sb.from('fixed_tasks').delete().eq('id',id);
-  await loadAllData();
-  renderFixedList();
-}
+async function delFixed(id){await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
 
-// --- LOCATIES ---
+// LOCATIONS
 function renderLocList(){
-  const el=document.getElementById('loc-list');
-  if(!el) return;
-  if(!allData.locations.length){el.innerHTML='<div class="empty">Nog geen locaties.</div>';return;}
-  el.innerHTML=allData.locations.map(l=>`<div class="task-row"><div class="loc-dot" style="background:${l.color}"></div><span class="task-txt">${l.name}</span><button onclick="delLocation('${l.id}')" style="background:none;border:none;cursor:pointer;color:#ddd">🗑</button></div>`).join('');
+  const el=document.getElementById('loc-list');if(!el)return;
+  if(!D.locations.length){el.innerHTML='<div class="empty">Nog geen locaties.</div>';return;}
+  el.innerHTML=D.locations.map(l=>`<div class="task-row" style="margin-bottom:4px"><div class="loc-dot" style="background:${l.color}"></div><span class="task-txt">${l.name}</span><button onclick="delLocation('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--hint)">✕</button></div>`).join('');
 }
 
 async function addLocation(){
   const name=document.getElementById('new-loc-name').value.trim();
   const color=document.getElementById('new-loc-color').value;
-  if(!name) return;
-  const maxOrder=Math.max(0,...allData.locations.map(l=>l.sort_order));
-  await sb.from('locations').insert({household_id:HOUSEHOLD_ID,name,color,sort_order:maxOrder+1});
+  if(!name)return;
+  const maxO=Math.max(0,...D.locations.map(l=>l.sort_order));
+  await sb.from('locations').insert({household_id:HID,name,color,sort_order:maxO+1});
   document.getElementById('new-loc-name').value='';
-  await loadAllData();
-  renderLocList();
+  await loadAll();renderLocList();
 }
 
 async function delLocation(id){
-  if(!confirm('Locatie verwijderen? Dit verwijdert ook alle gekoppelde taken.')) return;
+  if(!confirm('Locatie verwijderen? Dit verwijdert ook alle gekoppelde taken.'))return;
   await sb.from('fixed_tasks').delete().eq('location_id',id);
   await sb.from('week_schedule').delete().eq('location_id',id);
   await sb.from('locations').delete().eq('id',id);
-  await loadAllData();
-  renderLocList();
-  renderMgrWeek();
+  await loadAll();renderLocList();renderMgrWeek();
 }
 
-// --- WEEK SCHEDULE ---
-// For manager to add a location to a day
-async function scheduleLocation(locId, dayIndex){
-  const wk=wkey(weekOff);
-  const exists=allData.weekSchedule.find(s=>s.location_id===locId&&s.week_key===wk);
-  if(exists){
-    await sb.from('week_schedule').update({day_index:dayIndex}).eq('id',exists.id);
-  } else {
-    await sb.from('week_schedule').insert({household_id:HOUSEHOLD_ID,location_id:locId,week_key:wk,day_index:dayIndex});
-  }
-  await loadAllData();
-  renderMgrWeek();
-}
-
-// --- PROFILE ---
+// WORKDAYS
 function loadInstForm(){
-  if(!currentUser) return;
-  const ni=document.getElementById('inst-name');
-  const li=document.getElementById('inst-lang');
-  if(ni) ni.value=currentUser.name;
-  if(li) li.value=currentUser.language||'nl';
+  if(!currentUser)return;
+  const ni=document.getElementById('inst-name');const li=document.getElementById('inst-lang');
+  if(ni)ni.value=currentUser.name;if(li)li.value=currentUser.language||'nl';
+  const dt=document.getElementById('day-toggles');if(!dt)return;dt.innerHTML='';
+  DAYS_NL.forEach((d,i)=>{
+    const b=document.createElement('button');b.className='day-pill'+(D.workdays.includes(i)?' on':'');
+    b.textContent=d;b.onclick=()=>{
+      if(D.workdays.includes(i))D.workdays=D.workdays.filter(x=>x!==i);else D.workdays.push(i);
+      renderLocList();loadInstForm();
+    };dt.appendChild(b);
+  });
+}
+
+async function saveWorkdays(){
+  await sb.from('households').update({workdays:D.workdays}).eq('id',HID);
+  await loadAll();
+  const fl=document.getElementById('wd-flash');if(fl){fl.style.opacity='1';fl.textContent='Werkdagen opgeslagen!';setTimeout(()=>fl.style.opacity='0',2000);}
 }
 
 async function saveProfile(){
   const name=document.getElementById('inst-name').value.trim();
   const lang=document.getElementById('inst-lang').value;
   const pin=document.getElementById('inst-pin').value;
-  const updates={name,language:lang};
-  if(pin&&/^\d{4}$/.test(pin)) updates.pin=pin;
+  const pin2=document.getElementById('inst-pin2').value;
+  if(pin){
+    if(!/^\d{4}$/.test(pin)){alert('PIN moet 4 cijfers zijn.');return;}
+    if(pin!==pin2){alert('PINs komen niet overeen.');return;}
+  }
+  const updates={name,language:lang};if(pin)updates.pin=pin;
   await sb.from('users').update(updates).eq('id',currentUser.id);
-  await loadAllData();
-  currentUser=allData.users.find(u=>u.id===currentUser.id);
-  document.getElementById('inst-pin').value='';
-  const fl=document.getElementById('inst-flash');
-  if(fl){fl.style.opacity='1';fl.textContent=t('saved');setTimeout(()=>fl.style.opacity='0',2000);}
+  await loadAll();currentUser=D.users.find(u=>u.id===currentUser.id);
+  document.getElementById('inst-pin').value='';document.getElementById('inst-pin2').value='';
+  const fl=document.getElementById('inst-flash');if(fl){fl.style.opacity='1';fl.textContent='Opgeslagen!';setTimeout(()=>fl.style.opacity='0',2000);}
   renderManager();
 }
 
 async function clearChecks(){
-  if(!confirm(t('clearChecks')+'?')) return;
-  const wk=wkey(weekOff);
-  await sb.from('task_checks').delete().eq('household_id',HOUSEHOLD_ID).eq('week_key',wk);
-  await loadAllData();
-  renderMgrWeek();
+  if(!confirm('Alle vinkjes voor deze week wissen?'))return;
+  await sb.from('task_checks').delete().eq('household_id',HID).eq('week_key',wkey(weekOff));
+  await loadAll();renderMgrWeek();
 }
 
-// --- VERTALING ---
-async function autoTranslate(fromId, toId, fromLang){
-  const fromEl = document.getElementById(fromId);
-  const toEl = document.getElementById(toId);
-  const loadId = toId + '-loading';
-  const loadEl = document.getElementById(loadId);
-  if(!fromEl || !toEl) return;
-  const text = fromEl.value.trim();
-  if(!text) return;
-  if(toEl.value.trim()) return; // al ingevuld, niet overschrijven
-  const toLang = fromLang === 'nl' ? 'pt' : 'nl';
-  const langName = toLang === 'pt' ? 'Europees Portugees' : 'Nederlands';
-  if(loadEl) loadEl.style.display='inline';
-  toEl.placeholder = 'Vertalen...';
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 100,
-        system: `Vertaal de volgende huishoudtaak naar ${langName}. Geef ALLEEN de vertaling terug, geen uitleg, geen aanhalingstekens.`,
-        messages: [{role:'user', content: text}]
-      })
-    });
-    const data = await res.json();
-    const translated = data.content?.[0]?.text?.trim();
-    if(translated) toEl.value = translated;
-    toEl.placeholder = 'Vertaling PT (automatisch)...';
-  } catch(e) {
-    toEl.placeholder = 'Vertaling mislukt, typ zelf...';
+// AUTO-TRANSLATE
+async function autoTranslate(fromId,toId,fromLang){
+  const fromEl=document.getElementById(fromId);const toEl=document.getElementById(toId);
+  if(!fromEl||!toEl)return;
+  const text=fromEl.value.trim();if(!text||toEl.value.trim())return;
+  const toLang=fromLang==='nl'?'pt':'nl';
+  const langName=toLang==='pt'?'Europees Portugees':'Nederlands';
+  toEl.placeholder='Vertalen...';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:100,
+        system:`Vertaal de volgende huishoudtaak naar ${langName}. Geef ALLEEN de vertaling terug, geen uitleg, geen aanhalingstekens.`,
+        messages:[{role:'user',content:text}]})});
+    const data=await res.json();
+    const translated=data.content?.[0]?.text?.trim();
+    if(translated)toEl.value=translated;
+  }catch(e){}
+  toEl.placeholder='Automatisch vertaald...';
+}
+
+// ADD WORKDAYS COLUMN + SUZAN USER (first run)
+async function ensureSetup(){
+  // Add Suzan if not exists
+  const suzan=D.users.find(u=>u.name.toLowerCase().includes('suzan'));
+  if(!suzan){
+    await sb.from('users').insert({household_id:HID,name:'Suzan',role:'admin',pin:'9999',language:'nl'});
   }
-  if(loadEl) loadEl.style.display='none';
 }
 
-// --- START ---
-init();
+init().then(()=>ensureSetup());
 </script>
 </body>
 </html>
