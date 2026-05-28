@@ -241,8 +241,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div id="mt-extra" class="scroll" style="display:none">
       <div class="lbl" style="margin-bottom:8px">Extra taak toevoegen</div>
       <div class="form-card">
-        <div class="form-row"><input type="text" id="ex-txt-nl" placeholder="Omschrijving (NL)"></div>
-        <div class="form-row"><input type="text" id="ex-txt-pt" placeholder="Descrição (PT)"></div>
+        <div class="form-row">
+          <input type="text" id="ex-txt-nl" placeholder="Omschrijving (NL)" onblur="autoTranslate('ex-txt-nl','ex-txt-pt','nl')">
+        </div>
+        <div class="form-row" style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="ex-txt-pt" placeholder="Vertaling PT (automatisch)..." style="flex:1">
+          <span id="ex-txt-pt-loading" style="font-size:12px;color:var(--cr-mid);display:none">⏳</span>
+        </div>
         <div class="form-2col form-row">
           <select id="ex-loc"></select>
           <select id="ex-day"></select>
@@ -278,8 +283,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div id="fixed-list"></div>
       <div class="lbl" style="margin:.75rem 0 8px">Nieuwe vaste taak</div>
       <div class="form-card">
-        <div class="form-row"><input type="text" id="ft-nl" placeholder="Omschrijving (NL)"></div>
-        <div class="form-row"><input type="text" id="ft-pt" placeholder="Descrição (PT)"></div>
+        <div class="form-row">
+          <input type="text" id="ft-nl" placeholder="Omschrijving (NL)" onblur="autoTranslate('ft-nl','ft-pt','nl')">
+        </div>
+        <div class="form-row" style="display:flex;align-items:center;gap:8px">
+          <input type="text" id="ft-pt" placeholder="Vertaling PT (automatisch)..." style="flex:1">
+          <span id="ft-pt-loading" style="font-size:12px;color:var(--cr-mid);display:none">⏳</span>
+        </div>
         <div class="form-2col form-row">
           <select id="ft-loc"></select>
           <select id="ft-cat">
@@ -973,6 +983,41 @@ async function clearChecks(){
   await sb.from('task_checks').delete().eq('household_id',HOUSEHOLD_ID).eq('week_key',wk);
   await loadAllData();
   renderMgrWeek();
+}
+
+// --- VERTALING ---
+async function autoTranslate(fromId, toId, fromLang){
+  const fromEl = document.getElementById(fromId);
+  const toEl = document.getElementById(toId);
+  const loadId = toId + '-loading';
+  const loadEl = document.getElementById(loadId);
+  if(!fromEl || !toEl) return;
+  const text = fromEl.value.trim();
+  if(!text) return;
+  if(toEl.value.trim()) return; // al ingevuld, niet overschrijven
+  const toLang = fromLang === 'nl' ? 'pt' : 'nl';
+  const langName = toLang === 'pt' ? 'Europees Portugees' : 'Nederlands';
+  if(loadEl) loadEl.style.display='inline';
+  toEl.placeholder = 'Vertalen...';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 100,
+        system: `Vertaal de volgende huishoudtaak naar ${langName}. Geef ALLEEN de vertaling terug, geen uitleg, geen aanhalingstekens.`,
+        messages: [{role:'user', content: text}]
+      })
+    });
+    const data = await res.json();
+    const translated = data.content?.[0]?.text?.trim();
+    if(translated) toEl.value = translated;
+    toEl.placeholder = 'Vertaling PT (automatisch)...';
+  } catch(e) {
+    toEl.placeholder = 'Vertaling mislukt, typ zelf...';
+  }
+  if(loadEl) loadEl.style.display='none';
 }
 
 // --- START ---
