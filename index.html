@@ -412,7 +412,7 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       <label class="flbl">Omschrijving (NL)</label>
       <input class="finput" type="text" id="pt-nl" placeholder="bijv. Koelkast schoonmaken">
       <div class="f2">
-        <div><label class="flbl">Locatie</label><select class="finput" id="pt-loc"></select></div>
+        <div style="grid-column:1/-1"><label class="flbl">Locaties (meerdere mogelijk)</label><div class="pill-group" id="pt-loc-pills"></div></div>
         <div><label class="flbl">Interval</label>
           <select class="finput" id="pt-interval">
             <option value="1">Elke maand</option>
@@ -482,10 +482,13 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
         <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
         <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
       </select>
+      <label class="flbl">Locaties</label>
+      <div class="pill-group" id="edit-locs"></div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:.75rem">
-      <button class="save-btn" onclick="saveEdit()" style="flex:1">Opslaan</button>
-      <button class="save-btn" onclick="closeModal()" style="flex:1;background:var(--steam);color:var(--text)">Annuleren</button>
+    <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+      <button class="save-btn" onclick="saveEdit()" style="flex:1;min-width:100px">Opslaan</button>
+      <button class="save-btn" onclick="closeModal()" style="flex:1;min-width:100px;background:var(--steam);color:var(--text)">Annuleren</button>
+      <button class="save-btn" id="edit-delete-btn" onclick="deleteFromEdit()" style="flex:1;min-width:100px;background:var(--danger);display:none">Verwijderen</button>
     </div>
   </div>
 </div>
@@ -837,7 +840,7 @@ function renderDayBody(di,wk,isMgr){
 function renderLocBlock(loc,wk,di,isMgr){
   const tasks=D.tasks.filter(t=>t.location_id===loc.id);
   // Periodic tasks due for this location on this day
-  const duePeriodicTasks=D.periodic.filter(pt=>pt.location_id===loc.id&&isPeriodicDue(pt));
+  const duePeriodicTasks=D.periodic.filter(pt=>(pt.location_id===loc.id||(pt.location_ids&&pt.location_ids.includes(loc.id)))&&isPeriodicDue(pt));
   const total=tasks.length+duePeriodicTasks.length;
   const done=tasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length
     +duePeriodicTasks.filter(pt=>{const now=new Date();return !!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);}).length;
@@ -1188,15 +1191,26 @@ async function delFixed(id){if(!confirm('Taak verwijderen?'))return;await sb.fro
 // PERIODIC TASKS
 function renderPeriodicList(){
   const el=document.getElementById('periodic-list');if(!el)return;
-  const pll=document.getElementById('pt-loc');if(pll)pll.innerHTML=`<option value="">-- Selecteer --</option>`+D.locs.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  const pll=document.getElementById('pt-loc-pills');if(pll)pll.innerHTML=D.locs.map(l=>`<div class="cpill" id="ptl-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
   if(!D.periodic.length){el.innerHTML='<div class="empty">Geen periodieke taken.</div>';return;}
   // Group by location
-  const byLoc={};D.periodic.forEach(pt=>{const lid=pt.location_id||'none';if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(pt);});
+  // Group by first location or 'diverse' if multiple/none
+  const byLoc={};
+  D.periodic.forEach(pt=>{
+    const lids=(pt.location_ids&&pt.location_ids.length)?pt.location_ids:[pt.location_id||'none'];
+    if(lids.length>1){
+      if(!byLoc['diverse'])byLoc['diverse']=[];byLoc['diverse'].push(pt);
+    } else {
+      const lid=lids[0]||'none';
+      if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(pt);
+    }
+  });
   let html='';
   Object.entries(byLoc).forEach(([lid,tasks])=>{
-    const loc=D.locs.find(l=>l.id===lid);
-    const locLabel=loc?loc.name:'Geen locatie';
-    const locCol=loc?loc.color:'#888';
+    const isDiverse=lid==='diverse';
+    const loc=isDiverse?null:D.locs.find(l=>l.id===lid);
+    const locLabel=isDiverse?'Diverse locaties':(loc?loc.name:'Diverse locaties');
+    const locCol=isDiverse?'#8a7e74':(loc?loc.color:'#8a7e74');
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${locCol}"><span class="loc-section-name">${locLabel}</span></div><div class="loc-section-body">`;
     tasks.forEach(t=>{
       const due=isPeriodicDue(t);
@@ -1208,11 +1222,14 @@ function renderPeriodicList(){
 }
 async function addPeriodic(){
   const nl=document.getElementById('pt-nl').value.trim();
-  const lid=document.getElementById('pt-loc').value;
   const interval=parseInt(document.getElementById('pt-interval').value)||1;
-  if(!nl||!lid)return;
-  await sb.from('monthly_tasks').insert({household_id:HID,location_id:lid,text_nl:nl,text_pt:nl,interval_months:interval});
+  if(!nl)return;
+  // Get selected locations from pills
+  const selLocs=[...document.querySelectorAll('#pt-loc-pills .cpill.on')].map(el=>el.id.replace('ptl-',''));
+  const lid=selLocs[0]||null;
+  await sb.from('monthly_tasks').insert({household_id:HID,location_id:lid,location_ids:selLocs,text_nl:nl,text_pt:nl,interval_months:interval});
   document.getElementById('pt-nl').value='';
+  document.querySelectorAll('#pt-loc-pills .cpill.on').forEach(el=>el.classList.remove('on'));
   await loadAll();renderPeriodicList();
 }
 async function delPeriodic(id){if(!confirm('Verwijderen?'))return;await sb.from('monthly_tasks').delete().eq('id',id);await loadAll();renderPeriodicList();}
@@ -1232,9 +1249,34 @@ function openEdit(id,type,nl,pt,interval){
   const iw=document.getElementById('edit-interval-wrap');
   if(iw){iw.style.display=type==='periodic'?'block':'none';if(interval&&type==='periodic'){const sel=document.getElementById('edit-interval');if(sel)sel.value=interval;}}
   editScope='one';setScope('one');
+  // Populate location checkboxes for periodic tasks
+  const elocs=document.getElementById('edit-locs');
+  const deleteBtn=document.getElementById('edit-delete-btn');
+  if(elocs){
+    if(type==='periodic'){
+      const task=D.periodic.find(p=>p.id===id);
+      const curLids=(task?.location_ids)||[];
+      elocs.innerHTML=D.locs.map(l=>`<div class="cpill${curLids.includes(l.id)?' on':''}" id="eloc-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
+    } else {
+      elocs.innerHTML='';
+    }
+  }
+  if(deleteBtn) deleteBtn.style.display=(type==='periodic'||type==='extra')?'flex':'none';
   document.getElementById('task-modal').classList.add('open');
 }
 function closeModal(){document.getElementById('task-modal').classList.remove('open');}
+
+async function deleteFromEdit(){
+  const id=document.getElementById('edit-task-id').value;
+  const type=document.getElementById('edit-task-type').value;
+  if(!confirm('Taak definitief verwijderen?'))return;
+  if(type==='periodic'){await sb.from('monthly_tasks').delete().eq('id',id);}
+  else if(type==='extra'){await sb.from('extra_tasks').delete().eq('id',id);}
+  else{await sb.from('fixed_tasks').delete().eq('id',id);}
+  await logChange('Taak verwijderd');
+  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();
+  closeModal();
+}
 
 async function saveEdit(){
   const id=document.getElementById('edit-task-id').value;
@@ -1254,7 +1296,8 @@ async function saveEdit(){
     }
   } else if(type==='periodic'){
     const interval=parseInt(document.getElementById('edit-interval').value)||1;
-    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval}).eq('id',id);
+    const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
+    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null}).eq('id',id);
   } else {
     await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl}).eq('id',id);
   }
