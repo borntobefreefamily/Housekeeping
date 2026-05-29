@@ -551,12 +551,12 @@ const I={
     due:'Due',interval1:'Por m\u00eas',interval2:'2 em 2 meses',interval3:'3 em 3 meses',
     interval4:'4 em 4 meses',interval6:'6 em 6 meses',interval12:'Anual'}
 };
-const t=k=>I[lg()][k]||k;
+const tr=k=>I[lg()][k]||k;
 
 function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.toISOString().slice(0,10);}
 
 function wlbl(off){
-  if(off===0)return t('thisWeek');
+  if(off===0)return tr('thisWeek');
   const mon=new Date();mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+off*7);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   const ms=MONTHS_SHORT;
@@ -582,7 +582,7 @@ function isPeriodicDue(task){
   return monthsSince>=(task.interval_months||1);
 }
 
-function intervalLabel(n){return t('interval'+n)||`Elke ${n} maanden`;}
+function intervalLabel(n){return tr('interval'+n)||`Elke ${n} maanden`;}
 
 async function loadAll(){
   const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl]=await Promise.all([
@@ -685,7 +685,7 @@ async function chkPin(){
     showScr(user.role==='admin'?'manager':'worker');
     if(user.role==='worker')updLogBadge();
   } else {
-    document.getElementById('pin-err').textContent=t('pinWrong');
+    document.getElementById('pin-err').textContent=tr('pinWrong');
     pin='';updDots();
   }
 }
@@ -746,10 +746,10 @@ function wTab(n){
     document.getElementById('wt-'+tab)?.classList.toggle('on',tab===n);
   });
   // Update tab labels
-  const wt=document.getElementById('wt-week');if(wt)wt.textContent=t('myWeek');
-  const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=t('changes');
-  const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=t('recipes');
-  const ltt=document.getElementById('log-title');if(ltt)ltt.textContent=t('recentChanges');
+  const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
+  const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
+  const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
+  const ltt=document.getElementById('log-title');if(ltt)ltt.textContent=tr('recentChanges');
   if(n==='log')renderLog();
   if(n==='recipe')renderWorkerRecipes();
   updWkLbls();
@@ -764,7 +764,7 @@ async function renderLog(){
   }
   if(unread.length)await loadAll();
   updLogBadge();
-  if(!D.log.length){el.innerHTML=`<div class="empty">${t('noChanges')}</div>`;return;}
+  if(!D.log.length){el.innerHTML=`<div class="empty">${tr('noChanges')}</div>`;return;}
   const now=new Date();
   el.innerHTML=D.log.map(l=>{
     const dt=new Date(l.created_at);
@@ -791,14 +791,14 @@ function renderDayBody(di,wk,isMgr){
 
   // Focus
   if(focus||isMgr){
-    html+=`<div class="focus-banner"><div class="focus-inner"><div class="focus-lbl">${t('focusToday')}</div><div class="focus-txt">${focus||'\u2014'}</div></div>`;
+    html+=`<div class="focus-banner"><div class="focus-inner"><div class="focus-lbl">${tr('focusToday')}</div><div class="focus-txt">${focus||'\u2014'}</div></div>`;
     if(isMgr)html+=`<button class="focus-edit" onclick="editFocus(${di})" title="Aanpassen">&#9998;</button>`;
     html+='</div>';
   }
 
   // Recepten
   if(recs.length){
-    html+=`<div class="recipe-block"><span class="recipe-lbl">${t('recipes')}</span>`;
+    html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
     recs.forEach(r=>{
       html+=`<div class="recipe-item">`;
       if(r.url)html+=`<a href="${r.url}" target="_blank">&#8599; ${r.name}</a>`;
@@ -824,9 +824,9 @@ function renderDayBody(di,wk,isMgr){
     const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
     const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
     const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${t('extra')}</span>${byStr}</span>`;
-    if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${t('skip')}">&#8864;</button>`;
-    if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${t('skipped')}</span>`;
+    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
+    if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+    if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
     if(isMgr)html+=`<button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button>`;
     html+='</div>';
   });
@@ -854,8 +854,8 @@ function renderLocBlock(loc,wk,di,isMgr){
       const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
       const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
       lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
-      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${t('skip')}">&#8864;</button>`;
-      if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${t('skipped')}</span>`;
+      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+      if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
       if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${t.text_nl.replace(/'/g,'&#39;')}','${(t.text_pt||'').replace(/'/g,'&#39;')}','')">&#9998;</button>`;
       lb+='</div>';
     });
@@ -869,18 +869,18 @@ function renderLocBlock(loc,wk,di,isMgr){
       const ck=!!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);
       const skipped=!!D.skipped[pt.id+'_'+wk+'_'+di];
       lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic('${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months||1)}</span></span>`;
-      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${t('skip')}">&#8864;</button>`;
+      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${tr('skip')}">&#8864;</button>`;
       if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${pt.text_nl.replace(/'/g,'&#39;')}','${(pt.text_pt||'').replace(/'/g,'&#39;')}','${pt.interval_months||1}')">&#9998;</button>`;
       lb+='</div>';
     });
   }
 
-  lb+=`<span class="slbl" style="margin-top:.5rem">${t('notes')}</span>`;
+  lb+=`<span class="slbl" style="margin-top:.5rem">${tr('notes')}</span>`;
   if(isMgr){
     lb+=`<div style="font-size:12px;color:var(--muted);padding:.25rem 0;min-height:18px;font-style:italic">${note||'\u2014'}</div>`;
   } else {
-    lb+=`<textarea class="notes-area" placeholder="${t('notesHint')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
-    lb+=`<button class="save-btn" onclick="doFlash('fl-${uid}')">${t('save')}</button><div id="fl-${uid}" class="flash" style="opacity:0">${t('saved')}</div>`;
+    lb+=`<textarea class="notes-area" placeholder="${tr('notesHint')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
+    lb+=`<button class="save-btn" onclick="doFlash('fl-${uid}')">${tr('save')}</button><div id="fl-${uid}" class="flash" style="opacity:0">${tr('saved')}</div>`;
   }
   return `<div class="loc-block"><div class="loc-hdr-bar" style="background:${loc.color}14" onclick="togEl('lb-${uid}','lc-${uid}')"><div class="loc-dot" style="background:${loc.color}"></div><span class="loc-name-txt">${loc.name}</span><span class="loc-task-count">${done}/${total}</span><span class="chev" id="lc-${uid}">&#9662;</span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
 }
@@ -891,11 +891,11 @@ function renderWorker(){
   document.getElementById('w-av').style.background=col;
   document.getElementById('w-av').textContent=CU.name[0];
   document.getElementById('w-name').textContent=CU.name;
-  document.getElementById('w-sub').textContent=t('worker');
+  document.getElementById('w-sub').textContent=tr('worker');
   // Tab labels
-  const wt=document.getElementById('wt-week');if(wt)wt.textContent=t('myWeek');
-  const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=t('changes');
-  const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=t('recipes');
+  const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
+  const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
+  const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
   updWkLbls();
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
@@ -919,8 +919,8 @@ function renderWorker(){
       html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
     });
     const pct=tot?Math.round(done/tot*100):0;
-    document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${t('progress')}</span><span class="prog-count">${done}/${tot} ${t('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
-    document.getElementById('w-days').innerHTML=html||`<div class="empty" style="margin-top:1rem">${t('noTasks')}</div>`;
+    document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
+    document.getElementById('w-days').innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
   });
 }
 
@@ -930,17 +930,17 @@ function renderWorkerRecipes(){
   const el=document.getElementById('w-recipe-form');
   // Update labels
   const lbMap={
-    'w-recipe-title':t('recipesTitle'),
-    'w-rc-lbl1':t('dish'),'w-rc-lbl2':t('link'),
-    'w-rc-lbl3':t('day'),'w-rc-lbl4':t('week'),
-    'w-rc-btn':t('addRecipe')
+    'w-recipe-title':tr('recipesTitle'),
+    'w-rc-lbl1':tr('dish'),'w-rc-lbl2':tr('link'),
+    'w-rc-lbl3':tr('day'),'w-rc-lbl4':tr('week'),
+    'w-rc-btn':tr('addRecipe')
   };
   Object.entries(lbMap).forEach(([id,txt])=>{const e=document.getElementById(id);if(e)e.textContent=txt;});
   const wd=document.getElementById('w-rc-day');
   if(wd)wd.innerHTML=ALL_DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
-  const wrcw0=document.getElementById('wrc-w0');if(wrcw0)wrcw0.textContent=t('thisWeek');
-  const wrcw1=document.getElementById('wrc-w1');if(wrcw1)wrcw1.textContent=t('nextWeek');
-  const np=document.getElementById('w-rc-name');if(np)np.placeholder=t('dish');
+  const wrcw0=document.getElementById('wrc-w0');if(wrcw0)wrcw0.textContent=tr('thisWeek');
+  const wrcw1=document.getElementById('wrc-w1');if(wrcw1)wrcw1.textContent=tr('nextWeek');
+  const np=document.getElementById('w-rc-name');if(np)np.placeholder=tr('dish');
   renderWorkerRcList();
 }
 
@@ -948,8 +948,8 @@ function renderWorkerRcList(){
   const el=document.getElementById('w-rc-list');if(!el)return;
   const wk=wkey(wOff);
   const up=D.recipes.filter(r=>r.week_key>=wk);
-  if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${t('noTasks')}</div>`;return;}
-  const sec=t('recipes');
+  if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noTasks')}</div>`;return;}
+  const sec=tr('recipes');
   el.innerHTML=`<div class="sec-title">${sec}</div>`+up.map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${ALL_DAYS[r.day_index]}</span></div>`).join('');
 }
 
@@ -960,7 +960,7 @@ async function addRecipeWorker(){
   const off=parseInt(document.getElementById('w-rc-wk').value);
   if(!name)return;
   await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url:url||null});
-  await logChange(`${t('recipes')}: "${name}" ${ALL_DAYS[day]}`);
+  await logChange(`${tr('recipes')}: "${name}" ${ALL_DAYS[day]}`);
   document.getElementById('w-rc-name').value='';document.getElementById('w-rc-url').value='';
   await loadAll();renderWorkerRcList();
 }
@@ -971,7 +971,7 @@ function renderManager(){
   document.getElementById('m-av').style.background=col;
   document.getElementById('m-av').textContent=CU.name[0];
   document.getElementById('m-name').textContent=CU.name;
-  document.getElementById('m-sub').textContent=t('admin');
+  document.getElementById('m-sub').textContent=tr('admin');
   updWkLbls();renderMgrWeek();
 }
 
