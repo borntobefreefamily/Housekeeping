@@ -180,12 +180,21 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
 .cpill{display:inline-flex;align-items:center;padding:6px 12px;border-radius:100px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;user-select:none}
 .cpill.on{background:var(--caramel);border-color:var(--caramel);color:#fff}
 
+/* TYPE PILLS */
+.type-pills{display:flex;gap:6px;margin-bottom:10px}
+.type-pill{flex:1;padding:9px 6px;border:1.5px solid var(--border);border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;background:var(--white);color:var(--muted);font-family:'DM Sans',sans-serif;text-align:center;transition:all .15s}
+.type-pill.on{background:var(--espresso);border-color:var(--espresso);color:var(--cream)}
+
 /* TAKEN TAB - locatie headers */
 .loc-section{margin-bottom:1rem}
 .loc-section-hdr{display:flex;align-items:center;gap:10px;padding:.6rem .9rem;border-radius:var(--rs) var(--rs) 0 0;margin-bottom:0}
 .loc-section-hdr .loc-section-name{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#fff;flex:1}
 .loc-section-hdr .loc-section-count{font-size:11px;color:rgba(255,255,255,.6)}
 .loc-section-body{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rs) var(--rs);padding:.5rem .875rem}
+
+/* COLLAPSIBLE SECTION */
+.collapse-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:.5rem 0}
+.collapse-hdr .sec-title{margin:0;padding:0;border:none;flex:1}
 
 /* SETTINGS */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}
@@ -219,6 +228,11 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
 .jump-btn:active{background:var(--steam)}
 .jump-btn.cur{background:var(--espresso);color:var(--cream);border-color:var(--espresso)}
 
+/* LOC EDIT ROW */
+.loc-edit-row{display:flex;align-items:center;gap:8px;padding:6px 4px;margin-bottom:4px;border-radius:7px}
+.loc-edit-row .loc-dot{cursor:default}
+.loc-cats{font-size:10px;color:var(--muted);margin-top:1px}
+
 .sec-title{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--espresso);margin:.875rem 0 .5rem;padding-bottom:.35rem;border-bottom:1px solid var(--border)}
 .empty{font-size:13px;color:var(--muted);font-style:italic;padding:.4rem 0;font-weight:300}
 .loading-wrap{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;background:var(--espresso)}
@@ -235,8 +249,8 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
 <div class="screen" id="s-pin">
   <div class="pin-wrap">
     <div class="pin-badge">Huisplanner</div>
-    <div class="pin-title">Jouw huis,<br><span>op orde.</span></div>
-    <div class="pin-sub">Structuur met warmte</div>
+    <div class="pin-title" id="pin-title">Jouw huis,<br><span>op orde.</span></div>
+    <div class="pin-sub" id="pin-sub">Structuur met warmte</div>
     <div class="pin-lang">
       <button id="pin-nl" class="active" onclick="setSessionLang('nl')">🇳🇱 NL</button>
       <button id="pin-pt" onclick="setSessionLang('pt')">🇵🇹 PT</button>
@@ -250,7 +264,7 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       <button class="key" style="visibility:hidden"></button><button class="key" onclick="pp('0')">0</button>
       <button class="key" onclick="pdel()" style="font-size:18px">&#9003;</button>
     </div>
-    <div class="pin-hint">Voer je PIN in</div>
+    <div class="pin-hint" id="pin-hint">Voer je PIN in</div>
   </div>
 </div>
 
@@ -316,10 +330,9 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       <button class="btn-out" onclick="logout()">&#8617;</button>
     </div>
   </div>
-  <div class="tabs">
+  <div class="tabs" id="mgr-tabs">
     <button class="tab on" id="t-week" onclick="mTab('week')">Week</button>
     <button class="tab" id="t-plan" onclick="mTab('plan')">Planning</button>
-    <button class="tab" id="t-extra" onclick="mTab('extra')">Extra</button>
     <button class="tab" id="t-recipe" onclick="mTab('recipe')">Recepten</button>
     <button class="tab" id="t-taken" onclick="mTab('taken')">Taken</button>
     <button class="tab" id="t-inst" onclick="mTab('inst')">Instellingen</button>
@@ -336,127 +349,139 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
   </div>
 
   <div id="mt-plan" class="scroll" style="display:none">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300">Vink per dag aan welke locaties Diana schoonmaakt.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
     <div id="plan-grid"></div>
   </div>
 
-  <div id="mt-extra" class="scroll" style="display:none">
-    <div class="sec-title">Extra taak toevoegen</div>
-    <div class="form-card">
-      <label class="flbl">Omschrijving (NL)</label>
-      <input class="finput" type="text" id="ex-nl" placeholder="bijv. Zwembad grondig schoonmaken" onblur="autoTr('ex-nl','ex-pt')">
-      <div class="fhint">&#8627; Portugese vertaling automatisch</div>
-      <label class="flbl">Descri&#231;&#227;o (PT)</label>
-      <input class="finput" type="text" id="ex-pt" placeholder="Automatisch vertaald...">
-      <label class="flbl">Locaties (meerdere mogelijk)</label>
-      <div class="pill-group" id="ex-locs"></div>
-      <label class="flbl">Dagen (meerdere mogelijk)</label>
-      <div class="pill-group" id="ex-days"></div>
-      <label class="flbl">Herhaling</label>
-      <select class="finput" id="ex-rep" onchange="togRep()">
-        <option value="once">Eenmalig</option>
-        <option value="weekly">Wekelijks</option>
-        <option value="monthly">Maandelijks (elke 4 weken)</option>
-        <option value="infinite">Oneindig</option>
-        <option value="weeks">Aantal weken</option>
-        <option value="until">Tot datum</option>
-      </select>
-      <div id="ex-rep-wks" style="display:none"><label class="flbl">Aantal weken</label><input class="finput" type="number" id="ex-wks-n" min="1" max="52" value="2"></div>
-      <div id="ex-rep-until" style="display:none"><label class="flbl">Tot en met</label><input class="finput" type="date" id="ex-until"></div>
-      <label class="flbl">Startweek</label>
-      <select class="finput" id="ex-wk"><option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option></select>
-      <button class="save-btn" onclick="addExtra()">+ Inplannen</button>
-    </div>
-    <div id="ex-list"></div>
-  </div>
-
   <div id="mt-recipe" class="scroll" style="display:none">
-    <div class="sec-title">Recept toevoegen</div>
+    <div class="sec-title" id="rc-sec-title">Recept toevoegen</div>
     <div class="form-card">
-      <label class="flbl">Gerecht</label><input class="finput" type="text" id="rc-name" placeholder="bijv. Gehaktbal">
-      <label class="flbl">Link (optioneel)</label><input class="finput" type="url" id="rc-url" placeholder="https://...">
+      <label class="flbl" id="rc-lbl-dish"></label><input class="finput" type="text" id="rc-name" placeholder="">
+      <label class="flbl" id="rc-lbl-link"></label><input class="finput" type="url" id="rc-url" placeholder="https://...">
       <div class="f2">
-        <div><label class="flbl">Dag</label><select class="finput" id="rc-day"></select></div>
-        <div><label class="flbl">Week</label><select class="finput" id="rc-wk"><option value="0">Deze week</option><option value="1">Volgende week</option></select></div>
+        <div><label class="flbl" id="rc-lbl-day"></label><select class="finput" id="rc-day"></select></div>
+        <div><label class="flbl" id="rc-lbl-week"></label><select class="finput" id="rc-wk"><option value="0" id="rc-w0"></option><option value="1" id="rc-w1"></option></select></div>
       </div>
-      <button class="save-btn" onclick="addRecipe()">+ Toevoegen</button>
+      <button class="save-btn" onclick="addRecipe()" id="rc-add-btn">+ Toevoegen</button>
     </div>
     <div id="rc-list"></div>
   </div>
 
   <div id="mt-taken" class="scroll" style="display:none">
-    <div id="fixed-list"></div>
-    <div class="sec-title" style="margin-top:.75rem">Periodieke taken</div>
-    <div id="periodic-list"></div>
-    <div class="sec-title" style="margin-top:.75rem">Nieuwe vaste taak</div>
-    <div class="form-card">
-      <label class="flbl">Omschrijving (NL)</label>
-      <input class="finput" type="text" id="ft-nl" placeholder="Taakomschrijving..." onblur="autoTr('ft-nl','ft-pt')">
-      <div class="fhint">&#8627; Portugese vertaling automatisch</div>
-      <label class="flbl">Descri&#231;&#227;o (PT)</label>
-      <input class="finput" type="text" id="ft-pt" placeholder="Automatisch vertaald...">
-      <div class="f2">
-        <div><label class="flbl">Locatie</label><select class="finput" id="ft-loc"></select></div>
-        <div><label class="flbl">Categorie</label>
-          <select class="finput" id="ft-cat">
-            <option value="binnen">Binnen</option><option value="tuin">Tuin & buiten</option>
-            <option value="zwembad">Zwembad</option><option value="koken">Koken</option>
-            <option value="extra_tijd">Extra indien tijd</option>
-          </select>
-        </div>
-      </div>
-      <button class="save-btn" onclick="addFixed()">+ Taak toevoegen</button>
+    <!-- Unified new task form -->
+    <div class="collapse-hdr" onclick="togEl('taken-form-body','taken-form-chev')">
+      <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
+      <span class="chev" id="taken-form-chev">&#9662;</span>
     </div>
-    <div class="sec-title" style="margin-top:.75rem">Nieuwe periodieke taak</div>
-    <div class="form-card">
-      <label class="flbl">Omschrijving (NL)</label>
-      <input class="finput" type="text" id="pt-nl" placeholder="bijv. Koelkast schoonmaken">
-      <div class="f2">
-        <div style="grid-column:1/-1"><label class="flbl">Locaties (meerdere mogelijk)</label><div class="pill-group" id="pt-loc-pills"></div></div>
-        <div><label class="flbl">Interval</label>
-          <select class="finput" id="pt-interval">
-            <option value="1">Elke maand</option>
-            <option value="2">Elke 2 maanden</option>
-            <option value="3">Elke 3 maanden</option>
-            <option value="4">Elke 4 maanden</option>
-            <option value="6">Elke 6 maanden</option>
-            <option value="12">Jaarlijks</option>
+    <div class="day-body" id="taken-form-body">
+      <div class="form-card" style="margin-top:6px">
+        <label class="flbl" id="nt-lbl-type">Type</label>
+        <div class="type-pills">
+          <button class="type-pill on" id="nt-type-fixed" onclick="setTaskType('fixed')">Vast</button>
+          <button class="type-pill" id="nt-type-periodic" onclick="setTaskType('periodic')">Periodiek</button>
+          <button class="type-pill" id="nt-type-extra" onclick="setTaskType('extra')">Extra</button>
+        </div>
+        <label class="flbl" id="nt-lbl-nl">Omschrijving (NL)</label>
+        <input class="finput" type="text" id="nt-nl" placeholder="" onblur="autoTr('nt-nl','nt-pt')">
+        <div class="fhint" id="nt-auto-hint">&#8627; Portugese vertaling automatisch</div>
+        <label class="flbl" id="nt-lbl-pt">Descrição (PT)</label>
+        <input class="finput" type="text" id="nt-pt" placeholder="">
+        <label class="flbl" id="nt-lbl-loc">Locatie</label>
+        <div class="pill-group" id="nt-locs"></div>
+        <!-- Category (for fixed) -->
+        <div id="nt-cat-wrap">
+          <label class="flbl" id="nt-lbl-cat">Categorie</label>
+          <select class="finput" id="nt-cat"><option value="Algemeen">Algemeen</option></select>
+        </div>
+        <!-- Interval (for periodic) -->
+        <div id="nt-interval-wrap" style="display:none">
+          <label class="flbl" id="nt-lbl-interval">Interval</label>
+          <select class="finput" id="nt-interval">
+            <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
+            <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
+            <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
           </select>
         </div>
+        <!-- Extra fields (for extra) -->
+        <div id="nt-extra-wrap" style="display:none">
+          <label class="flbl" id="nt-lbl-days">Dagen</label>
+          <div class="pill-group" id="nt-days"></div>
+          <label class="flbl" id="nt-lbl-rep">Herhaling</label>
+          <select class="finput" id="nt-rep" onchange="togNtRep()">
+            <option value="once">Eenmalig</option>
+            <option value="weekly">Wekelijks</option>
+            <option value="monthly">Maandelijks (elke 4 weken)</option>
+            <option value="infinite">Oneindig</option>
+            <option value="weeks">Aantal weken</option>
+            <option value="until">Tot datum</option>
+          </select>
+          <div id="nt-rep-wks" style="display:none"><label class="flbl" id="nt-lbl-nwks">Aantal weken</label><input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2"></div>
+          <div id="nt-rep-until" style="display:none"><label class="flbl" id="nt-lbl-until">Tot en met</label><input class="finput" type="date" id="nt-until"></div>
+          <label class="flbl" id="nt-lbl-start">Startweek</label>
+          <select class="finput" id="nt-wk">
+            <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
+          </select>
+        </div>
+        <button class="save-btn" onclick="addUnifiedTask()" id="nt-add-btn">+ Toevoegen</button>
+        <div id="nt-flash" class="flash" style="opacity:0"></div>
       </div>
-      <button class="save-btn" onclick="addPeriodic()">+ Toevoegen</button>
+    </div>
+
+    <!-- Existing tasks lists -->
+    <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
+      <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken</div>
+      <span class="chev" id="fixed-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="fixed-list-body">
+      <div id="fixed-list"></div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('periodic-list-body','periodic-list-chev')">
+      <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken</div>
+      <span class="chev" id="periodic-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="periodic-list-body">
+      <div id="periodic-list"></div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('extra-list-body','extra-list-chev')">
+      <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken</div>
+      <span class="chev" id="extra-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="extra-list-body">
+      <div id="ex-list"></div>
     </div>
   </div>
 
   <div id="mt-inst" class="scroll" style="display:none">
-    <div class="sec-title">Mijn profiel</div>
+    <div class="sec-title" id="inst-prof-title">Mijn profiel</div>
     <div class="form-card">
-      <label class="flbl">Naam</label><input class="finput" type="text" id="inst-name">
-      <label class="flbl">Nieuwe PIN (4 cijfers)</label><input class="finput" type="password" id="inst-pin" placeholder="Laat leeg = ongewijzigd" maxlength="4">
-      <label class="flbl">PIN bevestigen</label><input class="finput" type="password" id="inst-pin2" placeholder="Herhaal nieuwe PIN" maxlength="4">
-      <label class="flbl">Taal</label>
-      <select class="finput" id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Portugu&#234;s</option></select>
-      <button class="save-btn" onclick="saveProfile()">Opslaan</button>
+      <label class="flbl" id="inst-lbl-name">Naam</label><input class="finput" type="text" id="inst-name">
+      <label class="flbl" id="inst-lbl-pin">Nieuwe PIN (4 cijfers)</label><input class="finput" type="password" id="inst-pin" placeholder="" maxlength="4">
+      <label class="flbl" id="inst-lbl-pin2">PIN bevestigen</label><input class="finput" type="password" id="inst-pin2" placeholder="" maxlength="4">
+      <label class="flbl" id="inst-lbl-lang">Taal</label>
+      <select class="finput" id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Português</option></select>
+      <button class="save-btn" onclick="saveProfile()" id="inst-save-btn">Opslaan</button>
       <div id="inst-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title">Werkdagen</div>
+    <div class="sec-title" id="inst-wd-title">Werkdagen</div>
     <div class="form-card">
       <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
-      <button class="save-btn" onclick="saveWd()">Werkdagen opslaan</button>
+      <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
       <div id="wd-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title">Locaties</div>
+    <div class="sec-title" id="inst-loc-title">Locaties</div>
     <div class="form-card">
       <div id="loc-list"></div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <input type="text" id="new-loc" placeholder="Naam locatie" class="finput" style="flex:1;margin:0">
+        <input type="text" id="new-loc" placeholder="" class="finput" style="flex:1;margin:0">
         <input type="color" id="new-loc-col" value="#C8722A" style="width:38px;height:36px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
         <button class="btn-sm" onclick="addLoc()">+</button>
       </div>
     </div>
-    <div class="sec-title">Week beheren</div>
+    <div class="sec-title" id="inst-wk-title">Week beheren</div>
     <div class="form-card">
-      <div class="set-row"><div><div class="set-lbl">Vinkjes wissen</div><div class="set-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()">Wissen</button></div>
+      <div class="set-row"><div><div class="set-lbl" id="inst-clear-lbl">Vinkjes wissen</div><div class="set-sub" id="inst-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="inst-clear-btn">Wissen</button></div>
     </div>
   </div>
 </div>
@@ -467,14 +492,21 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     <div class="modal-title" id="edit-modal-title">Taak bewerken</div>
     <input type="hidden" id="edit-task-id"><input type="hidden" id="edit-task-type">
     <div id="edit-scope-wrap" style="display:none">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Wijzig voor:</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px" id="edit-scope-lbl">Wijzig voor:</div>
       <div class="scope-btns">
         <button class="scope-btn on" id="scope-one" onclick="setScope('one')">Alleen deze week</button>
         <button class="scope-btn" id="scope-all" onclick="setScope('all')">Alle weken</button>
       </div>
     </div>
-    <label class="flbl">Omschrijving (NL)</label><input class="finput" type="text" id="edit-nl">
-    <label class="flbl">Descri&#231;&#227;o (PT)</label><input class="finput" type="text" id="edit-pt">
+    <label class="flbl">Omschrijving (NL)</label><input class="finput" type="text" id="edit-nl" onblur="autoTr('edit-nl','edit-pt')">
+    <label class="flbl">Descrição (PT)</label><input class="finput" type="text" id="edit-pt">
+    <!-- Location for fixed tasks -->
+    <div id="edit-loc-wrap" style="display:none">
+      <label class="flbl" id="edit-lbl-loc">Locatie</label>
+      <div class="pill-group" id="edit-loc-pills"></div>
+      <label class="flbl" id="edit-lbl-cat">Categorie</label>
+      <select class="finput" id="edit-cat"><option value="Algemeen">Algemeen</option></select>
+    </div>
     <div id="edit-interval-wrap" style="display:none">
       <label class="flbl">Interval</label>
       <select class="finput" id="edit-interval">
@@ -486,9 +518,30 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       <div class="pill-group" id="edit-locs"></div>
     </div>
     <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
-      <button class="save-btn" onclick="saveEdit()" style="flex:1;min-width:100px">Opslaan</button>
-      <button class="save-btn" onclick="closeModal()" style="flex:1;min-width:100px;background:var(--steam);color:var(--text)">Annuleren</button>
+      <button class="save-btn" onclick="saveEdit()" style="flex:1;min-width:100px" id="edit-save-btn">Opslaan</button>
+      <button class="save-btn" onclick="closeModal()" style="flex:1;min-width:100px;background:var(--steam);color:var(--text)" id="edit-cancel-btn">Annuleren</button>
       <button class="save-btn" id="edit-delete-btn" onclick="deleteFromEdit()" style="flex:1;min-width:100px;background:var(--danger);display:none">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOCATION EDIT MODAL -->
+<div class="modal-bg" id="loc-modal">
+  <div class="modal">
+    <div class="modal-title" id="loc-modal-title">Locatie bewerken</div>
+    <input type="hidden" id="loc-edit-id">
+    <label class="flbl">Naam</label><input class="finput" type="text" id="loc-edit-name">
+    <label class="flbl">Kleur</label>
+    <input type="color" id="loc-edit-color" style="width:50px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer;margin-bottom:8px">
+    <label class="flbl" id="loc-cat-title">Categorieën (kamers)</label>
+    <div id="loc-cat-list" style="margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <input type="text" id="loc-new-cat" placeholder="" class="finput" style="flex:1;margin:0">
+      <button class="btn-sm" onclick="addLocCat()">+</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:.75rem">
+      <button class="save-btn" onclick="saveLocEdit()" style="flex:1" id="loc-save-btn">Opslaan</button>
+      <button class="save-btn" onclick="closeLocModal()" style="flex:1;background:var(--steam);color:var(--text)" id="loc-cancel-btn">Annuleren</button>
     </div>
   </div>
 </div>
@@ -496,9 +549,9 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
 <!-- WEEK JUMP MODAL -->
 <div class="modal-bg" id="jump-modal">
   <div class="modal">
-    <div class="modal-title">Ga naar week</div>
+    <div class="modal-title" id="jump-title">Ga naar week</div>
     <div id="jump-grid" class="jump-grid"></div>
-    <button class="save-btn" onclick="closeJump()" style="background:var(--steam);color:var(--text);margin-top:.75rem">Sluiten</button>
+    <button class="save-btn" onclick="closeJump()" style="background:var(--steam);color:var(--text);margin-top:.75rem" id="jump-close-btn">Sluiten</button>
   </div>
 </div>
 
@@ -509,52 +562,140 @@ const SK='sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
 const sb=supabase.createClient(SU,SK);
 const HID='11111111-1111-1111-1111-111111111111';
 const ALL_DAYS=['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
-const ALL_DAYS_PT=['Segunda','Ter\u00e7a','Quarta','Quinta','Sexta','S\u00e1bado','Domingo'];
-const CAT_NL={tuin:'Tuin & buiten',zwembad:'Zwembad',binnen:'Binnen',koken:'Koken',extra_tijd:'Extra indien tijd'};
-const CAT_PT={tuin:'Jardim & exterior',zwembad:'Piscina',binnen:'Interior',koken:'Cozinhar',extra_tijd:'Extra se houver tempo'};
+const ALL_DAYS_PT=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const MONTHS_NL=['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
 const MONTHS_SHORT=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-const MONTHS_PT=['Janeiro','Fevereiro','Mar\u00e7o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MONTHS_SHORT_PT=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const MONTHS_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DAILY_ID='eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
-let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one';
+let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[]};
 let rtSubs=[];
+let locEditCats=[];
 
 const lg=()=>sessionLang;
 const dayArr=()=>lg()==='pt'?ALL_DAYS_PT:ALL_DAYS;
-const catMap=()=>lg()==='pt'?CAT_PT:CAT_NL;
 const tx=o=>lg()==='pt'&&o.text_pt?o.text_pt:o.text_nl;
 
+// ═══════════════ TRANSLATIONS ═══════════════
 const I={
-  nl:{myWeek:'Mijn week',changes:'Wijzigingen',recipes:'Recepten',
+  nl:{
+    myWeek:'Mijn week',changes:'Wijzigingen',recipes:'Recepten',
     focusToday:'Focus vandaag',dailyBase:'Dagelijkse basis',
-    save:'Opslaan',saved:'Opgeslagen!',notes:'Notities',notesHint:'Aantekeningen...',
+    save:'Opslaan',saved:'Opgeslagen!',cancel:'Annuleren',delete:'Verwijderen',
+    notes:'Notities',notesHint:'Aantekeningen...',
     recipesTitle:'Recepten toevoegen',extra:'extra',
     progress:'Voortgang week',tasks:'taken',
     recentChanges:'Recente wijzigingen',noChanges:'Geen wijzigingen.',
     noTasks:'Geen taken gepland.',worker:'Medewerker',admin:'Beheerder',
-    pinWrong:'Onjuiste PIN',skip:'Overslaan',skipped:'Overgeslagen',
-    thisWeek:'Deze week',nextWeek:'Volgende week',
-    dish:'Gerecht',link:'Link (optioneel)',day:'Dag',week:'Week',addRecipe:'+ Recept toevoegen',
-    due:'Vervalt',interval1:'Elke maand',interval2:'Elke 2 mnd',interval3:'Elke 3 mnd',
-    interval4:'Elke 4 mnd',interval6:'Elke 6 mnd',interval12:'Jaarlijks'},
-  pt:{myWeek:'A minha semana',changes:'Altera\u00e7\u00f5es',recipes:'Receitas',
-    focusToday:'Foco de hoje',dailyBase:'Base di\u00e1ria',
-    save:'Guardar',saved:'Guardado!',notes:'Notas',notesHint:'Anota\u00e7\u00f5es...',
+    pinWrong:'Onjuiste PIN',pinHint:'Voer je PIN in',
+    pinTitle:'Jouw huis,',pinTitleSpan:'op orde.',pinSub:'Structuur met warmte',
+    skip:'Overslaan',skipped:'Overgeslagen',
+    thisWeek:'Deze week',nextWeek:'Volgende week',in2weeks:'Over 2 weken',
+    dish:'Gerecht',link:'Link (optioneel)',day:'Dag',week:'Week',
+    addRecipe:'+ Recept toevoegen',addTask:'+ Toevoegen',
+    due:'Vervalt',
+    interval1:'Elke maand',interval2:'Elke 2 maanden',interval3:'Elke 3 maanden',
+    interval4:'Elke 4 maanden',interval6:'Elke 6 maanden',interval12:'Jaarlijks',
+    // Tabs
+    tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabTasks:'Taken',tabSettings:'Instellingen',
+    // New task form
+    newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',
+    type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
+    autoHint:'↳ Portugese vertaling automatisch',
+    location:'Locatie',locations:'Locaties',category:'Categorie',
+    interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',
+    repOnce:'Eenmalig',repWeekly:'Wekelijks',repMonthly:'Maandelijks (elke 4 weken)',
+    repInfinite:'Oneindig',repWeeks:'Aantal weken',repUntil:'Tot datum',
+    numWeeks:'Aantal weken',untilDate:'Tot en met',
+    // Taken lists
+    fixedTasks:'Vaste taken',periodicTasks:'Periodieke taken',extraTasks:'Extra taken',
+    fixedPerLoc:'Vaste taken per locatie',noFixed:'Geen taken',noPeriodic:'Geen periodieke taken.',
+    noExtras:'Geen extra taken gepland.',nowDue:'Nu verwacht',diverseLocs:'Diverse locaties',
+    // Settings
+    myProfile:'Mijn profiel',name:'Naam',newPin:'Nieuwe PIN (4 cijfers)',
+    confirmPin:'PIN bevestigen',language:'Taal',pinUnchanged:'Laat leeg = ongewijzigd',pinRepeat:'Herhaal nieuwe PIN',
+    workdays:'Werkdagen',saveWorkdays:'Werkdagen opslaan',
+    locationsList:'Locaties',locPlaceholder:'Naam locatie',
+    weekManage:'Week beheren',clearChecks:'Vinkjes wissen',clearSub:'Begin nieuwe week opgeschoond',clearBtn:'Wissen',
+    // Edit modal
+    editTask:'Taak bewerken',editPeriodic:'Periodieke taak bewerken',editExtra:'Extra taak bewerken',
+    changeFor:'Wijzig voor:',onlyThisWeek:'Alleen deze week',allWeeks:'Alle weken',
+    // Location edit
+    editLoc:'Locatie bewerken',catRooms:'Categorieën (kamers)',catPlaceholder:'bijv. Keuken',
+    // Planning
+    planHint:'Vink per dag aan welke locaties Diana schoonmaakt.',workday:'werkdag',
+    // Recipes
+    addRecipeTitle:'Recept toevoegen',plannedRecipes:'Geplande recepten',noRecipes:'Geen recepten gepland.',
+    // Jump
+    jumpTitle:'Ga naar week',close:'Sluiten',
+    // General
+    general:'Algemeen',confirmDelete:'Taak definitief verwijderen?',
+    selectMinOne:'Selecteer minimaal één locatie en één dag.',
+    taskAdded:'Taak toegevoegd!',ago:'geleden',min:'min',
+    periodicLabel:'Periodieke taken',
+  },
+  pt:{
+    myWeek:'A minha semana',changes:'Alterações',recipes:'Receitas',
+    focusToday:'Foco de hoje',dailyBase:'Base diária',
+    save:'Guardar',saved:'Guardado!',cancel:'Cancelar',delete:'Eliminar',
+    notes:'Notas',notesHint:'Anotações...',
     recipesTitle:'Adicionar receita',extra:'extra',
     progress:'Progresso da semana',tasks:'tarefas',
-    recentChanges:'Altera\u00e7\u00f5es recentes',noChanges:'Sem altera\u00e7\u00f5es.',
+    recentChanges:'Alterações recentes',noChanges:'Sem alterações.',
     noTasks:'Sem tarefas para esta semana.',worker:'Colaboradora',admin:'Administrador',
-    pinWrong:'PIN incorreto',skip:'Ignorar',skipped:'Ignorado',
-    thisWeek:'Esta semana',nextWeek:'Pr\u00f3xima semana',
-    dish:'Prato',link:'Link (opcional)',day:'Dia',week:'Semana',addRecipe:'+ Adicionar receita',
-    due:'Due',interval1:'Por m\u00eas',interval2:'2 em 2 meses',interval3:'3 em 3 meses',
-    interval4:'4 em 4 meses',interval6:'6 em 6 meses',interval12:'Anual'}
+    pinWrong:'PIN incorreto',pinHint:'Introduza o seu PIN',
+    pinTitle:'A sua casa,',pinTitleSpan:'em ordem.',pinSub:'Estrutura com carinho',
+    skip:'Ignorar',skipped:'Ignorado',
+    thisWeek:'Esta semana',nextWeek:'Próxima semana',in2weeks:'Daqui a 2 semanas',
+    dish:'Prato',link:'Link (opcional)',day:'Dia',week:'Semana',
+    addRecipe:'+ Adicionar receita',addTask:'+ Adicionar',
+    due:'Vence',
+    interval1:'Mensal',interval2:'A cada 2 meses',interval3:'A cada 3 meses',
+    interval4:'A cada 4 meses',interval6:'A cada 6 meses',interval12:'Anual',
+    // Tabs
+    tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabTasks:'Tarefas',tabSettings:'Definições',
+    // New task form
+    newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',
+    type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
+    autoHint:'↳ Tradução portuguesa automática',
+    location:'Local',locations:'Locais',category:'Categoria',
+    interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',
+    repOnce:'Uma vez',repWeekly:'Semanal',repMonthly:'Mensal (cada 4 semanas)',
+    repInfinite:'Infinito',repWeeks:'Número de semanas',repUntil:'Até data',
+    numWeeks:'Número de semanas',untilDate:'Até',
+    // Taken lists
+    fixedTasks:'Tarefas fixas',periodicTasks:'Tarefas periódicas',extraTasks:'Tarefas extra',
+    fixedPerLoc:'Tarefas fixas por local',noFixed:'Sem tarefas',noPeriodic:'Sem tarefas periódicas.',
+    noExtras:'Sem tarefas extra planeadas.',nowDue:'Agora previsto',diverseLocs:'Vários locais',
+    // Settings
+    myProfile:'O meu perfil',name:'Nome',newPin:'Novo PIN (4 dígitos)',
+    confirmPin:'Confirmar PIN',language:'Idioma',pinUnchanged:'Deixar vazio = inalterado',pinRepeat:'Repetir novo PIN',
+    workdays:'Dias de trabalho',saveWorkdays:'Guardar dias de trabalho',
+    locationsList:'Locais',locPlaceholder:'Nome do local',
+    weekManage:'Gerir semana',clearChecks:'Limpar marcações',clearSub:'Começar semana limpa',clearBtn:'Limpar',
+    // Edit modal
+    editTask:'Editar tarefa',editPeriodic:'Editar tarefa periódica',editExtra:'Editar tarefa extra',
+    changeFor:'Alterar para:',onlyThisWeek:'Apenas esta semana',allWeeks:'Todas as semanas',
+    // Location edit
+    editLoc:'Editar local',catRooms:'Categorias (divisões)',catPlaceholder:'ex. Cozinha',
+    // Planning
+    planHint:'Marque por dia quais os locais que a Diana limpa.',workday:'dia de trabalho',
+    // Recipes
+    addRecipeTitle:'Adicionar receita',plannedRecipes:'Receitas planeadas',noRecipes:'Sem receitas planeadas.',
+    // Jump
+    jumpTitle:'Ir para semana',close:'Fechar',
+    // General
+    general:'Geral',confirmDelete:'Eliminar tarefa definitivamente?',
+    selectMinOne:'Selecione pelo menos um local e um dia.',
+    taskAdded:'Tarefa adicionada!',ago:'atrás',min:'min',
+    periodicLabel:'Tarefas periódicas',
+  }
 };
-const tr=k=>I[lg()][k]||k;
+const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
 
 function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.toISOString().slice(0,10);}
 
@@ -562,18 +703,19 @@ function wlbl(off){
   if(off===0)return tr('thisWeek');
   const mon=new Date();mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+off*7);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-  const ms=MONTHS_SHORT;
+  const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
   const md=mon.getDate(),mm=ms[mon.getMonth()];
   const sd=sun.getDate(),sm=ms[sun.getMonth()];
   const yr=sun.getFullYear();
-  if(mon.getMonth()===sun.getMonth())return `${md} \u2013 ${sd} ${mm} ${yr}`;
-  return `${md} ${mm} \u2013 ${sd} ${sm} ${yr}`;
+  if(mon.getMonth()===sun.getMonth())return `${md} – ${sd} ${mm} ${yr}`;
+  return `${md} ${mm} – ${sd} ${sm} ${yr}`;
 }
 
 function ucol(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '#7A5C3E';const n=u.name.toLowerCase();if(n.includes('tijn'))return '#2c5f8a';if(n.includes('suzan'))return '#4A6741';return '#7A5C3E';}
 function uname(uid){return D.users.find(u=>u.id===uid)?.name||'';}
 function locName(lid){return D.locs.find(l=>l.id===lid)?.name||'';}
 function locColor(lid){return D.locs.find(l=>l.id===lid)?.color||'#888';}
+function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[];}
 
 function isPeriodicDue(task){
   if(!D.pChecks.length)return true;
@@ -585,7 +727,7 @@ function isPeriodicDue(task){
   return monthsSince>=(task.interval_months||1);
 }
 
-function intervalLabel(n){return tr('interval'+n)||`Elke ${n} maanden`;}
+function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'maanden'}`;}
 
 async function loadAll(){
   const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl]=await Promise.all([
@@ -651,17 +793,85 @@ async function loadWeather(){
   }catch(e){}
 }
 
+// ═══════════════ LANGUAGE SWITCHING ═══════════════
 function setSessionLang(l){
   sessionLang=l;
   // Update all lang buttons
-  ['pin-nl','pin-pt','wl-nl','wl-pt','ml-nl','ml-pt'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.classList.toggle('on',el.id.endsWith(l)||el.id.endsWith('-'+l));
-  });
   document.getElementById('pin-nl')?.classList.toggle('active',l==='nl');
   document.getElementById('pin-pt')?.classList.toggle('active',l==='pt');
+  ['wl-nl','wl-pt','ml-nl','ml-pt'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.classList.toggle('on',id.endsWith(l));
+  });
+  // Update PIN screen
+  const pt=document.getElementById('pin-title');
+  if(pt)pt.innerHTML=tr('pinTitle')+'<br><span>'+tr('pinTitleSpan')+'</span>';
+  const ps=document.getElementById('pin-sub');if(ps)ps.textContent=tr('pinSub');
+  const ph=document.getElementById('pin-hint');if(ph)ph.textContent=tr('pinHint');
   // Re-render current view
   if(CU?.role==='worker')renderWorker();
   else if(CU?.role==='admin')renderManager();
+}
+
+function updateManagerLabels(){
+  // Tab labels
+  const tabs={
+    't-week':tr('tabWeek'),'t-plan':tr('tabPlan'),
+    't-recipe':tr('tabRecipes'),'t-taken':tr('tabTasks'),'t-inst':tr('tabSettings')
+  };
+  Object.entries(tabs).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
+  // Settings labels
+  const s={
+    'inst-prof-title':tr('myProfile'),'inst-lbl-name':tr('name'),
+    'inst-lbl-pin':tr('newPin'),'inst-lbl-pin2':tr('confirmPin'),
+    'inst-lbl-lang':tr('language'),'inst-save-btn':tr('save'),
+    'inst-wd-title':tr('workdays'),'inst-wd-btn':tr('saveWorkdays'),
+    'inst-loc-title':tr('locationsList'),'inst-wk-title':tr('weekManage'),
+    'inst-clear-lbl':tr('clearChecks'),'inst-clear-sub':tr('clearSub'),
+    'inst-clear-btn':tr('clearBtn'),'plan-hint':tr('planHint'),
+    'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
+    'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
+    'rc-sec-title':tr('addRecipeTitle'),'rc-lbl-dish':tr('dish'),
+    'rc-lbl-link':tr('link'),'rc-lbl-day':tr('day'),'rc-lbl-week':tr('week'),
+    'rc-add-btn':tr('addRecipe'),'rc-w0':tr('thisWeek'),'rc-w1':tr('nextWeek'),
+  };
+  Object.entries(s).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
+  // Placeholders
+  const pl=document.getElementById('inst-pin');if(pl)pl.placeholder=tr('pinUnchanged');
+  const pl2=document.getElementById('inst-pin2');if(pl2)pl2.placeholder=tr('pinRepeat');
+  const nloc=document.getElementById('new-loc');if(nloc)nloc.placeholder=tr('locPlaceholder');
+  // New task form labels
+  updateTaskFormLabels();
+}
+
+function updateTaskFormLabels(){
+  const m={
+    'nt-lbl-type':tr('type'),'nt-type-fixed':tr('typeFixed'),
+    'nt-type-periodic':tr('typePeriodic'),'nt-type-extra':tr('typeExtra'),
+    'nt-lbl-nl':tr('descNl'),'nt-lbl-pt':tr('descPt'),
+    'nt-auto-hint':tr('autoHint'),'nt-lbl-loc':tr('location'),
+    'nt-lbl-cat':tr('category'),'nt-lbl-interval':tr('interval'),
+    'nt-lbl-days':tr('days'),'nt-lbl-rep':tr('repetition'),
+    'nt-lbl-start':tr('startWeek'),'nt-lbl-nwks':tr('numWeeks'),
+    'nt-lbl-until':tr('untilDate'),'nt-add-btn':tr('addTask'),
+  };
+  Object.entries(m).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
+  // Rep options
+  const rep=document.getElementById('nt-rep');
+  if(rep){
+    rep.options[0].text=tr('repOnce');rep.options[1].text=tr('repWeekly');
+    rep.options[2].text=tr('repMonthly');rep.options[3].text=tr('repInfinite');
+    rep.options[4].text=tr('repWeeks');rep.options[5].text=tr('repUntil');
+  }
+  // Start week
+  const sw=document.getElementById('nt-wk');
+  if(sw){sw.options[0].text=tr('thisWeek');sw.options[1].text=tr('nextWeek');sw.options[2].text=tr('in2weeks');}
+  // Interval options
+  const iv=document.getElementById('nt-interval');
+  if(iv){
+    iv.options[0].text=tr('interval1');iv.options[1].text=tr('interval2');
+    iv.options[2].text=tr('interval3');iv.options[3].text=tr('interval4');
+    iv.options[4].text=tr('interval6');iv.options[5].text=tr('interval12');
+  }
 }
 
 async function init(){
@@ -682,7 +892,7 @@ async function chkPin(){
     sessionLang=user.language||'nl';
     setSessionLang(sessionLang);
     if(user.pin==='0000'){
-      const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 d\u00edgitos):':'Kies een nieuwe PIN (4 cijfers):');
+      const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 dígitos):':'Kies een nieuwe PIN (4 cijfers):');
       if(np&&/^\d{4}$/.test(np)){await sb.from('users').update({pin:np}).eq('id',user.id);await loadAll();CU=D.users.find(u=>u.id===user.id);}
     }
     showScr(user.role==='admin'?'manager':'worker');
@@ -720,13 +930,13 @@ async function ensureWeekSched(off){
 // WEEK JUMP
 function openJump(){
   const el=document.getElementById('jump-grid');if(!el)return;
+  document.getElementById('jump-title').textContent=tr('jumpTitle');
+  document.getElementById('jump-close-btn').textContent=tr('close');
   const now=new Date();
   let html='';
-  // Current month + 18 months ahead
   for(let i=-1;i<=18;i++){
     const d=new Date(now.getFullYear(),now.getMonth()+i,1);
     const yr=d.getFullYear(),mo=d.getMonth();
-    // Find week offset for first monday of this month
     const firstMon=new Date(yr,mo,1);
     while(firstMon.getDay()!==1)firstMon.setDate(firstMon.getDate()+1);
     const curMon=new Date(now);curMon.setDate(now.getDate()-((now.getDay()+6)%7));
@@ -748,7 +958,6 @@ function wTab(n){
     const el=document.getElementById('wmt-'+tab);if(el)el.style.display=tab===n?(tab==='week'||tab==='recipe'?'flex':'block'):'none';
     document.getElementById('wt-'+tab)?.classList.toggle('on',tab===n);
   });
-  // Update tab labels
   const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
   const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
@@ -772,15 +981,15 @@ async function renderLog(){
   el.innerHTML=D.log.map(l=>{
     const dt=new Date(l.created_at);
     const diff=Math.floor((now-dt)/60000);
-    const ts=diff<60?`${diff} min`:diff<1440?`${Math.floor(diff/60)}u`:`${Math.floor(diff/1440)}d`;
-    const who=uname(l.user_id)||'Beheerder';
+    const ts=diff<60?`${diff} ${tr('min')}`:diff<1440?`${Math.floor(diff/60)}u`:`${Math.floor(diff/1440)}d`;
+    const who=uname(l.user_id)||tr('admin');
     const wc=ucol(l.user_id);
     const unrd=!(l.seen_by||[]).includes(CU.id);
-    return `<div class="clog-item${unrd?' unread':''}"><div class="clog-who" style="color:${wc}">${who}</div><div class="clog-txt">${l.description}</div><div class="clog-time">${ts} geleden</div></div>`;
+    return `<div class="clog-item${unrd?' unread':''}"><div class="clog-who" style="color:${wc}">${who}</div><div class="clog-txt">${l.description}</div><div class="clog-time">${ts} ${tr('ago')}</div></div>`;
   }).join('');
 }
 
-// RENDER HELPERS
+// ═══════════════ RENDER HELPERS ═══════════════
 function renderDayBody(di,wk,isMgr){
   const focus=getFocus(di);
   const schedDay=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
@@ -792,14 +1001,12 @@ function renderDayBody(di,wk,isMgr){
   const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
   let html='';
 
-  // Focus
   if(focus||isMgr){
     html+=`<div class="focus-banner"><div class="focus-inner"><div class="focus-lbl">${tr('focusToday')}</div><div class="focus-txt">${focus||'\u2014'}</div></div>`;
-    if(isMgr)html+=`<button class="focus-edit" onclick="editFocus(${di})" title="Aanpassen">&#9998;</button>`;
+    if(isMgr)html+=`<button class="focus-edit" onclick="editFocus(${di})" title="${tr('editTask')}">&#9998;</button>`;
     html+='</div>';
   }
 
-  // Recepten
   if(recs.length){
     html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
     recs.forEach(r=>{
@@ -812,16 +1019,10 @@ function renderDayBody(di,wk,isMgr){
     html+='</div>';
   }
 
-  // Main locatie blokken
-  mainLocs.forEach(sr=>{ const loc=D.locs.find(l=>l.id===sr.location_id);if(loc)html+=renderLocBlock(loc,wk,di,isMgr); });
-
-  // Dagelijkse basis
+  mainLocs.forEach(sr=>{const loc=D.locs.find(l=>l.id===sr.location_id);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);});
   if(hasDaily){const loc=D.locs.find(l=>l.id===DAILY_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
-
-  // Buiten
   if(hasBuiten){const loc=D.locs.find(l=>l.id===BUITEN_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
 
-  // Extra taken
   extras.forEach(e=>{
     const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.on;
     const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
@@ -839,19 +1040,21 @@ function renderDayBody(di,wk,isMgr){
 
 function renderLocBlock(loc,wk,di,isMgr){
   const tasks=D.tasks.filter(t=>t.location_id===loc.id);
-  // Periodic tasks due for this location on this day
   const duePeriodicTasks=D.periodic.filter(pt=>(pt.location_id===loc.id||(pt.location_ids&&pt.location_ids.includes(loc.id)))&&isPeriodicDue(pt));
   const total=tasks.length+duePeriodicTasks.length;
   const done=tasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length
     +duePeriodicTasks.filter(pt=>{const now=new Date();return !!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);}).length;
-  const locCats=[...new Set(tasks.map(t=>t.category))];
+
+  // Group by category
+  const cats=[...new Set(tasks.map(t=>t.category||tr('general')))];
   const note=D.notes[loc.id+'_'+wk+'_'+di]||'';
   const uid=`loc-${di}-${loc.id.slice(0,6)}`;
   let lb='';
 
-  locCats.forEach(cat=>{
-    lb+=`<span class="slbl">${catMap()[cat]||cat}</span>`;
-    tasks.filter(t=>t.category===cat).forEach(t=>{
+  cats.forEach(cat=>{
+    const catLabel=cat||tr('general');
+    lb+=`<span class="slbl">${catLabel}</span>`;
+    tasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
       const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
       const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
@@ -859,21 +1062,20 @@ function renderLocBlock(loc,wk,di,isMgr){
       lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
       if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
-      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${t.text_nl.replace(/'/g,'&#39;')}','${(t.text_pt||'').replace(/'/g,'&#39;')}','')">&#9998;</button>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
       lb+='</div>';
     });
   });
 
-  // Periodic tasks for this location that are due
   if(duePeriodicTasks.length){
-    lb+=`<span class="slbl">Periodieke taken</span>`;
+    lb+=`<span class="slbl">${tr('periodicLabel')}</span>`;
     duePeriodicTasks.forEach(pt=>{
       const now=new Date();
       const ck=!!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);
       const skipped=!!D.skipped[pt.id+'_'+wk+'_'+di];
       lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic('${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months||1)}</span></span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${tr('skip')}">&#8864;</button>`;
-      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${pt.text_nl.replace(/'/g,'&#39;')}','${(pt.text_pt||'').replace(/'/g,'&#39;')}','${pt.interval_months||1}')">&#9998;</button>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${esc(pt.text_nl)}','${esc(pt.text_pt||'')}','${pt.interval_months||1}')">&#9998;</button>`;
       lb+='</div>';
     });
   }
@@ -888,6 +1090,9 @@ function renderLocBlock(loc,wk,di,isMgr){
   return `<div class="loc-block"><div class="loc-hdr-bar" style="background:${loc.color}14" onclick="togEl('lb-${uid}','lc-${uid}')"><div class="loc-dot" style="background:${loc.color}"></div><span class="loc-name-txt">${loc.name}</span><span class="loc-task-count">${done}/${total}</span><span class="chev" id="lc-${uid}">&#9662;</span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
 }
 
+function esc(s){return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+
+// ═══════════════ WORKER ═══════════════
 function renderWorker(){
   if(!CU)return;
   const col=ucol(CU.id);
@@ -895,7 +1100,6 @@ function renderWorker(){
   document.getElementById('w-av').textContent=CU.name[0];
   document.getElementById('w-name').textContent=CU.name;
   document.getElementById('w-sub').textContent=tr('worker');
-  // Tab labels
   const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
   const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
@@ -913,8 +1117,7 @@ function renderWorker(){
       sd.forEach(sr=>{
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
         dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-        // Count due periodic
-        const dp=D.periodic.filter(pt=>pt.location_id===sr.location_id&&isPeriodicDue(pt));
+        const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
         dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
@@ -930,17 +1133,13 @@ function renderWorker(){
 function renderWorkerRecipes(){
   if(!CU)return;
   updWkLbls();
-  const el=document.getElementById('w-recipe-form');
-  // Update labels
   const lbMap={
-    'w-recipe-title':tr('recipesTitle'),
-    'w-rc-lbl1':tr('dish'),'w-rc-lbl2':tr('link'),
-    'w-rc-lbl3':tr('day'),'w-rc-lbl4':tr('week'),
-    'w-rc-btn':tr('addRecipe')
+    'w-recipe-title':tr('recipesTitle'),'w-rc-lbl1':tr('dish'),'w-rc-lbl2':tr('link'),
+    'w-rc-lbl3':tr('day'),'w-rc-lbl4':tr('week'),'w-rc-btn':tr('addRecipe')
   };
   Object.entries(lbMap).forEach(([id,txt])=>{const e=document.getElementById(id);if(e)e.textContent=txt;});
   const wd=document.getElementById('w-rc-day');
-  if(wd)wd.innerHTML=ALL_DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  if(wd)wd.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const wrcw0=document.getElementById('wrc-w0');if(wrcw0)wrcw0.textContent=tr('thisWeek');
   const wrcw1=document.getElementById('wrc-w1');if(wrcw1)wrcw1.textContent=tr('nextWeek');
   const np=document.getElementById('w-rc-name');if(np)np.placeholder=tr('dish');
@@ -952,8 +1151,7 @@ function renderWorkerRcList(){
   const wk=wkey(wOff);
   const up=D.recipes.filter(r=>r.week_key>=wk);
   if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noTasks')}</div>`;return;}
-  const sec=tr('recipes');
-  el.innerHTML=`<div class="sec-title">${sec}</div>`+up.map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${ALL_DAYS[r.day_index]}</span></div>`).join('');
+  el.innerHTML=`<div class="sec-title">${tr('recipes')}</div>`+up.map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span></div>`).join('');
 }
 
 async function addRecipeWorker(){
@@ -963,11 +1161,12 @@ async function addRecipeWorker(){
   const off=parseInt(document.getElementById('w-rc-wk').value);
   if(!name)return;
   await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url:url||null});
-  await logChange(`${tr('recipes')}: "${name}" ${ALL_DAYS[day]}`);
+  await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('w-rc-name').value='';document.getElementById('w-rc-url').value='';
   await loadAll();renderWorkerRcList();
 }
 
+// ═══════════════ MANAGER ═══════════════
 function renderManager(){
   if(!CU)return;
   const col=ucol(CU.id);
@@ -975,19 +1174,19 @@ function renderManager(){
   document.getElementById('m-av').textContent=CU.name[0];
   document.getElementById('m-name').textContent=CU.name;
   document.getElementById('m-sub').textContent=tr('admin');
+  updateManagerLabels();
   updWkLbls();renderMgrWeek();
 }
 
 function mTab(n){
-  ['week','plan','extra','recipe','taken','inst'].forEach(tab=>{
+  ['week','plan','recipe','taken','inst'].forEach(tab=>{
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?(tab==='week'?'flex':'block'):'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
   if(n==='week')renderMgrWeek();
   if(n==='plan')renderPlan();
-  if(n==='extra')renderExForm();
   if(n==='recipe'){renderRecSels();renderRcList();}
-  if(n==='taken'){renderFixedList();renderPeriodicList();}
+  if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();}
   if(n==='inst'){renderLocList();loadInstForm();}
 }
 
@@ -1006,16 +1205,16 @@ function renderMgrWeek(){
       sd.forEach(sr=>{
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
         dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-        const dp=D.periodic.filter(pt=>pt.location_id===sr.location_id&&isPeriodicDue(pt));
+        const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
         dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
-      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${ALL_DAYS[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
+      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
     });
     const pct=tot?Math.round(done/tot*100):0;
-    document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">Voortgang week</span><span class="prog-count">${done}/${tot} taken</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
-    const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">Geen taken gepland.</div>`;
+    document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
+    const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
   });
 }
 
@@ -1052,15 +1251,15 @@ function doFlash(id){const fl=document.getElementById(id);if(!fl)return;fl.style
 
 async function editFocus(di){
   const cur=getFocus(di)||'';
-  const np=prompt('Focus aanpassen voor '+ALL_DAYS[di]+':',cur);
+  const np=prompt(tr('focusToday')+' '+dayArr()[di]+':',cur);
   if(np===null)return;
   const wk=wkey(wOff);
   await sb.from('day_focus').upsert({household_id:HID,week_key:wk,day_index:di,focus_nl:np,focus_pt:np,updated_by:CU?.id,updated_at:new Date().toISOString()},{onConflict:'household_id,week_key,day_index'});
-  await logChange(`Focus ${ALL_DAYS[di]}: "${np}"`);
+  await logChange(`Focus ${dayArr()[di]}: "${np}"`);
   await loadAll();renderMgrWeek();
 }
 
-// PLANNING
+// ═══════════════ PLANNING ═══════════════
 function renderPlan(){
   const el=document.getElementById('plan-grid');if(!el)return;
   const wk=wkey(wOff);
@@ -1068,7 +1267,7 @@ function renderPlan(){
   for(let di=0;di<7;di++){
     const sched=D.sched.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id);
     const isWd=D.workdays.includes(di);
-    html+=`<div style="margin-bottom:14px"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--espresso);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">${ALL_DAYS[di]}${isWd?'<span style="font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:100px;background:var(--caramel);color:#fff">werkdag</span>':''}</div>`;
+    html+=`<div style="margin-bottom:14px"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--espresso);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">${dayArr()[di]}${isWd?`<span style="font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:100px;background:var(--caramel);color:#fff">${tr('workday')}</span>`:''}</div>`;
     D.locs.forEach(loc=>{
       const on=sched.includes(loc.id);
       html+=`<div onclick="togPlan('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:8px 11px;margin-bottom:4px;border-radius:var(--rs);border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'12':'var(--white)'};cursor:pointer;transition:all .15s"><div class="loc-dot" style="background:${loc.color}"></div><span style="font-size:13px;flex:1">${loc.name}</span>${on?`<span style="color:${loc.color};font-weight:700;font-size:14px">&#10003;</span>`:''}</div>`;
@@ -1085,65 +1284,174 @@ async function togPlan(lid,di,wk){
   await loadAll();renderPlan();renderMgrWeek();
 }
 
-// EXTRA
-function renderExForm(){
-  const lc=document.getElementById('ex-locs'),dc=document.getElementById('ex-days');
-  if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="exl-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
-  if(dc)dc.innerHTML=ALL_DAYS.map((d,i)=>`<div class="cpill" id="exd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
+// ═══════════════ UNIFIED TASK FORM ═══════════════
+function setTaskType(type){
+  newTaskType=type;
+  ['fixed','periodic','extra'].forEach(t=>{
+    document.getElementById('nt-type-'+t)?.classList.toggle('on',t===type);
+  });
+  document.getElementById('nt-cat-wrap').style.display=type==='fixed'?'block':'none';
+  document.getElementById('nt-interval-wrap').style.display=type==='periodic'?'block':'none';
+  document.getElementById('nt-extra-wrap').style.display=type==='extra'?'block':'none';
 }
 
-function togRep(){
-  const v=document.getElementById('ex-rep').value;
-  document.getElementById('ex-rep-wks').style.display=v==='weeks'?'block':'none';
-  document.getElementById('ex-rep-until').style.display=v==='until'?'block':'none';
+function renderTaskForm(){
+  updateTaskFormLabels();
+  // Loc pills
+  const lc=document.getElementById('nt-locs');
+  if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${l.name}</div>`).join('');
+  // Days pills for extra
+  const dc=document.getElementById('nt-days');
+  if(dc)dc.innerHTML=dayArr().map((d,i)=>`<div class="cpill" id="ntd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
+  // Category dropdown - populated on loc click
+  updateNtCats();
+  setTaskType(newTaskType);
 }
 
-async function addExtra(){
-  const nl=document.getElementById('ex-nl').value.trim();
-  const pt=document.getElementById('ex-pt').value.trim();
+function ntLocClick(el,lid){
+  if(newTaskType==='fixed'){
+    // Single select for fixed tasks
+    document.querySelectorAll('#nt-locs .cpill').forEach(p=>p.classList.remove('on'));
+    el.classList.add('on');
+  } else {
+    el.classList.toggle('on');
+  }
+  updateNtCats();
+}
+
+function updateNtCats(){
+  const sel=document.getElementById('nt-cat');if(!sel)return;
+  const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
+  let allCats=[];
+  selLocs.forEach(lid=>{
+    const cats=locCats(lid);
+    cats.forEach(c=>{if(!allCats.includes(c))allCats.push(c);});
+  });
+  sel.innerHTML=`<option value="Algemeen">${tr('general')}</option>`+allCats.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+function togNtRep(){
+  const v=document.getElementById('nt-rep').value;
+  document.getElementById('nt-rep-wks').style.display=v==='weeks'?'block':'none';
+  document.getElementById('nt-rep-until').style.display=v==='until'?'block':'none';
+}
+
+async function addUnifiedTask(){
+  const nl=document.getElementById('nt-nl').value.trim();
+  const pt=document.getElementById('nt-pt').value.trim();
   if(!nl)return;
-  const locs=[...document.querySelectorAll('#ex-locs .cpill.on')].map(el=>el.id.replace('exl-',''));
-  const daysSelected=[...document.querySelectorAll('#ex-days .cpill.on')].map(el=>parseInt(el.id.replace('exd-','')));
-  if(!locs.length||!daysSelected.length){alert('Selecteer minimaal één locatie en één dag.');return;}
-  const rep=document.getElementById('ex-rep').value;
-  const sOff=parseInt(document.getElementById('ex-wk').value);
-  const wks=[];
-  if(rep==='once'){wks.push(wkey(sOff));}
-  else if(rep==='weekly'){for(let i=0;i<52;i++)wks.push(wkey(sOff+i));}
-  else if(rep==='monthly'){for(let i=0;i<12;i++)wks.push(wkey(sOff+i*4));}
-  else if(rep==='infinite'){for(let i=0;i<260;i++)wks.push(wkey(sOff+i));}
-  else if(rep==='weeks'){const n=parseInt(document.getElementById('ex-wks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
-  else if(rep==='until'){const ud=document.getElementById('ex-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>260)break;wks.push(w);o++;}}
-  const ins=[];
-  for(const loc of locs)for(const di of daysSelected)for(const wk of wks)ins.push({household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl});
-  // Insert in batches of 500
-  for(let i=0;i<ins.length;i+=500)await sb.from('extra_tasks').insert(ins.slice(i,i+500));
-  await logChange(`Extra taak: "${nl}" (${rep}) op ${daysSelected.map(d=>ALL_DAYS[d]).join(', ')}`);
-  document.getElementById('ex-nl').value='';document.getElementById('ex-pt').value='';
-  document.querySelectorAll('#ex-locs .cpill.on,#ex-days .cpill.on').forEach(el=>el.classList.remove('on'));
-  await loadAll();renderExList();mTab('week');
+  const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
+  if(!selLocs.length){alert(tr('selectMinOne'));return;}
+
+  if(newTaskType==='fixed'){
+    const cat=document.getElementById('nt-cat').value;
+    const loc=selLocs[0];
+    await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
+    await logChange(`${tr('fixedTasks')}: "${nl}"`);
+  } else if(newTaskType==='periodic'){
+    const interval=parseInt(document.getElementById('nt-interval').value)||1;
+    await sb.from('monthly_tasks').insert({household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval});
+    await logChange(`${tr('periodicTasks')}: "${nl}"`);
+  } else {
+    // Extra
+    const daysSelected=[...document.querySelectorAll('#nt-days .cpill.on')].map(el=>parseInt(el.id.replace('ntd-','')));
+    if(!daysSelected.length){alert(tr('selectMinOne'));return;}
+    const rep=document.getElementById('nt-rep').value;
+    const sOff=parseInt(document.getElementById('nt-wk').value);
+    const wks=[];
+    if(rep==='once'){wks.push(wkey(sOff));}
+    else if(rep==='weekly'){for(let i=0;i<52;i++)wks.push(wkey(sOff+i));}
+    else if(rep==='monthly'){for(let i=0;i<12;i++)wks.push(wkey(sOff+i*4));}
+    else if(rep==='infinite'){for(let i=0;i<260;i++)wks.push(wkey(sOff+i));}
+    else if(rep==='weeks'){const n=parseInt(document.getElementById('nt-wks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
+    else if(rep==='until'){const ud=document.getElementById('nt-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>260)break;wks.push(w);o++;}}
+    const ins=[];
+    for(const loc of selLocs)for(const di of daysSelected)for(const wk of wks)ins.push({household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl});
+    for(let i=0;i<ins.length;i+=500)await sb.from('extra_tasks').insert(ins.slice(i,i+500));
+    await logChange(`${tr('extraTasks')}: "${nl}" (${rep})`);
+  }
+
+  // Reset form
+  document.getElementById('nt-nl').value='';document.getElementById('nt-pt').value='';
+  document.querySelectorAll('#nt-locs .cpill.on,#nt-days .cpill.on').forEach(el=>el.classList.remove('on'));
+  await loadAll();
+  doFlash('nt-flash');
+  renderFixedList();renderPeriodicList();renderExList();
 }
 
-async function delExtra(id){await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
+// ═══════════════ EXISTING TASK LISTS ═══════════════
+function renderFixedList(){
+  const el=document.getElementById('fixed-list');if(!el)return;
+  if(!D.tasks.length){el.innerHTML=`<div class="empty">${tr('noFixed')}</div>`;return;}
+  let html='';
+  D.locs.forEach(loc=>{
+    const tasks=D.tasks.filter(t=>t.location_id===loc.id);
+    if(!tasks.length)return;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
+    // Group by category
+    const cats=[...new Set(tasks.map(t=>t.category||tr('general')))];
+    cats.forEach(cat=>{
+      html+=`<span class="slbl">${cat}</span>`;
+      tasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
+        html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+      });
+    });
+    html+=`</div></div>`;
+  });
+  el.innerHTML=html;
+}
+
+function renderPeriodicList(){
+  const el=document.getElementById('periodic-list');if(!el)return;
+  if(!D.periodic.length){el.innerHTML=`<div class="empty">${tr('noPeriodic')}</div>`;return;}
+  const byLoc={};
+  D.periodic.forEach(pt=>{
+    const lids=(pt.location_ids&&pt.location_ids.length)?pt.location_ids:[pt.location_id||'none'];
+    if(lids.length>1){if(!byLoc['diverse'])byLoc['diverse']=[];byLoc['diverse'].push(pt);}
+    else{const lid=lids[0]||'none';if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(pt);}
+  });
+  let html='';
+  Object.entries(byLoc).forEach(([lid,tasks])=>{
+    const isDiverse=lid==='diverse';
+    const loc=isDiverse?null:D.locs.find(l=>l.id===lid);
+    const locLabel=isDiverse?tr('diverseLocs'):(loc?loc.name:tr('diverseLocs'));
+    const locCol=isDiverse?'#8a7e74':(loc?loc.color:'#8a7e74');
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${locCol}"><span class="loc-section-name">${locLabel}</span></div><div class="loc-section-body">`;
+    tasks.forEach(t=>{
+      const due=isPeriodicDue(t);
+      html+=`<div class="task-row${due?' monthly-due-row':''}" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span>${due?`<span class="badge-interval">${tr('nowDue')}</span>`:''}</div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
+    });
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
 
 function renderExList(){
   const el=document.getElementById('ex-list');if(!el)return;
   const wk=wkey(wOff);const up=D.extras.filter(e=>e.week_key>=wk);
-  if(!up.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen extra taken gepland.</div>';return;}
+  if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noExtras')}</div>`;return;}
   const gr={};up.forEach(e=>{if(!gr[e.text_nl])gr[e.text_nl]=[];gr[e.text_nl].push(e);});
-  let html='<div class="sec-title">Geplande extra taken</div>';
+  let html='';
   Object.entries(gr).forEach(([txt,ts])=>{
     const wks=ts.map(x=>x.week_key).sort();
     const lns=[...new Set(ts.map(e=>locName(e.location_id)))].join(', ');
-    const dns=[...new Set(ts.map(e=>ALL_DAYS[e.day_index]))].join(', ');
-    html+=`<div class="extra-bubble"><div class="extra-bubble-lbl">Extra taak</div><div class="extra-bubble-txt">${txt}</div><div class="extra-bubble-meta">${lns} &middot; ${dns} &middot; ${ts.length>1?`${wks[0]} t/m ${wks[wks.length-1]} (${ts.length}&times;)`:wks[0]}</div><button class="extra-bubble-del" onclick="delExGr(${JSON.stringify(ts.map(x=>x.id))})">Verwijderen</button></div>`;
+    const dns=[...new Set(ts.map(e=>dayArr()[e.day_index]))].join(', ');
+    html+=`<div class="extra-bubble"><div class="extra-bubble-lbl">${tr('extra')}</div><div class="extra-bubble-txt">${txt}</div><div class="extra-bubble-meta">${lns} &middot; ${dns} &middot; ${ts.length>1?`${wks[0]} t/m ${wks[wks.length-1]} (${ts.length}&times;)`:wks[0]}</div><button class="extra-bubble-del" onclick="delExGr(${JSON.stringify(ts.map(x=>x.id))})">${tr('delete')}</button></div>`;
   });
   el.innerHTML=html;
 }
+
+async function delFixed(id){if(!confirm(tr('confirmDelete')))return;await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
+async function delPeriodic(id){if(!confirm(tr('confirmDelete')))return;await sb.from('monthly_tasks').delete().eq('id',id);await loadAll();renderPeriodicList();}
+async function delExtra(id){await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
 async function delExGr(ids){for(const id of ids)await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
 
-// RECIPES MANAGER
-function renderRecSels(){const ds=document.getElementById('rc-day');if(ds)ds.innerHTML=ALL_DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join('');}
+// ═══════════════ RECIPES MANAGER ═══════════════
+function renderRecSels(){
+  const ds=document.getElementById('rc-day');
+  if(ds)ds.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  const rn=document.getElementById('rc-name');if(rn)rn.placeholder=tr('dish');
+}
 async function addRecipe(){
   const name=document.getElementById('rc-name').value.trim();
   const url=document.getElementById('rc-url').value.trim();
@@ -1151,7 +1459,7 @@ async function addRecipe(){
   const off=parseInt(document.getElementById('rc-wk').value);
   if(!name)return;
   await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url:url||null});
-  await logChange(`Recept: "${name}" op ${ALL_DAYS[day]}`);
+  await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
   await loadAll();renderRcList();mTab('week');
 }
@@ -1159,82 +1467,11 @@ async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await
 function renderRcList(){
   const el=document.getElementById('rc-list');if(!el)return;
   const wk=wkey(wOff);const up=D.recipes.filter(r=>r.week_key>=wk);
-  if(!up.length){el.innerHTML='<div class="empty" style="margin-top:.5rem">Geen recepten gepland.</div>';return;}
-  el.innerHTML='<div class="sec-title">Geplande recepten</div>'+up.map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${ALL_DAYS[r.day_index]} &middot; ${r.week_key}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+  if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noRecipes')}</div>`;return;}
+  el.innerHTML=`<div class="sec-title">${tr('plannedRecipes')}</div>`+up.map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]} &middot; ${r.week_key}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
 }
 
-// FIXED TASKS
-function renderFixedList(){
-  const el=document.getElementById('fixed-list');if(!el)return;
-  const ls=document.getElementById('ft-loc');if(ls)ls.innerHTML=D.locs.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
-  let html='<div class="sec-title">Vaste taken per locatie</div>';
-  D.locs.forEach(loc=>{
-    const tasks=D.tasks.filter(t=>t.location_id===loc.id);
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length} taken</span></div>`;
-    if(!tasks.length){html+=`<div class="loc-section-body"><div class="empty" style="padding:.25rem 0">Geen taken</div></div>`;}
-    else{html+=`<div class="loc-section-body">`;tasks.forEach(t=>{html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt?`<div style="font-size:11px;color:var(--muted)">${CAT_NL[t.category]||t.category} &middot; ${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${t.text_nl.replace(/'/g,'&#39;')}','${(t.text_pt||'').replace(/'/g,'&#39;')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;});html+=`</div>`;}
-    html+='</div>';
-  });
-  el.innerHTML=html;
-}
-async function addFixed(){
-  const nl=document.getElementById('ft-nl').value.trim(),pt=document.getElementById('ft-pt').value.trim();
-  const loc=document.getElementById('ft-loc').value,cat=document.getElementById('ft-cat').value;
-  if(!nl||!loc)return;
-  await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
-  await logChange(`Taak toegevoegd: "${nl}"`);
-  document.getElementById('ft-nl').value='';document.getElementById('ft-pt').value='';
-  await loadAll();renderFixedList();
-}
-async function delFixed(id){if(!confirm('Taak verwijderen?'))return;await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
-
-// PERIODIC TASKS
-function renderPeriodicList(){
-  const el=document.getElementById('periodic-list');if(!el)return;
-  const pll=document.getElementById('pt-loc-pills');if(pll)pll.innerHTML=D.locs.map(l=>`<div class="cpill" id="ptl-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
-  if(!D.periodic.length){el.innerHTML='<div class="empty">Geen periodieke taken.</div>';return;}
-  // Group by location
-  // Group by first location or 'diverse' if multiple/none
-  const byLoc={};
-  D.periodic.forEach(pt=>{
-    const lids=(pt.location_ids&&pt.location_ids.length)?pt.location_ids:[pt.location_id||'none'];
-    if(lids.length>1){
-      if(!byLoc['diverse'])byLoc['diverse']=[];byLoc['diverse'].push(pt);
-    } else {
-      const lid=lids[0]||'none';
-      if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(pt);
-    }
-  });
-  let html='';
-  Object.entries(byLoc).forEach(([lid,tasks])=>{
-    const isDiverse=lid==='diverse';
-    const loc=isDiverse?null:D.locs.find(l=>l.id===lid);
-    const locLabel=isDiverse?'Diverse locaties':(loc?loc.name:'Diverse locaties');
-    const locCol=isDiverse?'#8a7e74':(loc?loc.color:'#8a7e74');
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${locCol}"><span class="loc-section-name">${locLabel}</span></div><div class="loc-section-body">`;
-    tasks.forEach(t=>{
-      const due=isPeriodicDue(t);
-      html+=`<div class="task-row${due?' monthly-due-row':''}" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span>${due?'<span class="badge-interval">Nu verwacht</span>':''}</div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${t.text_nl.replace(/'/g,'&#39;')}','${(t.text_pt||'').replace(/'/g,'&#39;')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
-    });
-    html+='</div></div>';
-  });
-  el.innerHTML=html;
-}
-async function addPeriodic(){
-  const nl=document.getElementById('pt-nl').value.trim();
-  const interval=parseInt(document.getElementById('pt-interval').value)||1;
-  if(!nl)return;
-  // Get selected locations from pills
-  const selLocs=[...document.querySelectorAll('#pt-loc-pills .cpill.on')].map(el=>el.id.replace('ptl-',''));
-  const lid=selLocs[0]||null;
-  await sb.from('monthly_tasks').insert({household_id:HID,location_id:lid,location_ids:selLocs,text_nl:nl,text_pt:nl,interval_months:interval});
-  document.getElementById('pt-nl').value='';
-  document.querySelectorAll('#pt-loc-pills .cpill.on').forEach(el=>el.classList.remove('on'));
-  await loadAll();renderPeriodicList();
-}
-async function delPeriodic(id){if(!confirm('Verwijderen?'))return;await sb.from('monthly_tasks').delete().eq('id',id);await loadAll();renderPeriodicList();}
-
-// TASK EDIT MODAL
+// ═══════════════ TASK EDIT MODAL ═══════════════
 function setScope(s){editScope=s;document.getElementById('scope-one')?.classList.toggle('on',s==='one');document.getElementById('scope-all')?.classList.toggle('on',s==='all');}
 
 function openEdit(id,type,nl,pt,interval){
@@ -1242,14 +1479,29 @@ function openEdit(id,type,nl,pt,interval){
   document.getElementById('edit-task-type').value=type;
   document.getElementById('edit-nl').value=nl;
   document.getElementById('edit-pt').value=pt;
-  document.getElementById('edit-modal-title').textContent=type==='periodic'?'Periodieke taak bewerken':type==='extra'?'Extra taak bewerken':'Taak bewerken';
-  // Show scope for extra tasks
+  document.getElementById('edit-modal-title').textContent=type==='periodic'?tr('editPeriodic'):type==='extra'?tr('editExtra'):tr('editTask');
+  // Scope for extra
   const sw=document.getElementById('edit-scope-wrap');if(sw)sw.style.display=type==='extra'?'block':'none';
-  // Show interval for periodic
+  document.getElementById('edit-scope-lbl').textContent=tr('changeFor');
+  document.getElementById('scope-one').textContent=tr('onlyThisWeek');
+  document.getElementById('scope-all').textContent=tr('allWeeks');
+  // Interval for periodic
   const iw=document.getElementById('edit-interval-wrap');
   if(iw){iw.style.display=type==='periodic'?'block':'none';if(interval&&type==='periodic'){const sel=document.getElementById('edit-interval');if(sel)sel.value=interval;}}
+  // Location for fixed
+  const lw=document.getElementById('edit-loc-wrap');
+  if(lw){
+    lw.style.display=type==='fixed'?'block':'none';
+    if(type==='fixed'){
+      const task=D.tasks.find(t=>t.id===id);
+      const curLid=task?.location_id;
+      const curCat=task?.category||'Algemeen';
+      document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${l.id===curLid?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
+      updateEditCats(curLid,curCat);
+    }
+  }
   editScope='one';setScope('one');
-  // Populate location checkboxes for periodic tasks
+  // Locs for periodic
   const elocs=document.getElementById('edit-locs');
   const deleteBtn=document.getElementById('edit-delete-btn');
   if(elocs){
@@ -1261,20 +1513,40 @@ function openEdit(id,type,nl,pt,interval){
       elocs.innerHTML='';
     }
   }
-  if(deleteBtn) deleteBtn.style.display=(type==='periodic'||type==='extra')?'flex':'none';
+  // Button labels
+  document.getElementById('edit-save-btn').textContent=tr('save');
+  document.getElementById('edit-cancel-btn').textContent=tr('cancel');
+  if(deleteBtn){
+    deleteBtn.style.display=(type==='periodic'||type==='extra'||type==='fixed')?'flex':'none';
+    deleteBtn.textContent=tr('delete');
+  }
   document.getElementById('task-modal').classList.add('open');
 }
+
+function editLocClick(el,lid){
+  document.querySelectorAll('#edit-loc-pills .cpill').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  updateEditCats(lid);
+}
+
+function updateEditCats(lid,curCat){
+  const sel=document.getElementById('edit-cat');if(!sel)return;
+  const cats=locCats(lid);
+  sel.innerHTML=`<option value="Algemeen">${tr('general')}</option>`+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if(curCat)sel.value=curCat;
+}
+
 function closeModal(){document.getElementById('task-modal').classList.remove('open');}
 
 async function deleteFromEdit(){
   const id=document.getElementById('edit-task-id').value;
   const type=document.getElementById('edit-task-type').value;
-  if(!confirm('Taak definitief verwijderen?'))return;
+  if(!confirm(tr('confirmDelete')))return;
   if(type==='periodic'){await sb.from('monthly_tasks').delete().eq('id',id);}
   else if(type==='extra'){await sb.from('extra_tasks').delete().eq('id',id);}
   else{await sb.from('fixed_tasks').delete().eq('id',id);}
-  await logChange('Taak verwijderd');
-  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();
+  await logChange(tr('delete'));
+  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();renderExList();
   closeModal();
 }
 
@@ -1286,11 +1558,8 @@ async function saveEdit(){
   if(!nl)return;
   if(type==='extra'){
     if(editScope==='one'){
-      // Only update this week's instance
-      const wk=wkey(wOff);
       await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl}).eq('id',id);
     } else {
-      // Update all instances with same text
       const orig=D.extras.find(e=>e.id===id);
       if(orig)await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl}).eq('text_nl',orig.text_nl).eq('household_id',HID);
     }
@@ -1299,29 +1568,43 @@ async function saveEdit(){
     const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
     await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null}).eq('id',id);
   } else {
-    await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl}).eq('id',id);
+    // Fixed - now with location and category
+    const selLoc=[...document.querySelectorAll('#edit-loc-pills .cpill.on')].map(el=>el.id.replace('elp-',''));
+    const cat=document.getElementById('edit-cat')?.value||'Algemeen';
+    const upd={text_nl:nl,text_pt:pt||nl};
+    if(selLoc.length)upd.location_id=selLoc[0];
+    upd.category=cat;
+    await sb.from('fixed_tasks').update(upd).eq('id',id);
   }
-  await logChange(`Taak aangepast: "${nl}"`);
-  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();
+  await logChange(`${tr('editTask')}: "${nl}"`);
+  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();renderExList();
   closeModal();
 }
 
-// LOCATIONS
+// ═══════════════ LOCATIONS (FIX + EDIT) ═══════════════
 function renderLocList(){
   const el=document.getElementById('loc-list');if(!el)return;
-  if(!D.locs.length){el.innerHTML='<div class="empty">Nog geen locaties.</div>';return;}
-  el.innerHTML=D.locs.map(l=>`<div class="task-row" style="margin-bottom:4px"><div class="loc-dot" style="background:${l.color}"></div><span class="task-txt">${l.name}</span><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+  if(!D.locs.length){el.innerHTML=`<div class="empty">${tr('noTasks')}</div>`;return;}
+  el.innerHTML=D.locs.map(l=>{
+    const cats=(l.categories||[]).join(', ')||tr('general');
+    return `<div class="loc-edit-row"><div class="loc-dot" style="background:${l.color}"></div><div style="flex:1"><span class="task-txt">${l.name}</span><div class="loc-cats">${cats}</div></div><button class="btn-edit" onclick="openLocEdit('${l.id}')">&#9998;</button><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`;
+  }).join('');
 }
+
 async function addLoc(){
-  const name=document.getElementById('new-loc').value.trim(),color=document.getElementById('new-loc-col').value;
+  const name=document.getElementById('new-loc').value.trim();
+  const color=document.getElementById('new-loc-col').value;
   if(!name)return;
-  const mo=Math.max(0,...D.locs.map(l=>l.sort_order));
-  await sb.from('locations').insert({household_id:HID,name,color,sort_order:mo+1});
+  const mo=Math.max(0,...D.locs.map(l=>l.sort_order||0));
+  const ins={household_id:HID,name,color,sort_order:mo+1};
+  const {error}=await sb.from('locations').insert(ins);
+  if(error){console.error('Location insert error:',error);alert('Fout bij opslaan: '+error.message);return;}
   document.getElementById('new-loc').value='';
   await loadAll();renderLocList();
 }
+
 async function delLoc(id){
-  if(!confirm('Locatie verwijderen inclusief alle taken?'))return;
+  if(!confirm(lg()==='pt'?'Eliminar local e todas as tarefas?':'Locatie verwijderen inclusief alle taken?'))return;
   await sb.from('fixed_tasks').delete().eq('location_id',id);
   await sb.from('monthly_tasks').update({location_id:null}).eq('location_id',id);
   await sb.from('week_schedule').delete().eq('location_id',id);
@@ -1329,13 +1612,63 @@ async function delLoc(id){
   await loadAll();renderLocList();renderMgrWeek();
 }
 
-// WORKDAYS & PROFILE
+// Location edit modal
+function openLocEdit(id){
+  const loc=D.locs.find(l=>l.id===id);if(!loc)return;
+  document.getElementById('loc-edit-id').value=id;
+  document.getElementById('loc-edit-name').value=loc.name;
+  document.getElementById('loc-edit-color').value=loc.color||'#C8722A';
+  document.getElementById('loc-modal-title').textContent=tr('editLoc');
+  document.getElementById('loc-cat-title').textContent=tr('catRooms');
+  document.getElementById('loc-new-cat').placeholder=tr('catPlaceholder');
+  document.getElementById('loc-save-btn').textContent=tr('save');
+  document.getElementById('loc-cancel-btn').textContent=tr('cancel');
+  locEditCats=[...(loc.categories||[])];
+  renderLocCatList();
+  document.getElementById('loc-modal').classList.add('open');
+}
+
+function renderLocCatList(){
+  const el=document.getElementById('loc-cat-list');if(!el)return;
+  if(!locEditCats.length){el.innerHTML=`<div class="empty" style="padding:4px 0">${tr('general')}</div>`;return;}
+  el.innerHTML=locEditCats.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><span style="font-size:13px;flex:1">${c}</span><button onclick="removeLocCat(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px">&#10005;</button></div>`).join('');
+}
+
+function addLocCat(){
+  const inp=document.getElementById('loc-new-cat');
+  const val=inp.value.trim();
+  if(!val)return;
+  if(!locEditCats.includes(val))locEditCats.push(val);
+  inp.value='';
+  renderLocCatList();
+}
+
+function removeLocCat(idx){
+  locEditCats.splice(idx,1);
+  renderLocCatList();
+}
+
+async function saveLocEdit(){
+  const id=document.getElementById('loc-edit-id').value;
+  const name=document.getElementById('loc-edit-name').value.trim();
+  const color=document.getElementById('loc-edit-color').value;
+  if(!name)return;
+  const upd={name,color,categories:locEditCats};
+  const {error}=await sb.from('locations').update(upd).eq('id',id);
+  if(error){console.error('Location update error:',error);alert('Fout bij opslaan: '+error.message);return;}
+  await loadAll();renderLocList();renderMgrWeek();
+  closeLocModal();
+}
+
+function closeLocModal(){document.getElementById('loc-modal').classList.remove('open');}
+
+// ═══════════════ WORKDAYS & PROFILE ═══════════════
 function loadInstForm(){
   if(!CU)return;
   const ni=document.getElementById('inst-name'),li=document.getElementById('inst-lang');
   if(ni)ni.value=CU.name;if(li)li.value=CU.language||'nl';
   const dt=document.getElementById('wd-toggles');if(!dt)return;dt.innerHTML='';
-  ALL_DAYS.forEach((d,i)=>{
+  dayArr().forEach((d,i)=>{
     const b=document.createElement('button');
     b.className='cpill'+(D.workdays.includes(i)?' on':'');
     b.textContent=d;
@@ -1349,20 +1682,20 @@ async function saveProfile(){
   const lang=document.getElementById('inst-lang').value;
   const p=document.getElementById('inst-pin').value;
   const p2=document.getElementById('inst-pin2').value;
-  if(p){if(!/^\d{4}$/.test(p)){alert('PIN moet 4 cijfers zijn.');return;}if(p!==p2){alert('PINs komen niet overeen.');return;}}
+  if(p){if(!/^\d{4}$/.test(p)){alert(lg()==='pt'?'PIN deve ter 4 dígitos.':'PIN moet 4 cijfers zijn.');return;}if(p!==p2){alert(lg()==='pt'?'PINs não coincidem.':'PINs komen niet overeen.');return;}}
   const upd={name,language:lang};if(p)upd.pin=p;
   await sb.from('users').update(upd).eq('id',CU.id);
   await loadAll();CU=D.users.find(u=>u.id===CU.id);
   document.getElementById('inst-pin').value='';document.getElementById('inst-pin2').value='';
   doFlash('inst-flash');renderManager();
 }
-async function clearChecks(){if(!confirm('Alle vinkjes voor deze week wissen?'))return;await sb.from('task_checks').delete().eq('household_id',HID).eq('week_key',wkey(wOff));await loadAll();renderMgrWeek();}
+async function clearChecks(){if(!confirm(lg()==='pt'?'Limpar todas as marcações desta semana?':'Alle vinkjes voor deze week wissen?'))return;await sb.from('task_checks').delete().eq('household_id',HID).eq('week_key',wkey(wOff));await loadAll();renderMgrWeek();}
 
 // AUTO TRANSLATE
 async function autoTr(fId,tId){
   const fEl=document.getElementById(fId),tEl=document.getElementById(tId);
   if(!fEl||!tEl||!fEl.value.trim()||tEl.value.trim())return;
-  tEl.placeholder='Vertalen...';
+  tEl.placeholder=lg()==='pt'?'Traduzindo...':'Vertalen...';
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
@@ -1370,7 +1703,7 @@ async function autoTr(fId,tId){
         messages:[{role:'user',content:fEl.value.trim()}]})});
     const d=await res.json();const tx=d.content?.[0]?.text?.trim();if(tx)tEl.value=tx;
   }catch(e){}
-  tEl.placeholder='Automatisch vertaald...';
+  tEl.placeholder=lg()==='pt'?'Traduzido automaticamente...':'Automatisch vertaald...';
 }
 
 async function ensureSetup(){
