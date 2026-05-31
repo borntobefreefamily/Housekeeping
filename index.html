@@ -493,9 +493,10 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       <div id="loc-list"></div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
         <input type="text" id="new-loc" placeholder="" class="finput" style="flex:1;margin:0">
-        <input type="color" id="new-loc-col" value="#C8722A" style="width:38px;height:36px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
+        <input type="hidden" id="new-loc-col" value="#C8722A">
         <button class="btn-sm" onclick="addLoc()">+</button>
       </div>
+      <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
     </div>
     <div class="sec-title" id="inst-wk-title">Week beheren</div>
     <div class="form-card">
@@ -560,7 +561,8 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     <input type="hidden" id="loc-edit-id">
     <label class="flbl">Naam</label><input class="finput" type="text" id="loc-edit-name">
     <label class="flbl">Kleur</label>
-    <input type="color" id="loc-edit-color" style="width:50px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer;margin-bottom:8px">
+    <input type="hidden" id="loc-edit-color" value="#C8722A">
+    <div id="loc-color-swatches" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
     <label class="flbl" id="loc-cat-title">Categorieën voor deze locatie</label>
     <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="loc-cat-hint">Selecteer welke categorieën van toepassing zijn</div>
     <div class="pill-group" id="loc-cat-pills"></div>
@@ -1818,6 +1820,18 @@ async function delGlobalCat(id){
 }
 
 // ═══════════════ LOCATIONS (FIX + EDIT) ═══════════════
+const LOC_COLORS=['#C8722A','#D4A853','#7A9E5F','#5B8FA8','#9B6B9E','#C45C5C','#4E8B7A','#D4845A','#6B7FA8','#A8855B','#8B6E4E','#5C8B6B','#A85B7A','#7A8B5C','#C4905C','#5B6B8B','#8B7A5C','#6B8B7A','#A87A5B','#7A5B8B'];
+
+function renderSwatches(containerId,inputId,selectedColor){
+  const el=document.getElementById(containerId);if(!el)return;
+  el.innerHTML=LOC_COLORS.map(c=>`<div onclick="pickColor('${inputId}','${containerId}','${c}')" style="width:28px;height:28px;border-radius:6px;background:${c};cursor:pointer;border:3px solid ${c===selectedColor?'#333':'transparent'};box-sizing:border-box;transition:border-color .15s"></div>`).join('');
+}
+
+function pickColor(inputId,containerId,color){
+  const inp=document.getElementById(inputId);if(inp)inp.value=color;
+  renderSwatches(containerId,inputId,color);
+}
+
 function renderLocList(){
   const el=document.getElementById('loc-list');if(!el)return;
   if(!D.locs.length){el.innerHTML=`<div class="empty">${tr('noTasks')}</div>`;return;}
@@ -1828,6 +1842,9 @@ function renderLocList(){
       : `<span style="font-size:10px;color:var(--muted);font-style:italic">${tr('general')}</span>`;
     return `<div class="loc-edit-row"><div class="loc-dot" style="background:${l.color}"></div><div style="flex:1"><span class="task-txt">${l.name}</span><div style="margin-top:3px">${catHtml}</div></div><button class="btn-edit" onclick="openLocEdit('${l.id}')">&#9998;</button><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`;
   }).join('');
+  // Init new-loc swatches
+  const curNewCol=document.getElementById('new-loc-col')?.value||'#C8722A';
+  renderSwatches('new-loc-swatches','new-loc-col',curNewCol);
 }
 
 async function addLoc(){
@@ -1844,7 +1861,12 @@ async function addLoc(){
 async function delLoc(id){
   if(!confirm(lg()==='pt'?'Eliminar local e todas as tarefas?':'Locatie verwijderen inclusief alle taken?'))return;
   try{
+    // Clean up all related data first
+    await sb.from('task_checks').delete().eq('household_id',HID).in('task_id',
+      (D.tasks.filter(t=>t.location_id===id).map(t=>t.id))
+    );
     await sb.from('fixed_tasks').delete().eq('location_id',id).eq('household_id',HID);
+    await sb.from('extra_tasks').delete().eq('location_id',id).eq('household_id',HID);
     await sb.from('monthly_tasks').update({location_id:null}).eq('location_id',id).eq('household_id',HID);
     await sb.from('week_schedule').delete().eq('location_id',id).eq('household_id',HID);
     const{error}=await sb.from('locations').delete().eq('id',id).eq('household_id',HID);
@@ -1864,6 +1886,9 @@ function openLocEdit(id){
   document.getElementById('loc-cat-hint').textContent=tr('catHint');
   document.getElementById('loc-save-btn').textContent=tr('save');
   document.getElementById('loc-cancel-btn').textContent=tr('cancel');
+  // Render color swatches
+  renderSwatches('loc-color-swatches','loc-edit-color',loc.color||'#C8722A');
+  // Show all global cats as pills, mark selected ones
   const locSelectedCats=loc.categories||[];
   const pills=document.getElementById('loc-cat-pills');
   if(pills){
