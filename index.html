@@ -1024,7 +1024,14 @@ function renderDayBody(di,wk,isMgr){
   const hasDaily=schedIds.includes(DAILY_ID);
   const hasBuiten=schedIds.includes(BUITEN_ID);
   const extras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
-  const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+  // Find recipes for this specific day (match week_key within ±6 days to handle Sunday boundary)
+  const wkDate=new Date(wk);
+  const recs=D.recipes.filter(r=>{
+    if(r.day_index!==di)return false;
+    const rd=new Date(r.week_key);
+    const diff=Math.abs((rd-wkDate)/(1000*60*60*24));
+    return diff<7;
+  });
   // Daily tasks (is_daily=true, no location)
   const dailyTasks=D.tasks.filter(t=>t.is_daily);
   let html='';
@@ -1682,24 +1689,27 @@ async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await
 
 function renderRcList(){
   const el=document.getElementById('rc-list');if(!el)return;
-  const wk=wkey(wOff);
-  // Show only recipes for current wOff week
-  const thisWkRecs=D.recipes.filter(r=>r.week_key===wk);
-  // Group future weeks separately
-  const futureRecs=D.recipes.filter(r=>r.week_key>wk);
+  // Show all upcoming recipes sorted by date
+  const today=new Date().toISOString().slice(0,10);
+  const up=D.recipes.filter(r=>r.week_key>=today.slice(0,8)+'01').sort((a,b)=>{
+    // Sort by actual date: week_key + day_index
+    const da=new Date(a.week_key);da.setDate(da.getDate()+a.day_index);
+    const db=new Date(b.week_key);db.setDate(db.getDate()+b.day_index);
+    return da-db;
+  });
   let html='';
-  // Current week header
-  html+=`<div class="sec-title">${tr('thisWeek')} (${wlbl(wOff)==='Deze week'||wlbl(wOff)==='Esta semana'?wk:wlbl(wOff)})</div>`;
-  if(thisWkRecs.length){
-    html+=thisWkRecs.sort((a,b)=>a.day_index-b.day_index).map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+  if(!up.length){
+    html=`<div class="empty" style="margin-top:.5rem">${tr('noRecipes')}</div>`;
   } else {
-    html+=`<div class="empty" style="margin-bottom:.5rem">${tr('noRecipes')}</div>`;
-  }
-  // Future weeks
-  if(futureRecs.length){
-    const byWk={};futureRecs.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
+    // Group by week_key
+    const byWk={};up.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
     Object.keys(byWk).sort().forEach(w=>{
-      html+=`<div class="sec-title" style="margin-top:.75rem">${w}</div>`;
+      const wDate=new Date(w);
+      const sunDate=new Date(wDate);sunDate.setDate(wDate.getDate()-1);
+      const satDate=new Date(wDate);satDate.setDate(wDate.getDate()+5);
+      const ms=MONTHS_SHORT;
+      const lbl=`${sunDate.getDate()} ${ms[sunDate.getMonth()]} – ${satDate.getDate()} ${ms[satDate.getMonth()]} ${satDate.getFullYear()}`;
+      html+=`<div class="sec-title" style="margin-top:.5rem">${w===wkey(wOff)?tr('thisWeek')+' ('+lbl+')':lbl}</div>`;
       html+=byWk[w].sort((a,b)=>a.day_index-b.day_index).map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
     });
   }
