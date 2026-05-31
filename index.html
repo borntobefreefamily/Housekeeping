@@ -1677,8 +1677,14 @@ async function addRecipe(){
   const url=document.getElementById('rc-url').value.trim();
   const day=parseInt(document.getElementById('rc-day').value);
   const off=parseInt(document.getElementById('rc-wk').value);
-  if(!name)return;
-  await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url:url||null});
+  if(!name){alert('Vul een gerechtnaam in');return;}
+  if(isNaN(day)){alert('Kies een dag');return;}
+  if(isNaN(off)){alert('Kies een week');return;}
+  const wk=wkey(off);
+  console.log('Saving recipe:',{name,day,off,wk,household_id:HID});
+  const{data,error}=await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null}).select();
+  if(error){alert('Fout bij opslaan recept: '+error.message);console.error(error);return;}
+  console.log('Saved:',data);
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
   await loadAll();renderRcList();
