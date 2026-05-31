@@ -300,7 +300,6 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     <div id="w-log-list"></div>
   </div>
   <div id="wmt-recipe" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div class="wk-nav"><button class="wbtn" onclick="chWeek(-1)">&#8249;</button><div class="wk-lbl" id="wr-wk-lbl"></div><button class="wbtn" onclick="chWeek(1)">&#8250;</button></div>
     <div class="scroll">
       <div class="sec-title" id="w-recipe-title"></div>
       <div class="form-card" id="w-recipe-form">
@@ -501,6 +500,8 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     <div class="sec-title" id="inst-wk-title">Week beheren</div>
     <div class="form-card">
       <div class="set-row"><div><div class="set-lbl" id="inst-clear-lbl">Vinkjes wissen</div><div class="set-sub" id="inst-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="inst-clear-btn">Wissen</button></div>
+      <div class="set-row" style="margin-top:8px"><div><div class="set-lbl">Taken vertalen naar PT</div><div class="set-sub">Vertaalt alle taken zonder Portugese tekst</div></div><button class="btn-sm" onclick="translateAllTasks()" id="translate-btn">Vertalen</button></div>
+      <div id="translate-flash" class="flash" style="opacity:0">Vertaling klaar!</div>
     </div>
   </div>
 </div>
@@ -934,7 +935,7 @@ function showScr(n){document.querySelectorAll('.screen').forEach(s=>s.classList.
 function chWeek(d){wOff+=d;updWkLbls();if(CU?.role==='worker')renderWorker();else renderMgrWeek();}
 function updWkLbls(){
   const l=wlbl(wOff);
-  ['w-wk-lbl','m-wk-lbl','wr-wk-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;});
+  ['w-wk-lbl','m-wk-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;});
 }
 
 function getFocus(di){
@@ -2034,6 +2035,37 @@ async function saveProfile(){
   doFlash('inst-flash');renderManager();
 }
 async function clearChecks(){if(!confirm(lg()==='pt'?'Limpar todas as marcações desta semana?':'Alle vinkjes voor deze week wissen?'))return;await sb.from('task_checks').delete().eq('household_id',HID).eq('week_key',wkey(wOff));await loadAll();renderMgrWeek();}
+
+async function translateAllTasks(){
+  const btn=document.getElementById('translate-btn');
+  if(btn){btn.disabled=true;btn.textContent='Bezig...';}
+  // Collect all tasks needing translation
+  const toTr=[
+    ...D.tasks.filter(t=>!t.text_pt||t.text_pt===t.text_nl).map(t=>({table:'fixed_tasks',id:t.id,nl:t.text_nl})),
+    ...D.periodic.filter(t=>!t.text_pt||t.text_pt===t.text_nl).map(t=>({table:'monthly_tasks',id:t.id,nl:t.text_nl})),
+  ];
+  let done=0;
+  for(const t of toTr){
+    try{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
+          system:'Vertaal naar Europees Portugees. Alleen de vertaling, geen uitleg, geen aanhalingstekens.',
+          messages:[{role:'user',content:t.nl}]})});
+      const d=await res.json();
+      const pt=d.content?.[0]?.text?.trim();
+      if(pt){
+        await sb.from(t.table).update({text_pt:pt}).eq('id',t.id);
+        done++;
+      }
+    }catch(e){}
+    // Small delay to avoid rate limiting
+    await new Promise(r=>setTimeout(r,300));
+  }
+  await loadAll();
+  if(btn){btn.disabled=false;btn.textContent='Vertalen';}
+  const fl=document.getElementById('translate-flash');
+  if(fl){fl.textContent=`${done} taken vertaald!`;fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',3000);}
+}
 
 // AUTO TRANSLATE
 async function autoTr(fId,tId){
