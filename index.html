@@ -388,6 +388,13 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
         <input class="finput" type="text" id="nt-pt" placeholder="">
         <label class="flbl" id="nt-lbl-loc">Locatie</label>
         <div class="pill-group" id="nt-locs"></div>
+        <!-- Daily task toggle (for fixed) -->
+        <div id="nt-daily-wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
+            <input type="checkbox" id="nt-daily" onchange="togNtDaily()" style="width:16px;height:16px;accent-color:var(--caramel)">
+            <span id="nt-daily-lbl" style="font-size:13px;color:var(--text)">Dagelijkse taak (verschijnt elke werkdag)</span>
+          </label>
+        </div>
         <!-- Category (for fixed) -->
         <div id="nt-cat-wrap">
           <label class="flbl" id="nt-lbl-cat">Categorie</label>
@@ -513,8 +520,12 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     <label class="flbl">Descrição (PT)</label><input class="finput" type="text" id="edit-pt">
     <!-- Location for fixed tasks -->
     <div id="edit-loc-wrap" style="display:none">
-      <label class="flbl" id="edit-lbl-loc">Locatie</label>
+      <label class="flbl" id="edit-lbl-loc">Locatie(s)</label>
       <div class="pill-group" id="edit-loc-pills"></div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:6px 0 8px">
+        <input type="checkbox" id="edit-daily" style="width:16px;height:16px;accent-color:var(--caramel)">
+        <span id="edit-daily-lbl" style="font-size:13px;color:var(--text)">Dagelijkse taak</span>
+      </label>
       <label class="flbl" id="edit-lbl-cat">Categorie</label>
       <select class="finput" id="edit-cat"><option value="Algemeen">Algemeen</option></select>
     </div>
@@ -1005,12 +1016,33 @@ function renderDayBody(di,wk,isMgr){
   const hasBuiten=schedIds.includes(BUITEN_ID);
   const extras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
   const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+  // Daily tasks (is_daily=true, no location)
+  const dailyTasks=D.tasks.filter(t=>t.is_daily);
   let html='';
 
   if(focus||isMgr){
     html+=`<div class="focus-banner"><div class="focus-inner"><div class="focus-lbl">${tr('focusToday')}</div><div class="focus-txt">${focus||'\u2014'}</div></div>`;
     if(isMgr)html+=`<button class="focus-edit" onclick="editFocus(${di})" title="${tr('editTask')}">&#9998;</button>`;
     html+='</div>';
+  }
+
+  // Daily basis block — always shown on workdays
+  if(dailyTasks.length){
+    const done=dailyTasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
+    const uid=`daily-${di}`;
+    let lb='';
+    dailyTasks.forEach(t=>{
+      const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+      const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
+      const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
+      const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
+      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
+      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+      if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
+      lb+='</div>';
+    });
+    html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-hdr-bar" style="background:#2B1A0E14" onclick="togEl('lb-${uid}','lc-${uid}')"><div class="loc-dot" style="background:var(--espresso)"></div><span class="loc-name-txt">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-task-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}">&#9662;</span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
   }
 
   if(recs.length){
@@ -1037,7 +1069,7 @@ function renderDayBody(di,wk,isMgr){
     html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
     if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
     if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
-    if(isMgr)html+=`<button onclick="delExtra('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button>`;
+    if(isMgr)html+=`<button onclick="delExtraConfirm('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button>`;
     html+='</div>';
   });
 
@@ -1299,6 +1331,28 @@ function setTaskType(type){
   document.getElementById('nt-cat-wrap').style.display='block';
   document.getElementById('nt-interval-wrap').style.display=type==='periodic'?'block':'none';
   document.getElementById('nt-extra-wrap').style.display=type==='extra'?'block':'none';
+  // Daily toggle only for fixed tasks
+  const dw=document.getElementById('nt-daily-wrap');
+  if(dw)dw.style.display=type==='fixed'?'block':'none';
+  // Loc pills: hide if daily is checked
+  const isDailyChecked=document.getElementById('nt-daily')?.checked;
+  const lbl=document.getElementById('nt-lbl-loc');
+  const locs=document.getElementById('nt-locs');
+  if(lbl)lbl.style.display=(type==='fixed'&&isDailyChecked)?'none':'block';
+  if(locs)locs.style.display=(type==='fixed'&&isDailyChecked)?'none':'block';
+}
+
+function togNtDaily(){
+  const isDailyChecked=document.getElementById('nt-daily')?.checked;
+  const lbl=document.getElementById('nt-lbl-loc');
+  const locs=document.getElementById('nt-locs');
+  if(lbl)lbl.style.display=isDailyChecked?'none':'block';
+  if(locs)locs.style.display=isDailyChecked?'none':'block';
+  if(isDailyChecked){
+    // Deselect all loc pills
+    document.querySelectorAll('#nt-locs .cpill').forEach(p=>p.classList.remove('on'));
+    updateNtCats();
+  }
 }
 
 function renderTaskForm(){
@@ -1307,6 +1361,11 @@ function renderTaskForm(){
   if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${l.name}</div>`).join('');
   const dc=document.getElementById('nt-days');
   if(dc)dc.innerHTML=dayArr().map((d,i)=>`<div class="cpill" id="ntd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
+  // Reset daily checkbox
+  const dailyCb=document.getElementById('nt-daily');
+  if(dailyCb)dailyCb.checked=false;
+  const dailyLbl=document.getElementById('nt-daily-lbl');
+  if(dailyLbl)dailyLbl.textContent=lg()==='pt'?'Tarefa diária (aparece todos os dias de trabalho)':'Dagelijkse taak (verschijnt elke werkdag)';
   updateNtCats();setTaskType(newTaskType);
 }
 
@@ -1334,13 +1393,19 @@ async function addUnifiedTask(){
   const nl=document.getElementById('nt-nl').value.trim();
   const pt=document.getElementById('nt-pt').value.trim();
   if(!nl)return;
+  const isDaily=newTaskType==='fixed'&&document.getElementById('nt-daily')?.checked;
   const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
-  if(!selLocs.length){alert(tr('selectMinLoc'));return;}
+  if(!isDaily&&!selLocs.length){alert(tr('selectMinLoc'));return;}
   const cat=document.getElementById('nt-cat').value||'Algemeen';
 
   if(newTaskType==='fixed'){
-    for(const loc of selLocs){
-      await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
+    if(isDaily){
+      // Daily task: location_id = null, is_daily = true
+      await sb.from('fixed_tasks').insert({household_id:HID,location_id:null,is_daily:true,category:cat,text_nl:nl,text_pt:pt||nl});
+    } else {
+      for(const loc of selLocs){
+        await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,is_daily:false,category:cat,text_nl:nl,text_pt:pt||nl});
+      }
     }
     await logChange(`${tr('typeFixed')}: "${nl}"`);
   } else if(newTaskType==='periodic'){
@@ -1369,6 +1434,7 @@ async function addUnifiedTask(){
   // Reset form
   document.getElementById('nt-nl').value='';document.getElementById('nt-pt').value='';
   document.querySelectorAll('#nt-locs .cpill.on,#nt-days .cpill.on').forEach(el=>el.classList.remove('on'));
+  const dailyCb=document.getElementById('nt-daily');if(dailyCb)dailyCb.checked=false;
   await loadAll();
   doFlash('nt-flash');
   renderFixedList();renderPeriodicList();renderExList();
@@ -1379,21 +1445,32 @@ function renderFixedList(){
   const el=document.getElementById('fixed-list');if(!el)return;
   if(!D.tasks.length){el.innerHTML=`<div class="empty">${tr('noFixed')}</div>`;return;}
   let html='';
+
+  // Daily tasks section
+  const dailyTasks=D.tasks.filter(t=>t.is_daily);
+  if(dailyTasks.length){
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:var(--espresso)"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-section-count">${dailyTasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
+    dailyTasks.forEach(t=>{
+      html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  // Per-location tasks
   D.locs.forEach(loc=>{
-    const tasks=D.tasks.filter(t=>t.location_id===loc.id);
+    const tasks=D.tasks.filter(t=>t.location_id===loc.id&&!t.is_daily);
     if(!tasks.length)return;
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
-    // Group by category
     const cats=[...new Set(tasks.map(t=>t.category||tr('general')))];
     cats.forEach(cat=>{
       html+=`<span class="slbl">${cat}</span>`;
       tasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
-        html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+        html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
       });
     });
     html+=`</div></div>`;
   });
-  el.innerHTML=html;
+  el.innerHTML=html||`<div class="empty">${tr('noFixed')}</div>`;
 }
 
 function renderPeriodicList(){
@@ -1450,7 +1527,8 @@ function renderExList(){
 async function delFixed(id){if(!confirm(tr('confirmDelete')))return;await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
 async function delPeriodic(id){if(!confirm(tr('confirmDelete')))return;await sb.from('monthly_tasks').delete().eq('id',id);await loadAll();renderPeriodicList();}
 async function delExtra(id){await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
-async function delExGr(ids){for(const id of ids)await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
+async function delExtraConfirm(id){if(!confirm(tr('confirmDelete')))return;await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderMgrWeek();}
+async function delExGr(ids){if(!confirm(tr('confirmDelete')))return;for(const id of ids)await sb.from('extra_tasks').delete().eq('id',id);await loadAll();renderExList();renderMgrWeek();}
 
 // ═══════════════ RECIPES MANAGER ═══════════════
 function renderRecSels(){
@@ -1490,15 +1568,33 @@ function openEdit(id,type,nl,pt,interval){
   document.getElementById('edit-scope-lbl').textContent=tr('changeFor');
   document.getElementById('scope-one').textContent=tr('onlyThisWeek');
   document.getElementById('scope-all').textContent=tr('allWeeks');
-  // Fixed: location pills + category
+  // Fixed: location pills (multi-select) + daily toggle + category
   const lw=document.getElementById('edit-loc-wrap');
   if(lw){
     lw.style.display=type==='fixed'?'block':'none';
     if(type==='fixed'){
       const task=D.tasks.find(t=>t.id===id);
-      const curLid=task?.location_id;const curCat=task?.category||'Algemeen';
+      const isDaily=task?.is_daily||false;
+      const curLid=task?.location_id;
+      const curCat=task?.category||'Algemeen';
+      // Multi-select pills — all selected if daily
       document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${l.id===curLid?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
-      updateEditCats('fixed',curLid,curCat);
+      const dailyCb=document.getElementById('edit-daily');
+      if(dailyCb){
+        dailyCb.checked=isDaily;
+        // Show/hide pills based on daily
+        document.getElementById('edit-loc-pills').style.display=isDaily?'none':'flex';
+        document.getElementById('edit-lbl-loc').style.display=isDaily?'none':'block';
+        dailyCb.onchange=function(){
+          const d=this.checked;
+          document.getElementById('edit-loc-pills').style.display=d?'none':'flex';
+          document.getElementById('edit-lbl-loc').style.display=d?'none':'block';
+          if(d)document.querySelectorAll('#edit-loc-pills .cpill').forEach(p=>p.classList.remove('on'));
+        };
+      }
+      const dailyLbl=document.getElementById('edit-daily-lbl');
+      if(dailyLbl)dailyLbl.textContent=lg()==='pt'?'Tarefa diária':'Dagelijkse taak';
+      updateEditCats('fixed',isDaily?null:curLid,curCat);
     }
   }
   // Periodic: interval + locs + category
@@ -1531,8 +1627,12 @@ function openEdit(id,type,nl,pt,interval){
 }
 
 function editLocClick(el,lid){
-  document.querySelectorAll('#edit-loc-pills .cpill').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on');updateEditCats('fixed',lid);
+  // Multi-select: toggle the clicked pill
+  el.classList.toggle('on');
+  // Update cats based on first selected loc
+  const firstSel=document.querySelector('#edit-loc-pills .cpill.on');
+  const firstLid=firstSel?firstSel.id.replace('elp-',''):null;
+  updateEditCats('fixed',firstLid);
 }
 
 function updateEditCats(type,lid,curCat){
@@ -1577,13 +1677,25 @@ async function saveEdit(){
     const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
     await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat}).eq('id',id);
   } else {
-    // Fixed - now with location and category
-    const selLoc=[...document.querySelectorAll('#edit-loc-pills .cpill.on')].map(el=>el.id.replace('elp-',''));
+    // Fixed — multi-location + daily support
+    const isDaily=document.getElementById('edit-daily')?.checked||false;
     const cat=document.getElementById('edit-cat')?.value||'Algemeen';
-    const upd={text_nl:nl,text_pt:pt||nl};
-    if(selLoc.length)upd.location_id=selLoc[0];
-    upd.category=cat;
-    await sb.from('fixed_tasks').update(upd).eq('id',id);
+    if(isDaily){
+      await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,location_id:null,is_daily:true,category:cat}).eq('id',id);
+    } else {
+      const selLocs=[...document.querySelectorAll('#edit-loc-pills .cpill.on')].map(el=>el.id.replace('elp-',''));
+      if(selLocs.length===1){
+        await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,location_id:selLocs[0],is_daily:false,category:cat}).eq('id',id);
+      } else if(selLocs.length>1){
+        // Multi-loc: update first, insert rest
+        await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,location_id:selLocs[0],is_daily:false,category:cat}).eq('id',id);
+        for(let i=1;i<selLocs.length;i++){
+          await sb.from('fixed_tasks').insert({household_id:HID,location_id:selLocs[i],is_daily:false,category:cat,text_nl:nl,text_pt:pt||nl});
+        }
+      } else {
+        await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,category:cat}).eq('id',id);
+      }
+    }
   }
   await logChange(`${tr('editTask')}: "${nl}"`);
   await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();renderExList();
