@@ -1026,21 +1026,25 @@ function renderDayBody(di,wk,isMgr){
     html+='</div>';
   }
 
-  // Daily basis block — always shown on workdays
+  // Daily basis block — always shown on workdays, grouped by category
   if(dailyTasks.length){
     const done=dailyTasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
     const uid=`daily-${di}`;
     let lb='';
-    dailyTasks.forEach(t=>{
-      const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
-      const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
-      const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
-      const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
-      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
-      if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
-      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
-      lb+='</div>';
+    const dCats=[...new Set(dailyTasks.map(t=>t.category||tr('general')))];
+    dCats.forEach(cat=>{
+      lb+=`<span class="slbl">${cat}</span>`;
+      dailyTasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
+        const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+        const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
+        const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
+        const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
+        lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
+        if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+        if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
+        if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
+        lb+='</div>';
+      });
     });
     html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-hdr-bar" style="background:#2B1A0E14" onclick="togEl('lb-${uid}','lc-${uid}')"><div class="loc-dot" style="background:var(--espresso)"></div><span class="loc-name-txt">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-task-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}">&#9662;</span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
   }
@@ -1259,18 +1263,101 @@ function renderMgrWeek(){
 function togDay(bid,cid){const b=document.getElementById(bid),c=document.getElementById(cid);if(!b)return;b.classList.toggle('open');if(c)c.classList.toggle('open',b.classList.contains('open'));}
 function togEl(bid,cid){togDay(bid,cid);}
 
+// Save which day-cards and loc-blocks are open
+function saveOpenState(prefix){
+  const open=[];
+  document.querySelectorAll(`[id^="${prefix}"]`).forEach(el=>{if(el.classList.contains('open'))open.push(el.id);});
+  return open;
+}
+function restoreOpenState(openIds){
+  openIds.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.add('open');
+    // Also update matching chev
+    const chevId=id.replace(/^(wd|md|lb)/,(m)=>m==='wd'?'wdc':m==='md'?'mdc':'lc');
+    const chev=document.getElementById(chevId);
+    if(chev)chev.classList.add('open');
+  });
+}
+
+// Soft refresh: only update day body contents + progress, keep open state
+function refreshMgrWeek(){
+  const wk=wkey(wOff);
+  const openDays=saveOpenState('md');
+  const openLocs=saveOpenState('lb-');
+  const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index)])].sort((a,b)=>a-b);
+  let tot=0,done=0;
+  showDays.forEach(di=>{
+    const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
+    const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+    const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+    if(!sd.length&&!ex.length&&!rc.length)return;
+    let dt=0,dd=0;
+    // Count daily tasks too
+    D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+    sd.forEach(sr=>{
+      const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+      dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
+      dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+    });
+    ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+    tot+=dt;done+=dd;
+    const body=document.getElementById('md'+di);
+    const prog=document.querySelector(`#mdc${di}`)?.closest('.day-card')?.querySelector('.day-prog-txt');
+    if(body)body.innerHTML=renderDayBody(di,wk,true);
+    if(prog)prog.textContent=`${dd}/${dt}`;
+  });
+  const pct=tot?Math.round(done/tot*100):0;
+  const progEl=document.getElementById('m-prog');
+  if(progEl)progEl.innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
+  restoreOpenState([...openDays,...openLocs]);
+}
+
+function refreshWorker(){
+  const wk=wkey(wOff);
+  const openDays=saveOpenState('wd');
+  const openLocs=saveOpenState('lb-');
+  const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
+  let tot=0,done=0;
+  allDi.forEach(di=>{
+    const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
+    const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+    const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+    if(!sd.length&&!ex.length&&!rc.length)return;
+    let dt=0,dd=0;
+    D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+    sd.forEach(sr=>{
+      const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+      dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
+      dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+    });
+    ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+    tot+=dt;done+=dd;
+    const body=document.getElementById('wd'+di);
+    const prog=document.querySelector(`#wdc${di}`)?.closest('.day-card')?.querySelector('.day-prog-txt');
+    if(body)body.innerHTML=renderDayBody(di,wk,false);
+    if(prog)prog.textContent=`${dd}/${dt}`;
+  });
+  const pct=tot?Math.round(done/tot*100):0;
+  const progEl=document.getElementById('w-prog');
+  if(progEl)progEl.innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
+  restoreOpenState([...openDays,...openLocs]);
+}
+
 async function togTask(tid,wk,di,mgr){
   const k=tid+'_'+wk+'_'+di;
   if(D.checks[k]?.on){await sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();if(mgr)renderMgrWeek();else renderWorker();
+  await loadAll();if(mgr)refreshMgrWeek();else refreshWorker();
 }
 
 async function skipTask(tid,wk,di,mgr,type){
   const k=tid+'_'+wk+'_'+di;
   if(D.skipped[k]){await sb.from('skipped_tasks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('skipped_tasks').upsert({household_id:HID,task_id:tid,task_type:type||'fixed',week_key:wk,day_index:di,skipped_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();if(mgr)renderMgrWeek();else renderWorker();
+  await loadAll();if(mgr)refreshMgrWeek();else refreshWorker();
 }
 
 async function togPeriodic(tid,mgr){
@@ -1278,7 +1365,7 @@ async function togPeriodic(tid,mgr){
   const ex=D.pChecks.find(c=>c.task_id===tid&&c.year===yr&&c.month===mo);
   if(ex){await sb.from('monthly_checks').delete().eq('task_id',tid).eq('year',yr).eq('month',mo).eq('household_id',HID);}
   else{await sb.from('monthly_checks').upsert({household_id:HID,task_id:tid,year:yr,month:mo,checked_by:CU?.id,checked_date:now.toISOString().slice(0,10)},{onConflict:'household_id,task_id,year,month'});}
-  await loadAll();if(mgr)renderMgrWeek();else renderWorker();
+  await loadAll();if(mgr)refreshMgrWeek();else refreshWorker();
 }
 
 async function saveNote(lid,wk,di,val){
@@ -1623,7 +1710,10 @@ function openEdit(id,type,nl,pt,interval){
   const deleteBtn=document.getElementById('edit-delete-btn');
   if(deleteBtn){deleteBtn.style.display='flex';deleteBtn.textContent=tr('delete');}
   editScope='one';setScope('one');
-  document.getElementById('task-modal').classList.add('open');
+  const modal=document.getElementById('task-modal');
+  modal.classList.add('open');
+  // Scroll modal content to top
+  const mc=modal.querySelector('.modal');if(mc)mc.scrollTop=0;
 }
 
 function editLocClick(el,lid){
@@ -1638,6 +1728,7 @@ function editLocClick(el,lid){
 function updateEditCats(type,lid,curCat){
   const selId=type==='fixed'?'edit-cat':type==='periodic'?'edit-cat-p':'edit-cat-e';
   const sel=document.getElementById(selId);if(!sel)return;
+  // For daily tasks (no lid) or when no loc selected: use globalCats
   const cats=lid?locCats(lid):D.globalCats.map(gc=>gc.name);
   sel.innerHTML=`<option value="Algemeen">${tr('general')}</option>`+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
   if(curCat)sel.value=curCat;
@@ -1752,11 +1843,14 @@ async function addLoc(){
 
 async function delLoc(id){
   if(!confirm(lg()==='pt'?'Eliminar local e todas as tarefas?':'Locatie verwijderen inclusief alle taken?'))return;
-  await sb.from('fixed_tasks').delete().eq('location_id',id);
-  await sb.from('monthly_tasks').update({location_id:null}).eq('location_id',id);
-  await sb.from('week_schedule').delete().eq('location_id',id);
-  await sb.from('locations').delete().eq('id',id);
-  await loadAll();renderLocList();renderMgrWeek();
+  try{
+    await sb.from('fixed_tasks').delete().eq('location_id',id).eq('household_id',HID);
+    await sb.from('monthly_tasks').update({location_id:null}).eq('location_id',id).eq('household_id',HID);
+    await sb.from('week_schedule').delete().eq('location_id',id).eq('household_id',HID);
+    const{error}=await sb.from('locations').delete().eq('id',id).eq('household_id',HID);
+    if(error){alert('Fout bij verwijderen: '+error.message);return;}
+    await loadAll();renderLocList();renderMgrWeek();
+  }catch(e){alert('Fout: '+e.message);}
 }
 
 // Location edit modal — uses global category pills
