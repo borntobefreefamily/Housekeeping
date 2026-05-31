@@ -409,6 +409,7 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
           <label class="flbl" id="nt-lbl-rep">Herhaling</label>
           <select class="finput" id="nt-rep" onchange="togNtRep()">
             <option value="once">Eenmalig</option>
+            <option value="daily">Dagelijks</option>
             <option value="weekly">Wekelijks</option>
             <option value="monthly">Maandelijks (elke 4 weken)</option>
             <option value="infinite">Oneindig</option>
@@ -429,7 +430,7 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
 
     <!-- Existing tasks lists -->
     <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
-      <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken</div>
+      <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
       <span class="chev" id="fixed-list-chev">&#9662;</span>
     </div>
     <div class="day-body" id="fixed-list-body">
@@ -437,7 +438,7 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     </div>
 
     <div class="collapse-hdr" onclick="togEl('periodic-list-body','periodic-list-chev')">
-      <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken</div>
+      <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken per locatie</div>
       <span class="chev" id="periodic-list-chev">&#9662;</span>
     </div>
     <div class="day-body" id="periodic-list-body">
@@ -445,7 +446,7 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     </div>
 
     <div class="collapse-hdr" onclick="togEl('extra-list-body','extra-list-chev')">
-      <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken</div>
+      <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken per locatie</div>
       <span class="chev" id="extra-list-chev">&#9662;</span>
     </div>
     <div class="day-body" id="extra-list-body">
@@ -469,6 +470,16 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
       <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
       <div id="wd-flash" class="flash" style="opacity:0"></div>
+    </div>
+    <div class="sec-title" id="inst-gcat-title">Categorieën</div>
+    <div class="form-card">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="inst-gcat-hint">Globale lijst voor alle locaties</div>
+      <div id="gcat-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <input type="text" id="new-gcat" placeholder="bijv. Keuken" class="finput" style="flex:1;margin:0">
+        <button class="btn-sm" onclick="addGlobalCat()">+</button>
+      </div>
+      <div id="gcat-flash" class="flash" style="opacity:0"></div>
     </div>
     <div class="sec-title" id="inst-loc-title">Locaties</div>
     <div class="form-card">
@@ -516,6 +527,12 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
       </select>
       <label class="flbl">Locaties</label>
       <div class="pill-group" id="edit-locs"></div>
+      <label class="flbl" id="edit-lbl-cat-p">Categorie</label>
+      <select class="finput" id="edit-cat-p"><option value="Algemeen">Algemeen</option></select>
+    </div>
+    <div id="edit-extra-cat-wrap" style="display:none">
+      <label class="flbl" id="edit-lbl-cat-e">Categorie</label>
+      <select class="finput" id="edit-cat-e"><option value="Algemeen">Algemeen</option></select>
     </div>
     <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
       <button class="save-btn" onclick="saveEdit()" style="flex:1;min-width:100px" id="edit-save-btn">Opslaan</button>
@@ -533,12 +550,9 @@ html,body{height:100%;overflow:hidden;background:var(--espresso);font-family:'DM
     <label class="flbl">Naam</label><input class="finput" type="text" id="loc-edit-name">
     <label class="flbl">Kleur</label>
     <input type="color" id="loc-edit-color" style="width:50px;height:38px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer;margin-bottom:8px">
-    <label class="flbl" id="loc-cat-title">Categorieën (kamers)</label>
-    <div id="loc-cat-list" style="margin-bottom:8px"></div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-      <input type="text" id="loc-new-cat" placeholder="" class="finput" style="flex:1;margin:0">
-      <button class="btn-sm" onclick="addLocCat()">+</button>
-    </div>
+    <label class="flbl" id="loc-cat-title">Categorieën voor deze locatie</label>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="loc-cat-hint">Selecteer welke categorieën van toepassing zijn</div>
+    <div class="pill-group" id="loc-cat-pills"></div>
     <div style="display:flex;gap:8px;margin-top:.75rem">
       <button class="save-btn" onclick="saveLocEdit()" style="flex:1" id="loc-save-btn">Opslaan</button>
       <button class="save-btn" onclick="closeLocModal()" style="flex:1;background:var(--steam);color:var(--text)" id="loc-cancel-btn">Annuleren</button>
@@ -572,7 +586,7 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[]};
 let rtSubs=[];
 let locEditCats=[];
 
@@ -608,24 +622,26 @@ const I={
     autoHint:'↳ Portugese vertaling automatisch',
     location:'Locatie',locations:'Locaties',category:'Categorie',
     interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',
-    repOnce:'Eenmalig',repWeekly:'Wekelijks',repMonthly:'Maandelijks (elke 4 weken)',
+    repOnce:'Eenmalig',repDaily:'Dagelijks',repWeekly:'Wekelijks',repMonthly:'Maandelijks (elke 4 weken)',
     repInfinite:'Oneindig',repWeeks:'Aantal weken',repUntil:'Tot datum',
     numWeeks:'Aantal weken',untilDate:'Tot en met',
     // Taken lists
-    fixedTasks:'Vaste taken',periodicTasks:'Periodieke taken',extraTasks:'Extra taken',
-    fixedPerLoc:'Vaste taken per locatie',noFixed:'Geen taken',noPeriodic:'Geen periodieke taken.',
-    noExtras:'Geen extra taken gepland.',nowDue:'Nu verwacht',diverseLocs:'Diverse locaties',
+    fixedTasks:'Vaste taken per locatie',periodicTasks:'Periodieke taken per locatie',
+    extraTasks:'Extra taken per locatie',
+    noFixed:'Geen taken',noPeriodic:'Geen periodieke taken.',
+    noExtras:'Geen extra taken gepland.',diverseLocs:'Diverse locaties',
     // Settings
     myProfile:'Mijn profiel',name:'Naam',newPin:'Nieuwe PIN (4 cijfers)',
     confirmPin:'PIN bevestigen',language:'Taal',pinUnchanged:'Laat leeg = ongewijzigd',pinRepeat:'Herhaal nieuwe PIN',
     workdays:'Werkdagen',saveWorkdays:'Werkdagen opslaan',
+    globalCats:'Categorieën',globalCatsHint:'Globale lijst voor alle locaties',newCatPlaceholder:'bijv. Keuken',
     locationsList:'Locaties',locPlaceholder:'Naam locatie',
     weekManage:'Week beheren',clearChecks:'Vinkjes wissen',clearSub:'Begin nieuwe week opgeschoond',clearBtn:'Wissen',
     // Edit modal
     editTask:'Taak bewerken',editPeriodic:'Periodieke taak bewerken',editExtra:'Extra taak bewerken',
     changeFor:'Wijzig voor:',onlyThisWeek:'Alleen deze week',allWeeks:'Alle weken',
     // Location edit
-    editLoc:'Locatie bewerken',catRooms:'Categorieën (kamers)',catPlaceholder:'bijv. Keuken',
+    editLoc:'Locatie bewerken',catForLoc:'Categorieën voor deze locatie',catHint:'Selecteer welke categorieën van toepassing zijn',
     // Planning
     planHint:'Vink per dag aan welke locaties Diana schoonmaakt.',workday:'werkdag',
     // Recipes
@@ -634,9 +650,15 @@ const I={
     jumpTitle:'Ga naar week',close:'Sluiten',
     // General
     general:'Algemeen',confirmDelete:'Taak definitief verwijderen?',
-    selectMinOne:'Selecteer minimaal één locatie en één dag.',
+    selectMinLoc:'Selecteer minimaal één locatie.',
+    selectMinDay:'Selecteer minimaal één dag.',
     taskAdded:'Taak toegevoegd!',ago:'geleden',min:'min',
     periodicLabel:'Periodieke taken',
+    newTask:'Nieuwe taak per locatie',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',
+    type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
+    autoHint:'↳ Portugese vertaling automatisch',
+    location:'Locatie(s)',category:'Categorie',
+    interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',
   },
   pt:{
     myWeek:'A minha semana',changes:'Alterações',recipes:'Receitas',
@@ -664,24 +686,25 @@ const I={
     autoHint:'↳ Tradução portuguesa automática',
     location:'Local',locations:'Locais',category:'Categoria',
     interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',
-    repOnce:'Uma vez',repWeekly:'Semanal',repMonthly:'Mensal (cada 4 semanas)',
+    repOnce:'Uma vez',repDaily:'Diariamente',repWeekly:'Semanal',repMonthly:'Mensal (cada 4 semanas)',
     repInfinite:'Infinito',repWeeks:'Número de semanas',repUntil:'Até data',
     numWeeks:'Número de semanas',untilDate:'Até',
     // Taken lists
-    fixedTasks:'Tarefas fixas',periodicTasks:'Tarefas periódicas',extraTasks:'Tarefas extra',
+    fixedTasks:'Tarefas fixas por local',periodicTasks:'Tarefas periódicas por local',extraTasks:'Tarefas extra por local',
     fixedPerLoc:'Tarefas fixas por local',noFixed:'Sem tarefas',noPeriodic:'Sem tarefas periódicas.',
-    noExtras:'Sem tarefas extra planeadas.',nowDue:'Agora previsto',diverseLocs:'Vários locais',
+    noExtras:'Sem tarefas extra planeadas.',diverseLocs:'Vários locais',
     // Settings
     myProfile:'O meu perfil',name:'Nome',newPin:'Novo PIN (4 dígitos)',
     confirmPin:'Confirmar PIN',language:'Idioma',pinUnchanged:'Deixar vazio = inalterado',pinRepeat:'Repetir novo PIN',
     workdays:'Dias de trabalho',saveWorkdays:'Guardar dias de trabalho',
+    globalCats:'Categorias',globalCatsHint:'Lista global para todos os locais',newCatPlaceholder:'ex. Cozinha',
     locationsList:'Locais',locPlaceholder:'Nome do local',
     weekManage:'Gerir semana',clearChecks:'Limpar marcações',clearSub:'Começar semana limpa',clearBtn:'Limpar',
     // Edit modal
     editTask:'Editar tarefa',editPeriodic:'Editar tarefa periódica',editExtra:'Editar tarefa extra',
     changeFor:'Alterar para:',onlyThisWeek:'Apenas esta semana',allWeeks:'Todas as semanas',
     // Location edit
-    editLoc:'Editar local',catRooms:'Categorias (divisões)',catPlaceholder:'ex. Cozinha',
+    editLoc:'Editar local',catForLoc:'Categorias para este local',catHint:'Selecione quais categorias se aplicam',
     // Planning
     planHint:'Marque por dia quais os locais que a Diana limpa.',workday:'dia de trabalho',
     // Recipes
@@ -690,9 +713,15 @@ const I={
     jumpTitle:'Ir para semana',close:'Fechar',
     // General
     general:'Geral',confirmDelete:'Eliminar tarefa definitivamente?',
-    selectMinOne:'Selecione pelo menos um local e um dia.',
+    selectMinLoc:'Selecione pelo menos um local.',
+    selectMinDay:'Selecione pelo menos um dia.',
     taskAdded:'Tarefa adicionada!',ago:'atrás',min:'min',
     periodicLabel:'Tarefas periódicas',
+    newTask:'Nova tarefa por local',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',
+    type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
+    autoHint:'↳ Tradução portuguesa automática',
+    location:'Local(ais)',category:'Categoria',
+    interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',
   }
 };
 const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
@@ -716,6 +745,7 @@ function uname(uid){return D.users.find(u=>u.id===uid)?.name||'';}
 function locName(lid){return D.locs.find(l=>l.id===lid)?.name||'';}
 function locColor(lid){return D.locs.find(l=>l.id===lid)?.color||'#888';}
 function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[];}
+function locCatsForLoc(lid){return locCats(lid);}
 
 function isPeriodicDue(task){
   if(!D.pChecks.length)return true;
@@ -730,7 +760,7 @@ function isPeriodicDue(task){
 function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'maanden'}`;}
 
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc]=await Promise.all([
     sb.from('users').select('*').eq('household_id',HID),
     sb.from('locations').select('*').eq('household_id',HID).order('sort_order'),
     sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order'),
@@ -746,11 +776,13 @@ async function loadAll(){
     sb.from('monthly_tasks').select('*').eq('household_id',HID).order('interval_months'),
     sb.from('monthly_checks').select('*').eq('household_id',HID),
     sb.from('change_log').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(50),
+    sb.from('global_categories').select('*').eq('household_id',HID).order('name').catch(()=>({data:[]})),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
   D.workdays=hh.data?.[0]?.workdays||[0,1,3,4];
   D.focusDef=fd.data||[];D.focusWk=fw.data||[];
+  D.globalCats=gc.data||[];
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -813,38 +845,11 @@ function setSessionLang(l){
 }
 
 function updateManagerLabels(){
-  // Tab labels
-  const tabs={
-    't-week':tr('tabWeek'),'t-plan':tr('tabPlan'),
-    't-recipe':tr('tabRecipes'),'t-taken':tr('tabTasks'),'t-inst':tr('tabSettings')
-  };
-  Object.entries(tabs).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
-  // Settings labels
-  const s={
-    'inst-prof-title':tr('myProfile'),'inst-lbl-name':tr('name'),
-    'inst-lbl-pin':tr('newPin'),'inst-lbl-pin2':tr('confirmPin'),
-    'inst-lbl-lang':tr('language'),'inst-save-btn':tr('save'),
-    'inst-wd-title':tr('workdays'),'inst-wd-btn':tr('saveWorkdays'),
-    'inst-loc-title':tr('locationsList'),'inst-wk-title':tr('weekManage'),
-    'inst-clear-lbl':tr('clearChecks'),'inst-clear-sub':tr('clearSub'),
-    'inst-clear-btn':tr('clearBtn'),'plan-hint':tr('planHint'),
+  const m={
+    't-week':tr('tabWeek'),'t-plan':tr('tabPlan'),'t-recipe':tr('tabRecipes'),
+    't-taken':tr('tabTasks'),'t-inst':tr('tabSettings'),
     'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
-    'rc-sec-title':tr('addRecipeTitle'),'rc-lbl-dish':tr('dish'),
-    'rc-lbl-link':tr('link'),'rc-lbl-day':tr('day'),'rc-lbl-week':tr('week'),
-    'rc-add-btn':tr('addRecipe'),'rc-w0':tr('thisWeek'),'rc-w1':tr('nextWeek'),
-  };
-  Object.entries(s).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
-  // Placeholders
-  const pl=document.getElementById('inst-pin');if(pl)pl.placeholder=tr('pinUnchanged');
-  const pl2=document.getElementById('inst-pin2');if(pl2)pl2.placeholder=tr('pinRepeat');
-  const nloc=document.getElementById('new-loc');if(nloc)nloc.placeholder=tr('locPlaceholder');
-  // New task form labels
-  updateTaskFormLabels();
-}
-
-function updateTaskFormLabels(){
-  const m={
     'nt-lbl-type':tr('type'),'nt-type-fixed':tr('typeFixed'),
     'nt-type-periodic':tr('typePeriodic'),'nt-type-extra':tr('typeExtra'),
     'nt-lbl-nl':tr('descNl'),'nt-lbl-pt':tr('descPt'),
@@ -853,25 +858,25 @@ function updateTaskFormLabels(){
     'nt-lbl-days':tr('days'),'nt-lbl-rep':tr('repetition'),
     'nt-lbl-start':tr('startWeek'),'nt-lbl-nwks':tr('numWeeks'),
     'nt-lbl-until':tr('untilDate'),'nt-add-btn':tr('addTask'),
+    'inst-prof-title':tr('myProfile'),'inst-lbl-name':tr('name'),
+    'inst-lbl-pin':tr('newPin'),'inst-lbl-pin2':tr('confirmPin'),
+    'inst-lbl-lang':tr('language'),'inst-save-btn':tr('save'),
+    'inst-wd-title':tr('workdays'),'inst-wd-btn':tr('saveWorkdays'),
+    'inst-gcat-title':tr('globalCats'),'inst-gcat-hint':tr('globalCatsHint'),
+    'inst-loc-title':tr('locationsList'),'inst-wk-title':tr('weekManage'),
+    'inst-clear-lbl':tr('clearChecks'),'inst-clear-sub':tr('clearSub'),'inst-clear-btn':tr('clearBtn'),
   };
   Object.entries(m).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
-  // Rep options
+  // Rep options (include daily)
   const rep=document.getElementById('nt-rep');
   if(rep){
-    rep.options[0].text=tr('repOnce');rep.options[1].text=tr('repWeekly');
-    rep.options[2].text=tr('repMonthly');rep.options[3].text=tr('repInfinite');
-    rep.options[4].text=tr('repWeeks');rep.options[5].text=tr('repUntil');
+    const keys=['repOnce','repDaily','repWeekly','repMonthly','repInfinite','repWeeks','repUntil'];
+    [...rep.options].forEach((o,i)=>{if(keys[i])o.text=tr(keys[i]);});
   }
-  // Start week
   const sw=document.getElementById('nt-wk');
-  if(sw){sw.options[0].text=tr('thisWeek');sw.options[1].text=tr('nextWeek');sw.options[2].text=tr('in2weeks');}
-  // Interval options
+  if(sw){if(sw.options[0])sw.options[0].text=tr('thisWeek');if(sw.options[1])sw.options[1].text=tr('nextWeek');if(sw.options[2])sw.options[2].text=tr('in2weeks');}
   const iv=document.getElementById('nt-interval');
-  if(iv){
-    iv.options[0].text=tr('interval1');iv.options[1].text=tr('interval2');
-    iv.options[2].text=tr('interval3');iv.options[3].text=tr('interval4');
-    iv.options[4].text=tr('interval6');iv.options[5].text=tr('interval12');
-  }
+  if(iv){[1,2,3,4,6,12].forEach((v,i)=>{if(iv.options[i])iv.options[i].text=tr('interval'+v);});}
 }
 
 async function init(){
@@ -1187,7 +1192,7 @@ function mTab(n){
   if(n==='plan')renderPlan();
   if(n==='recipe'){renderRecSels();renderRcList();}
   if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();}
-  if(n==='inst'){renderLocList();loadInstForm();}
+  if(n==='inst'){renderGlobalCatList();renderLocList();loadInstForm();}
 }
 
 function renderMgrWeek(){
@@ -1290,32 +1295,22 @@ function setTaskType(type){
   ['fixed','periodic','extra'].forEach(t=>{
     document.getElementById('nt-type-'+t)?.classList.toggle('on',t===type);
   });
-  document.getElementById('nt-cat-wrap').style.display=type==='fixed'?'block':'none';
+  document.getElementById('nt-cat-wrap').style.display='block';
   document.getElementById('nt-interval-wrap').style.display=type==='periodic'?'block':'none';
   document.getElementById('nt-extra-wrap').style.display=type==='extra'?'block':'none';
 }
 
 function renderTaskForm(){
-  updateTaskFormLabels();
-  // Loc pills
+  updateManagerLabels();
   const lc=document.getElementById('nt-locs');
   if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${l.name}</div>`).join('');
-  // Days pills for extra
   const dc=document.getElementById('nt-days');
   if(dc)dc.innerHTML=dayArr().map((d,i)=>`<div class="cpill" id="ntd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
-  // Category dropdown - populated on loc click
-  updateNtCats();
-  setTaskType(newTaskType);
+  updateNtCats();setTaskType(newTaskType);
 }
 
 function ntLocClick(el,lid){
-  if(newTaskType==='fixed'){
-    // Single select for fixed tasks
-    document.querySelectorAll('#nt-locs .cpill').forEach(p=>p.classList.remove('on'));
-    el.classList.add('on');
-  } else {
-    el.classList.toggle('on');
-  }
+  el.classList.toggle('on');
   updateNtCats();
 }
 
@@ -1323,10 +1318,8 @@ function updateNtCats(){
   const sel=document.getElementById('nt-cat');if(!sel)return;
   const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
   let allCats=[];
-  selLocs.forEach(lid=>{
-    const cats=locCats(lid);
-    cats.forEach(c=>{if(!allCats.includes(c))allCats.push(c);});
-  });
+  if(selLocs.length){selLocs.forEach(lid=>{locCats(lid).forEach(c=>{if(!allCats.includes(c))allCats.push(c);});});}
+  else{allCats=D.globalCats.map(gc=>gc.name);}
   sel.innerHTML=`<option value="Algemeen">${tr('general')}</option>`+allCats.map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
@@ -1341,34 +1334,35 @@ async function addUnifiedTask(){
   const pt=document.getElementById('nt-pt').value.trim();
   if(!nl)return;
   const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
-  if(!selLocs.length){alert(tr('selectMinOne'));return;}
+  if(!selLocs.length){alert(tr('selectMinLoc'));return;}
+  const cat=document.getElementById('nt-cat').value||'Algemeen';
 
   if(newTaskType==='fixed'){
-    const cat=document.getElementById('nt-cat').value;
-    const loc=selLocs[0];
-    await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
-    await logChange(`${tr('fixedTasks')}: "${nl}"`);
+    for(const loc of selLocs){
+      await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,category:cat,text_nl:nl,text_pt:pt||nl});
+    }
+    await logChange(`${tr('typeFixed')}: "${nl}"`);
   } else if(newTaskType==='periodic'){
     const interval=parseInt(document.getElementById('nt-interval').value)||1;
-    await sb.from('monthly_tasks').insert({household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval});
-    await logChange(`${tr('periodicTasks')}: "${nl}"`);
+    await sb.from('monthly_tasks').insert({household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat});
+    await logChange(`${tr('typePeriodic')}: "${nl}"`);
   } else {
-    // Extra
     const daysSelected=[...document.querySelectorAll('#nt-days .cpill.on')].map(el=>parseInt(el.id.replace('ntd-','')));
-    if(!daysSelected.length){alert(tr('selectMinOne'));return;}
+    if(!daysSelected.length){alert(tr('selectMinDay'));return;}
     const rep=document.getElementById('nt-rep').value;
     const sOff=parseInt(document.getElementById('nt-wk').value);
     const wks=[];
     if(rep==='once'){wks.push(wkey(sOff));}
+    else if(rep==='daily'){for(let i=0;i<90;i++){const w=wkey(sOff+Math.floor(i/7));if(!wks.includes(w))wks.push(w);}}
     else if(rep==='weekly'){for(let i=0;i<52;i++)wks.push(wkey(sOff+i));}
     else if(rep==='monthly'){for(let i=0;i<12;i++)wks.push(wkey(sOff+i*4));}
     else if(rep==='infinite'){for(let i=0;i<260;i++)wks.push(wkey(sOff+i));}
     else if(rep==='weeks'){const n=parseInt(document.getElementById('nt-wks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
     else if(rep==='until'){const ud=document.getElementById('nt-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>260)break;wks.push(w);o++;}}
     const ins=[];
-    for(const loc of selLocs)for(const di of daysSelected)for(const wk of wks)ins.push({household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl});
+    for(const loc of selLocs)for(const di of daysSelected)for(const wk of wks)ins.push({household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl,category:cat});
     for(let i=0;i<ins.length;i+=500)await sb.from('extra_tasks').insert(ins.slice(i,i+500));
-    await logChange(`${tr('extraTasks')}: "${nl}" (${rep})`);
+    await logChange(`${tr('typeExtra')}: "${nl}" (${rep})`);
   }
 
   // Reset form
@@ -1404,25 +1398,27 @@ function renderFixedList(){
 function renderPeriodicList(){
   const el=document.getElementById('periodic-list');if(!el)return;
   if(!D.periodic.length){el.innerHTML=`<div class="empty">${tr('noPeriodic')}</div>`;return;}
+  // Group per location: a task can appear under multiple locations
   const byLoc={};
   D.periodic.forEach(pt=>{
-    const lids=(pt.location_ids&&pt.location_ids.length)?pt.location_ids:[pt.location_id||'none'];
-    if(lids.length>1){if(!byLoc['diverse'])byLoc['diverse']=[];byLoc['diverse'].push(pt);}
-    else{const lid=lids[0]||'none';if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(pt);}
+    const lids=(pt.location_ids&&pt.location_ids.length)?pt.location_ids:[pt.location_id].filter(Boolean);
+    if(!lids.length){if(!byLoc['none'])byLoc['none']=[];if(!byLoc['none'].find(x=>x.id===pt.id))byLoc['none'].push(pt);}
+    else{lids.forEach(lid=>{if(!byLoc[lid])byLoc[lid]=[];if(!byLoc[lid].find(x=>x.id===pt.id))byLoc[lid].push(pt);});}
   });
   let html='';
-  Object.entries(byLoc).forEach(([lid,tasks])=>{
-    const isDiverse=lid==='diverse';
-    const loc=isDiverse?null:D.locs.find(l=>l.id===lid);
-    const locLabel=isDiverse?tr('diverseLocs'):(loc?loc.name:tr('diverseLocs'));
-    const locCol=isDiverse?'#8a7e74':(loc?loc.color:'#8a7e74');
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${locCol}"><span class="loc-section-name">${locLabel}</span></div><div class="loc-section-body">`;
+  D.locs.forEach(loc=>{
+    const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
     tasks.forEach(t=>{
-      const due=isPeriodicDue(t);
-      html+=`<div class="task-row${due?' monthly-due-row':''}" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span>${due?`<span class="badge-interval">${tr('nowDue')}</span>`:''}</div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
+      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span></div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
     });
     html+='</div></div>';
   });
+  if(byLoc['none']){
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#8a7e74"><span class="loc-section-name">${tr('general')}</span></div><div class="loc-section-body">`;
+    byLoc['none'].forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span></div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
+    html+='</div></div>';
+  }
   el.innerHTML=html;
 }
 
@@ -1430,15 +1426,24 @@ function renderExList(){
   const el=document.getElementById('ex-list');if(!el)return;
   const wk=wkey(wOff);const up=D.extras.filter(e=>e.week_key>=wk);
   if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noExtras')}</div>`;return;}
-  const gr={};up.forEach(e=>{if(!gr[e.text_nl])gr[e.text_nl]=[];gr[e.text_nl].push(e);});
+  // Group by location
+  const byLoc={};
+  up.forEach(e=>{const lid=e.location_id||'none';if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(e);});
   let html='';
-  Object.entries(gr).forEach(([txt,ts])=>{
-    const wks=ts.map(x=>x.week_key).sort();
-    const lns=[...new Set(ts.map(e=>locName(e.location_id)))].join(', ');
-    const dns=[...new Set(ts.map(e=>dayArr()[e.day_index]))].join(', ');
-    html+=`<div class="extra-bubble"><div class="extra-bubble-lbl">${tr('extra')}</div><div class="extra-bubble-txt">${txt}</div><div class="extra-bubble-meta">${lns} &middot; ${dns} &middot; ${ts.length>1?`${wks[0]} t/m ${wks[wks.length-1]} (${ts.length}&times;)`:wks[0]}</div><button class="extra-bubble-del" onclick="delExGr(${JSON.stringify(ts.map(x=>x.id))})">${tr('delete')}</button></div>`;
+  D.locs.forEach(loc=>{
+    const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span></div><div class="loc-section-body">`;
+    // Sub-group by text_nl
+    const gr={};tasks.forEach(e=>{if(!gr[e.text_nl])gr[e.text_nl]=[];gr[e.text_nl].push(e);});
+    Object.entries(gr).forEach(([txt,ts])=>{
+      const wks=ts.map(x=>x.week_key).sort();
+      const dns=[...new Set(ts.map(e=>dayArr()[e.day_index]))].join(', ');
+      const allIds=ts.map(x=>x.id);
+      html+=`<div style="padding:6px 4px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:6px"><div style="flex:1"><div class="task-txt">${txt}</div><div style="font-size:11px;color:var(--muted)">${dns} · ${ts.length>1?`${wks[0]} – ${wks[wks.length-1]} (${ts.length}×)`:wks[0]}</div></div><button class="btn-edit" onclick="openEdit('${ts[0].id}','extra','${esc(txt)}','${esc(ts[0].text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delExGr(${JSON.stringify(allIds)})">&#10005;</button></div>`;
+    });
+    html+='</div></div>';
   });
-  el.innerHTML=html;
+  el.innerHTML=html||`<div class="empty">${tr('noExtras')}</div>`;
 }
 
 async function delFixed(id){if(!confirm(tr('confirmDelete')))return;await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
@@ -1480,58 +1485,59 @@ function openEdit(id,type,nl,pt,interval){
   document.getElementById('edit-nl').value=nl;
   document.getElementById('edit-pt').value=pt;
   document.getElementById('edit-modal-title').textContent=type==='periodic'?tr('editPeriodic'):type==='extra'?tr('editExtra'):tr('editTask');
-  // Scope for extra
   const sw=document.getElementById('edit-scope-wrap');if(sw)sw.style.display=type==='extra'?'block':'none';
   document.getElementById('edit-scope-lbl').textContent=tr('changeFor');
   document.getElementById('scope-one').textContent=tr('onlyThisWeek');
   document.getElementById('scope-all').textContent=tr('allWeeks');
-  // Interval for periodic
-  const iw=document.getElementById('edit-interval-wrap');
-  if(iw){iw.style.display=type==='periodic'?'block':'none';if(interval&&type==='periodic'){const sel=document.getElementById('edit-interval');if(sel)sel.value=interval;}}
-  // Location for fixed
+  // Fixed: location pills + category
   const lw=document.getElementById('edit-loc-wrap');
   if(lw){
     lw.style.display=type==='fixed'?'block':'none';
     if(type==='fixed'){
       const task=D.tasks.find(t=>t.id===id);
-      const curLid=task?.location_id;
-      const curCat=task?.category||'Algemeen';
+      const curLid=task?.location_id;const curCat=task?.category||'Algemeen';
       document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${l.id===curLid?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
-      updateEditCats(curLid,curCat);
+      updateEditCats('fixed',curLid,curCat);
     }
   }
-  editScope='one';setScope('one');
-  // Locs for periodic
-  const elocs=document.getElementById('edit-locs');
-  const deleteBtn=document.getElementById('edit-delete-btn');
-  if(elocs){
+  // Periodic: interval + locs + category
+  const iw=document.getElementById('edit-interval-wrap');
+  if(iw){
+    iw.style.display=type==='periodic'?'block':'none';
     if(type==='periodic'){
+      if(interval){const sel=document.getElementById('edit-interval');if(sel)sel.value=interval;}
       const task=D.periodic.find(p=>p.id===id);
       const curLids=(task?.location_ids)||[];
-      elocs.innerHTML=D.locs.map(l=>`<div class="cpill${curLids.includes(l.id)?' on':''}" id="eloc-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
-    } else {
-      elocs.innerHTML='';
+      document.getElementById('edit-locs').innerHTML=D.locs.map(l=>`<div class="cpill${curLids.includes(l.id)?' on':''}" id="eloc-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
+      updateEditCats('periodic',curLids[0],task?.category);
     }
   }
-  // Button labels
+  // Extra: category
+  const ew=document.getElementById('edit-extra-cat-wrap');
+  if(ew){
+    ew.style.display=type==='extra'?'block':'none';
+    if(type==='extra'){
+      const task=D.extras.find(e=>e.id===id);
+      updateEditCats('extra',task?.location_id,task?.category);
+    }
+  }
   document.getElementById('edit-save-btn').textContent=tr('save');
   document.getElementById('edit-cancel-btn').textContent=tr('cancel');
-  if(deleteBtn){
-    deleteBtn.style.display=(type==='periodic'||type==='extra'||type==='fixed')?'flex':'none';
-    deleteBtn.textContent=tr('delete');
-  }
+  const deleteBtn=document.getElementById('edit-delete-btn');
+  if(deleteBtn){deleteBtn.style.display='flex';deleteBtn.textContent=tr('delete');}
+  editScope='one';setScope('one');
   document.getElementById('task-modal').classList.add('open');
 }
 
 function editLocClick(el,lid){
   document.querySelectorAll('#edit-loc-pills .cpill').forEach(p=>p.classList.remove('on'));
-  el.classList.add('on');
-  updateEditCats(lid);
+  el.classList.add('on');updateEditCats('fixed',lid);
 }
 
-function updateEditCats(lid,curCat){
-  const sel=document.getElementById('edit-cat');if(!sel)return;
-  const cats=locCats(lid);
+function updateEditCats(type,lid,curCat){
+  const selId=type==='fixed'?'edit-cat':type==='periodic'?'edit-cat-p':'edit-cat-e';
+  const sel=document.getElementById(selId);if(!sel)return;
+  const cats=lid?locCats(lid):D.globalCats.map(gc=>gc.name);
   sel.innerHTML=`<option value="Algemeen">${tr('general')}</option>`+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
   if(curCat)sel.value=curCat;
 }
@@ -1557,16 +1563,18 @@ async function saveEdit(){
   const pt=document.getElementById('edit-pt').value.trim();
   if(!nl)return;
   if(type==='extra'){
+    const cat=document.getElementById('edit-cat-e')?.value||'Algemeen';
     if(editScope==='one'){
-      await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl}).eq('id',id);
+      await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl,category:cat}).eq('id',id);
     } else {
       const orig=D.extras.find(e=>e.id===id);
-      if(orig)await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl}).eq('text_nl',orig.text_nl).eq('household_id',HID);
+      if(orig)await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl,category:cat}).eq('text_nl',orig.text_nl).eq('household_id',HID);
     }
   } else if(type==='periodic'){
     const interval=parseInt(document.getElementById('edit-interval').value)||1;
+    const cat=document.getElementById('edit-cat-p')?.value||'Algemeen';
     const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
-    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null}).eq('id',id);
+    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat}).eq('id',id);
   } else {
     // Fixed - now with location and category
     const selLoc=[...document.querySelectorAll('#edit-loc-pills .cpill.on')].map(el=>el.id.replace('elp-',''));
@@ -1581,13 +1589,40 @@ async function saveEdit(){
   closeModal();
 }
 
+// ═══════════════ GLOBAL CATEGORIES ═══════════════
+function renderGlobalCatList(){
+  const el=document.getElementById('gcat-list');if(!el)return;
+  const title=document.getElementById('inst-gcat-title');if(title)title.textContent=tr('globalCats');
+  const hint=document.getElementById('inst-gcat-hint');if(hint)hint.textContent=tr('globalCatsHint');
+  const inp=document.getElementById('new-gcat');if(inp)inp.placeholder=tr('newCatPlaceholder');
+  if(!D.globalCats.length){el.innerHTML=`<div class="empty" style="font-size:12px;padding:4px 0">${tr('noFixed')}</div>`;return;}
+  el.innerHTML=D.globalCats.map(gc=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border)"><span style="font-size:13px;flex:1">${gc.name}</span><button class="btn-del" onclick="delGlobalCat('${gc.id}')">&#10005;</button></div>`).join('');
+}
+
+async function addGlobalCat(){
+  const inp=document.getElementById('new-gcat');
+  const name=inp?.value?.trim();if(!name)return;
+  const{error}=await sb.from('global_categories').insert({household_id:HID,name});
+  if(error){alert('Fout: '+error.message);return;}
+  if(inp)inp.value='';
+  await loadAll();renderGlobalCatList();doFlash('gcat-flash');
+}
+
+async function delGlobalCat(id){
+  await sb.from('global_categories').delete().eq('id',id);
+  await loadAll();renderGlobalCatList();
+}
+
 // ═══════════════ LOCATIONS (FIX + EDIT) ═══════════════
 function renderLocList(){
   const el=document.getElementById('loc-list');if(!el)return;
   if(!D.locs.length){el.innerHTML=`<div class="empty">${tr('noTasks')}</div>`;return;}
   el.innerHTML=D.locs.map(l=>{
-    const cats=(l.categories||[]).join(', ')||tr('general');
-    return `<div class="loc-edit-row"><div class="loc-dot" style="background:${l.color}"></div><div style="flex:1"><span class="task-txt">${l.name}</span><div class="loc-cats">${cats}</div></div><button class="btn-edit" onclick="openLocEdit('${l.id}')">&#9998;</button><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`;
+    const cats=l.categories||[];
+    const catHtml=cats.length
+      ? cats.map(c=>`<span style="display:inline-block;background:${l.color}20;color:${l.color};border:1px solid ${l.color}40;border-radius:100px;font-size:10px;padding:1px 7px;margin:2px 2px 0 0">${c}</span>`).join('')
+      : `<span style="font-size:10px;color:var(--muted);font-style:italic">${tr('general')}</span>`;
+    return `<div class="loc-edit-row"><div class="loc-dot" style="background:${l.color}"></div><div style="flex:1"><span class="task-txt">${l.name}</span><div style="margin-top:3px">${catHtml}</div></div><button class="btn-edit" onclick="openLocEdit('${l.id}')">&#9998;</button><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`;
   }).join('');
 }
 
@@ -1596,9 +1631,8 @@ async function addLoc(){
   const color=document.getElementById('new-loc-col').value;
   if(!name)return;
   const mo=Math.max(0,...D.locs.map(l=>l.sort_order||0));
-  const ins={household_id:HID,name,color,sort_order:mo+1};
-  const {error}=await sb.from('locations').insert(ins);
-  if(error){console.error('Location insert error:',error);alert('Fout bij opslaan: '+error.message);return;}
+  const{error}=await sb.from('locations').insert({household_id:HID,name,color,sort_order:mo+1,categories:[]});
+  if(error){alert('Fout bij opslaan: '+error.message);return;}
   document.getElementById('new-loc').value='';
   await loadAll();renderLocList();
 }
@@ -1612,40 +1646,30 @@ async function delLoc(id){
   await loadAll();renderLocList();renderMgrWeek();
 }
 
-// Location edit modal
+// Location edit modal — uses global category pills
 function openLocEdit(id){
   const loc=D.locs.find(l=>l.id===id);if(!loc)return;
   document.getElementById('loc-edit-id').value=id;
   document.getElementById('loc-edit-name').value=loc.name;
   document.getElementById('loc-edit-color').value=loc.color||'#C8722A';
   document.getElementById('loc-modal-title').textContent=tr('editLoc');
-  document.getElementById('loc-cat-title').textContent=tr('catRooms');
-  document.getElementById('loc-new-cat').placeholder=tr('catPlaceholder');
+  document.getElementById('loc-cat-title').textContent=tr('catForLoc');
+  document.getElementById('loc-cat-hint').textContent=tr('catHint');
   document.getElementById('loc-save-btn').textContent=tr('save');
   document.getElementById('loc-cancel-btn').textContent=tr('cancel');
-  locEditCats=[...(loc.categories||[])];
-  renderLocCatList();
+  const locSelectedCats=loc.categories||[];
+  const pills=document.getElementById('loc-cat-pills');
+  if(pills){
+    if(!D.globalCats.length){
+      pills.innerHTML='<div style="font-size:12px;color:var(--muted);font-style:italic;padding:6px 0">Voeg eerst categorieën toe in het onderdeel "Categorieën" hierboven.</div>';
+    } else {
+      pills.innerHTML=D.globalCats.map(gc=>{
+        const isOn=locSelectedCats.includes(gc.name);
+        return '<div class="cpill'+(isOn?' on':'')+'" onclick="this.classList.toggle(\'on\')" data-cat="'+gc.name+'">'+gc.name+'</div>';
+      }).join('');
+    }
+  }
   document.getElementById('loc-modal').classList.add('open');
-}
-
-function renderLocCatList(){
-  const el=document.getElementById('loc-cat-list');if(!el)return;
-  if(!locEditCats.length){el.innerHTML=`<div class="empty" style="padding:4px 0">${tr('general')}</div>`;return;}
-  el.innerHTML=locEditCats.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0"><span style="font-size:13px;flex:1">${c}</span><button onclick="removeLocCat(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px">&#10005;</button></div>`).join('');
-}
-
-function addLocCat(){
-  const inp=document.getElementById('loc-new-cat');
-  const val=inp.value.trim();
-  if(!val)return;
-  if(!locEditCats.includes(val))locEditCats.push(val);
-  inp.value='';
-  renderLocCatList();
-}
-
-function removeLocCat(idx){
-  locEditCats.splice(idx,1);
-  renderLocCatList();
 }
 
 async function saveLocEdit(){
@@ -1653,11 +1677,10 @@ async function saveLocEdit(){
   const name=document.getElementById('loc-edit-name').value.trim();
   const color=document.getElementById('loc-edit-color').value;
   if(!name)return;
-  const upd={name,color,categories:locEditCats};
-  const {error}=await sb.from('locations').update(upd).eq('id',id);
-  if(error){console.error('Location update error:',error);alert('Fout bij opslaan: '+error.message);return;}
-  await loadAll();renderLocList();renderMgrWeek();
-  closeLocModal();
+  const selCats=[...document.querySelectorAll('#loc-cat-pills .cpill.on')].map(el=>el.getAttribute('data-cat')||el.textContent.trim());
+  const{error}=await sb.from('locations').update({name,color,categories:selCats}).eq('id',id);
+  if(error){alert('Fout bij opslaan: '+error.message);return;}
+  await loadAll();renderLocList();renderMgrWeek();closeLocModal();
 }
 
 function closeLocModal(){document.getElementById('loc-modal').classList.remove('open');}
