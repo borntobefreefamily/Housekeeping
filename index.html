@@ -604,6 +604,7 @@ const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[]};
+const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
 
@@ -1608,8 +1609,9 @@ function renderExList(){
       const wks=ts.map(x=>x.week_key).sort();
       const dns=[...new Set(ts.map(e=>dayArr()[e.day_index]))].join(', ');
       const dateStr=ts.length>1?`${wks[0]} – ${wks[wks.length-1]} (${ts.length}×)`:wks[0];
-      const idsAttr=ts.map(x=>x.id).join(',');
-      html+=`<div class="task-row" style="margin-bottom:4px"><div style="flex:1"><div class="task-txt">${txt}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dns} &middot; ${dateStr}</div></div><button class="btn-edit" onclick="openEdit('${ts[0].id}','extra','${esc(txt)}','${esc(ts[0].text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delExGr(this.dataset.ids.split(','))" data-ids="${idsAttr}">&#10005;</button></div>`;
+      const mapKey=loc.id+'_'+txt.slice(0,20).replace(/\W/g,'_');
+      exIdMap[mapKey]=ts.map(x=>x.id);
+      html+=`<div class="task-row" style="margin-bottom:4px"><div style="flex:1"><div class="task-txt">${txt}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dns} &middot; ${dateStr}</div></div><button class="btn-edit" onclick="openEdit('${ts[0].id}','extra','${esc(txt)}','${esc(ts[0].text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delExGr(exIdMap['${mapKey}'])">&#10005;</button></div>`;
     });
     html+='</div></div>';
   });
@@ -1752,7 +1754,15 @@ async function deleteFromEdit(){
   const type=document.getElementById('edit-task-type').value;
   if(!confirm(tr('confirmDelete')))return;
   if(type==='periodic'){await sb.from('monthly_tasks').delete().eq('id',id);}
-  else if(type==='extra'){await sb.from('extra_tasks').delete().eq('id',id);}
+  else if(type==='extra'){
+    // Delete all entries with same text + location (the whole group)
+    const orig=D.extras.find(e=>e.id===id);
+    if(orig){
+      await sb.from('extra_tasks').delete().eq('text_nl',orig.text_nl).eq('location_id',orig.location_id).eq('household_id',HID);
+    } else {
+      await sb.from('extra_tasks').delete().eq('id',id);
+    }
+  }
   else{await sb.from('fixed_tasks').delete().eq('id',id);}
   await logChange(tr('delete'));
   await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();renderExList();
