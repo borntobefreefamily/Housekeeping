@@ -748,14 +748,16 @@ function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.
 
 function wlbl(off){
   if(off===0)return tr('thisWeek');
+  // Show Sun-Sat range (week starts Sunday visually)
   const mon=new Date();mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+off*7);
-  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const sun=new Date(mon);sun.setDate(mon.getDate()-1); // Sunday before Monday
+  const sat=new Date(mon);sat.setDate(mon.getDate()+5); // Saturday
   const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
-  const md=mon.getDate(),mm=ms[mon.getMonth()];
   const sd=sun.getDate(),sm=ms[sun.getMonth()];
-  const yr=sun.getFullYear();
-  if(mon.getMonth()===sun.getMonth())return `${md} – ${sd} ${mm} ${yr}`;
-  return `${md} ${mm} – ${sd} ${sm} ${yr}`;
+  const ed=sat.getDate(),em=ms[sat.getMonth()];
+  const yr=sat.getFullYear();
+  if(sun.getMonth()===sat.getMonth())return `${sd} – ${ed} ${sm} ${yr}`;
+  return `${sd} ${sm} – ${ed} ${em} ${yr}`;
 }
 
 function ucol(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '#7A5C3E';const n=u.name.toLowerCase();if(n.includes('tijn'))return '#2c5f8a';if(n.includes('suzan'))return '#4A6741';return '#7A5C3E';}
@@ -1189,8 +1191,17 @@ function renderWorkerRecipes(){
   Object.entries(lbMap).forEach(([id,txt])=>{const e=document.getElementById(id);if(e)e.textContent=txt;});
   const wd=document.getElementById('w-rc-day');
   if(wd)wd.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
-  const wrcw0=document.getElementById('wrc-w0');if(wrcw0)wrcw0.textContent=tr('thisWeek');
-  const wrcw1=document.getElementById('wrc-w1');if(wrcw1)wrcw1.textContent=tr('nextWeek');
+  // Fill week dropdown properly
+  const wsel=document.getElementById('w-rc-wk');
+  if(wsel){
+    wsel.innerHTML='';
+    for(let i=0;i<4;i++){
+      const opt=document.createElement('option');
+      opt.value=i;
+      opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(i);
+      wsel.appendChild(opt);
+    }
+  }
   const np=document.getElementById('w-rc-name');if(np)np.placeholder=tr('dish');
   renderWorkerRcList();
 }
@@ -1198,9 +1209,22 @@ function renderWorkerRecipes(){
 function renderWorkerRcList(){
   const el=document.getElementById('w-rc-list');if(!el)return;
   const wk=wkey(wOff);
-  const up=D.recipes.filter(r=>r.week_key>=wk);
-  if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noTasks')}</div>`;return;}
-  el.innerHTML=`<div class="sec-title">${tr('recipes')}</div>`+up.map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span></div>`).join('');
+  const thisWkRecs=D.recipes.filter(r=>r.week_key===wk);
+  const futureRecs=D.recipes.filter(r=>r.week_key>wk);
+  let html='';
+  if(thisWkRecs.length){
+    html+=`<div class="sec-title">${tr('thisWeek')}</div>`;
+    html+=thisWkRecs.sort((a,b)=>a.day_index-b.day_index).map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span></div>`).join('');
+  }
+  if(futureRecs.length){
+    const byWk={};futureRecs.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
+    Object.keys(byWk).sort().forEach(w=>{
+      html+=`<div class="sec-title" style="margin-top:.75rem">${w}</div>`;
+      html+=byWk[w].sort((a,b)=>a.day_index-b.day_index).map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span></div>`).join('');
+    });
+  }
+  if(!html)html=`<div class="empty" style="margin-top:.5rem">${tr('noRecipes')}</div>`;
+  el.innerHTML=html;
 }
 
 async function addRecipeWorker(){
@@ -1629,7 +1653,19 @@ function renderRecSels(){
   const ds=document.getElementById('rc-day');
   if(ds)ds.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const rn=document.getElementById('rc-name');if(rn)rn.placeholder=tr('dish');
+  // Fill week dropdown
+  const wsel=document.getElementById('rc-wk');
+  if(wsel){
+    wsel.innerHTML='';
+    for(let i=0;i<4;i++){
+      const opt=document.createElement('option');
+      opt.value=i;
+      opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(i);
+      wsel.appendChild(opt);
+    }
+  }
 }
+
 async function addRecipe(){
   const name=document.getElementById('rc-name').value.trim();
   const url=document.getElementById('rc-url').value.trim();
@@ -1639,14 +1675,35 @@ async function addRecipe(){
   await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url:url||null});
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
-  await loadAll();renderRcList();mTab('week');
+  await loadAll();renderRcList();
 }
+
 async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await loadAll();renderRcList();renderMgrWeek();}
+
 function renderRcList(){
   const el=document.getElementById('rc-list');if(!el)return;
-  const wk=wkey(wOff);const up=D.recipes.filter(r=>r.week_key>=wk);
-  if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noRecipes')}</div>`;return;}
-  el.innerHTML=`<div class="sec-title">${tr('plannedRecipes')}</div>`+up.map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]} &middot; ${r.week_key}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+  const wk=wkey(wOff);
+  // Show only recipes for current wOff week
+  const thisWkRecs=D.recipes.filter(r=>r.week_key===wk);
+  // Group future weeks separately
+  const futureRecs=D.recipes.filter(r=>r.week_key>wk);
+  let html='';
+  // Current week header
+  html+=`<div class="sec-title">${tr('thisWeek')} (${wlbl(wOff)==='Deze week'||wlbl(wOff)==='Esta semana'?wk:wlbl(wOff)})</div>`;
+  if(thisWkRecs.length){
+    html+=thisWkRecs.sort((a,b)=>a.day_index-b.day_index).map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+  } else {
+    html+=`<div class="empty" style="margin-bottom:.5rem">${tr('noRecipes')}</div>`;
+  }
+  // Future weeks
+  if(futureRecs.length){
+    const byWk={};futureRecs.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
+    Object.keys(byWk).sort().forEach(w=>{
+      html+=`<div class="sec-title" style="margin-top:.75rem">${w}</div>`;
+      html+=byWk[w].sort((a,b)=>a.day_index-b.day_index).map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+    });
+  }
+  el.innerHTML=html;
 }
 
 // ═══════════════ TASK EDIT MODAL ═══════════════
