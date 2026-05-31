@@ -759,24 +759,25 @@ function isPeriodicDue(task){
 
 function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'maanden'}`;}
 
+async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
   const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc]=await Promise.all([
-    sb.from('users').select('*').eq('household_id',HID),
-    sb.from('locations').select('*').eq('household_id',HID).order('sort_order'),
-    sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order'),
-    sb.from('week_schedule').select('*').eq('household_id',HID),
-    sb.from('extra_tasks').select('*').eq('household_id',HID),
-    sb.from('task_checks').select('*').eq('household_id',HID),
-    sb.from('skipped_tasks').select('*').eq('household_id',HID),
-    sb.from('day_notes').select('*').eq('household_id',HID),
-    sb.from('recipes').select('*').eq('household_id',HID),
-    sb.from('households').select('workdays').eq('id',HID),
-    sb.from('day_focus_defaults').select('*').eq('household_id',HID),
-    sb.from('day_focus').select('*').eq('household_id',HID),
-    sb.from('monthly_tasks').select('*').eq('household_id',HID).order('interval_months'),
-    sb.from('monthly_checks').select('*').eq('household_id',HID),
-    sb.from('change_log').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(50),
-    sb.from('global_categories').select('*').eq('household_id',HID).order('name').catch(()=>({data:[]})),
+    safeQ(sb.from('users').select('*').eq('household_id',HID)),
+    safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
+    safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
+    safeQ(sb.from('week_schedule').select('*').eq('household_id',HID)),
+    safeQ(sb.from('extra_tasks').select('*').eq('household_id',HID)),
+    safeQ(sb.from('task_checks').select('*').eq('household_id',HID)),
+    safeQ(sb.from('skipped_tasks').select('*').eq('household_id',HID)),
+    safeQ(sb.from('day_notes').select('*').eq('household_id',HID)),
+    safeQ(sb.from('recipes').select('*').eq('household_id',HID)),
+    safeQ(sb.from('households').select('workdays').eq('id',HID)),
+    safeQ(sb.from('day_focus_defaults').select('*').eq('household_id',HID)),
+    safeQ(sb.from('day_focus').select('*').eq('household_id',HID)),
+    safeQ(sb.from('monthly_tasks').select('*').eq('household_id',HID).order('interval_months')),
+    safeQ(sb.from('monthly_checks').select('*').eq('household_id',HID)),
+    safeQ(sb.from('change_log').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(50)),
+    safeQ(sb.from('global_categories').select('*').eq('household_id',HID).order('name')),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
