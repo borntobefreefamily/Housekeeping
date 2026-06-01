@@ -1042,14 +1042,7 @@ function renderDayBody(di,wk,isMgr){
   const hasDaily=schedIds.includes(DAILY_ID);
   const hasBuiten=schedIds.includes(BUITEN_ID);
   const extras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
-  // Find recipes for this specific day (match week_key within ±6 days to handle Sunday boundary)
-  const wkDate=new Date(wk);
-  const recs=D.recipes.filter(r=>{
-    if(r.day_index!==di)return false;
-    const rd=new Date(r.week_key);
-    const diff=Math.abs((rd-wkDate)/(1000*60*60*24));
-    return diff<7;
-  });
+  const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
   // Daily tasks (is_daily=true, no location)
   const dailyTasks=D.tasks.filter(t=>t.is_daily);
   let html='';
@@ -1095,7 +1088,7 @@ function renderDayBody(di,wk,isMgr){
         lb+='</div>';
       });
     });
-    html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:var(--espresso);cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
+    html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#fe7f2d;cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
   }
 
   // 4. Recepten
@@ -1599,7 +1592,7 @@ function renderFixedList(){
   // Daily tasks section
   const dailyTasks=D.tasks.filter(t=>t.is_daily);
   if(dailyTasks.length){
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:var(--espresso)"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-section-count">${dailyTasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#fe7f2d"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-section-count">${dailyTasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
     dailyTasks.forEach(t=>{
       html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
     });
