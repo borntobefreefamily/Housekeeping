@@ -765,17 +765,13 @@ const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
 function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.toISOString().slice(0,10);}
 
 function wlbl(off){
-  if(off===0)return tr('thisWeek');
-  // Show Sun-Sat range (week starts Sunday visually)
+  if(off===wOff)return tr('thisWeek');
+  if(off===wOff+1)return tr('nextWeek');
   const mon=new Date();mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+off*7);
-  const sun=new Date(mon);sun.setDate(mon.getDate()-1); // Sunday before Monday
-  const sat=new Date(mon);sat.setDate(mon.getDate()+5); // Saturday
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
-  const sd=sun.getDate(),sm=ms[sun.getMonth()];
-  const ed=sat.getDate(),em=ms[sat.getMonth()];
-  const yr=sat.getFullYear();
-  if(sun.getMonth()===sat.getMonth())return `${sd} – ${ed} ${sm} ${yr}`;
-  return `${sd} ${sm} – ${ed} ${em} ${yr}`;
+  if(mon.getMonth()===sun.getMonth())return `${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
+  return `${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
 }
 
 function ucol(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '#7A5C3E';const n=u.name.toLowerCase();if(n.includes('tijn'))return '#2c5f8a';if(n.includes('suzan'))return '#4A6741';return '#7A5C3E';}
@@ -1219,8 +1215,8 @@ function renderWorkerRecipes(){
     wsel.innerHTML='';
     for(let i=0;i<4;i++){
       const opt=document.createElement('option');
-      opt.value=i;
-      opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(i);
+      opt.value=wkey(wOff+i);
+      opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(wOff+i);
       wsel.appendChild(opt);
     }
   }
@@ -1252,9 +1248,9 @@ async function addRecipeWorker(){
   const name=document.getElementById('w-rc-name').value.trim();
   const url=document.getElementById('w-rc-url').value.trim();
   const day=parseInt(document.getElementById('w-rc-day').value);
-  const off=parseInt(document.getElementById('w-rc-wk').value);
+  const wk=document.getElementById('w-rc-wk').value;
   if(!name)return;
-  await sb.from('recipes').insert({household_id:HID,week_key:wkey(off),day_index:day,name,url:url||null});
+  await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null});
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('w-rc-name').value='';document.getElementById('w-rc-url').value='';
   await loadAll();renderWorkerRcList();
@@ -1684,14 +1680,13 @@ function renderRecSels(){
   const ds=document.getElementById('rc-day');
   if(ds)ds.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const rn=document.getElementById('rc-name');if(rn)rn.placeholder=tr('dish');
-  // Fill week dropdown
   const wsel=document.getElementById('rc-wk');
   if(wsel){
     wsel.innerHTML='';
     for(let i=0;i<4;i++){
       const opt=document.createElement('option');
-      opt.value=i;
-      opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(i);
+      opt.value=wkey(wOff+i);
+      opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(wOff+i);
       wsel.appendChild(opt);
     }
   }
@@ -1701,18 +1696,15 @@ async function addRecipe(){
   const name=document.getElementById('rc-name').value.trim();
   const url=document.getElementById('rc-url').value.trim();
   const day=parseInt(document.getElementById('rc-day').value);
-  const off=parseInt(document.getElementById('rc-wk').value);
+  const wk=document.getElementById('rc-wk').value;
   if(!name){alert('Vul een gerechtnaam in');return;}
   if(isNaN(day)){alert('Kies een dag');return;}
-  if(isNaN(off)){alert('Kies een week');return;}
-  const wk=wkey(off);
-  console.log('Saving recipe:',{name,day,off,wk,household_id:HID});
+  if(!wk){alert('Kies een week');return;}
   const{data,error}=await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null}).select();
   if(error){alert('Fout bij opslaan recept: '+error.message);console.error(error);return;}
-  console.log('Saved:',data);
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
-  await loadAll();renderRcList();
+  await loadAll();renderRcList();renderMgrWeek();
 }
 
 async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await loadAll();renderRcList();renderMgrWeek();}
