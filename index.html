@@ -76,13 +76,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding:1rem 1.25rem;padding-bottom:calc(1rem + env(safe-area-inset-bottom,0))}
 
 /* PROGRESS */
-.prog-card{background:var(--espresso);border-radius:var(--r);padding:.8rem 1rem;margin-bottom:.875rem}
+.prog-card{background:#1a6b5a;border-radius:var(--r);padding:.8rem 1rem;margin-bottom:.875rem}
 .prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
-.prog-title{font-family:'Fraunces',serif;font-size:13px;color:var(--cream)}
-.prog-count{font-size:12px;color:rgba(253,246,237,.45)}
-.prog-bar{height:5px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
-.prog-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .4s}
-.prog-pct{font-size:11px;color:rgba(253,246,237,.35);margin-top:5px}
+.prog-title{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#fff}
+.prog-count{font-size:13px;font-weight:600;color:rgba(255,255,255,.85)}
+.prog-bar{height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:#fcca46;border-radius:3px;transition:width .4s}
+.prog-pct{font-size:13px;font-weight:600;color:rgba(255,255,255,.7);margin-top:5px}
 
 /* DAY CARD */
 .day-card{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;background:var(--white)}
@@ -95,11 +95,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .day-body.open{display:block}
 
 /* FOCUS BANNER */
-.focus-banner{background:var(--espresso);border-radius:var(--rs);padding:.65rem .9rem;margin-bottom:.75rem;display:flex;align-items:flex-start;gap:8px}
+.focus-banner{background:#233d4d;border-radius:var(--rs);padding:.65rem .9rem;margin-bottom:.75rem;display:flex;align-items:flex-start;gap:8px}
 .focus-inner{flex:1}
-.focus-lbl{font-size:.59rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(253,246,237,.4);margin-bottom:3px}
-.focus-txt{font-family:'Fraunces',serif;font-size:14px;color:var(--cream);line-height:1.3}
-.focus-edit{background:none;border:none;color:rgba(253,246,237,.3);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0;margin-top:1px}
+.focus-lbl{font-size:.59rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:3px}
+.focus-txt{font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:#fff;line-height:1.3}
+.focus-edit{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;padding:2px;flex-shrink:0;margin-top:1px}
 .focus-edit:hover{color:var(--gold)}
 
 /* LOC BLOCK */
@@ -1060,7 +1060,22 @@ function renderDayBody(di,wk,isMgr){
     html+='</div>';
   }
 
-  // Daily basis block — always shown on workdays, grouped by category
+  // 1. Focus vandaag (al gebouwd hierboven)
+
+  // 2. Extra taken
+  extras.forEach(e=>{
+    const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.on;
+    const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
+    const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
+    const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
+    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
+    if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+    if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
+    if(isMgr)html+=`<button onclick="delExtraConfirm('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button>`;
+    html+='</div>';
+  });
+
+  // 3. Dagelijkse basis
   if(dailyTasks.length){
     const done=dailyTasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
     const uid=`daily-${di}`;
@@ -1083,6 +1098,7 @@ function renderDayBody(di,wk,isMgr){
     html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:var(--espresso);cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
   }
 
+  // 4. Recepten
   if(recs.length){
     html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
     recs.forEach(r=>{
@@ -1095,21 +1111,9 @@ function renderDayBody(di,wk,isMgr){
     html+='</div>';
   }
 
+  // 5. Locaties (mainLocs, dan Buiten)
   mainLocs.forEach(sr=>{const loc=D.locs.find(l=>l.id===sr.location_id);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);});
-  if(hasDaily){const loc=D.locs.find(l=>l.id===DAILY_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
   if(hasBuiten){const loc=D.locs.find(l=>l.id===BUITEN_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
-
-  extras.forEach(e=>{
-    const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.on;
-    const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
-    const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
-    const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
-    if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
-    if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
-    if(isMgr)html+=`<button onclick="delExtraConfirm('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button>`;
-    html+='</div>';
-  });
 
   return html;
 }
@@ -1324,12 +1328,16 @@ function saveOpenState(prefix){
   document.querySelectorAll(`[id^="${prefix}"]`).forEach(el=>{if(el.classList.contains('open'))open.push(el.id);});
   return open;
 }
+function saveAllLocStates(){
+  const open=[];
+  document.querySelectorAll('[id^="lb-"]').forEach(el=>{if(el.classList.contains('open'))open.push(el.id);});
+  return open;
+}
 function restoreOpenState(openIds){
   openIds.forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.classList.add('open');
-    // Also update matching chev
-    const chevId=id.replace(/^(wd|md|lb)/,(m)=>m==='wd'?'wdc':m==='md'?'mdc':'lc');
+    const chevId=id.startsWith('lb-')?'lc-'+id.slice(3):id.startsWith('wd')?'wdc'+id.slice(2):'mdc'+id.slice(2);
     const chev=document.getElementById(chevId);
     if(chev)chev.classList.add('open');
   });
@@ -1339,7 +1347,7 @@ function restoreOpenState(openIds){
 function refreshMgrWeek(){
   const wk=wkey(wOff);
   const openDays=saveOpenState('md');
-  const openLocs=saveOpenState('lb-');
+  const openLocs=saveAllLocStates();
   const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   showDays.forEach(di=>{
@@ -1372,7 +1380,7 @@ function refreshMgrWeek(){
 function refreshWorker(){
   const wk=wkey(wOff);
   const openDays=saveOpenState('wd');
-  const openLocs=saveOpenState('lb-');
+  const openLocs=saveAllLocStates();
   const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   allDi.forEach(di=>{
@@ -1927,7 +1935,7 @@ async function delGlobalCat(id){
 }
 
 // ═══════════════ LOCATIONS (FIX + EDIT) ═══════════════
-const LOC_COLORS=['#C8722A','#D4A853','#7A9E5F','#5B8FA8','#9B6B9E','#C45C5C','#4E8B7A','#D4845A','#6B7FA8','#A8855B','#8B6E4E','#5C8B6B','#A85B7A','#7A8B5C','#C4905C','#5B6B8B','#8B7A5C','#6B8B7A','#A87A5B','#7A5B8B'];
+const LOC_COLORS=['#619b8a','#a1c181','#fcca46','#fe7f2d','#233d4d','#6a4c93','#ffffff','#ff1385','#2c7bf1','#7ebeed','#000000','#727271','#fdc2f7','#e63946','#2a9d8f','#e9c46a','#f4a261','#264653','#a8dadc','#457b9d'];
 
 function renderSwatches(containerId,inputId,selectedColor){
   const el=document.getElementById(containerId);if(!el)return;
