@@ -1238,10 +1238,10 @@ function renderWorkerRcList(){
   const byWk={};sorted.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
   let html='';
   Object.keys(byWk).sort().forEach(w=>{
-    const wDate=new Date(w);const ms=MONTHS_SHORT;
-    const sunDate=new Date(wDate);sunDate.setDate(wDate.getDate()-1);
-    const satDate=new Date(wDate);satDate.setDate(wDate.getDate()+5);
-    const lbl=`${sunDate.getDate()} ${ms[sunDate.getMonth()]} – ${satDate.getDate()} ${ms[satDate.getMonth()]} ${satDate.getFullYear()}`;
+    const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
+    const mon=new Date(w+'T12:00:00');
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
     html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span></div>`).join('');
   });
@@ -1337,10 +1337,10 @@ function restoreOpenState(openIds){
 }
 
 // Soft refresh: only update day body contents + progress, keep open state
-function refreshMgrWeek(){
+function refreshMgrWeek(preOpenDays,preOpenLocs){
   const wk=wkey(wOff);
-  const openDays=saveOpenState('md');
-  const openLocs=saveAllLocStates();
+  const openDays=preOpenDays||saveOpenState('md');
+  const openLocs=preOpenLocs||saveAllLocStates();
   const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   showDays.forEach(di=>{
@@ -1370,10 +1370,10 @@ function refreshMgrWeek(){
   restoreOpenState([...openDays,...openLocs]);
 }
 
-function refreshWorker(){
+function refreshWorker(preOpenDays,preOpenLocs){
   const wk=wkey(wOff);
-  const openDays=saveOpenState('wd');
-  const openLocs=saveAllLocStates();
+  const openDays=preOpenDays||saveOpenState('wd');
+  const openLocs=preOpenLocs||saveAllLocStates();
   const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   allDi.forEach(di=>{
@@ -1404,24 +1404,30 @@ function refreshWorker(){
 
 async function togTask(tid,wk,di,mgr){
   const k=tid+'_'+wk+'_'+di;
+  const openDays=saveOpenState(mgr?'md':'wd');
+  const openLocs=saveAllLocStates();
   if(D.checks[k]?.on){await sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();if(mgr)refreshMgrWeek();else refreshWorker();
+  await loadAll();if(mgr)refreshMgrWeek(openDays,openLocs);else refreshWorker(openDays,openLocs);
 }
 
 async function skipTask(tid,wk,di,mgr,type){
   const k=tid+'_'+wk+'_'+di;
+  const openDays=saveOpenState(mgr?'md':'wd');
+  const openLocs=saveAllLocStates();
   if(D.skipped[k]){await sb.from('skipped_tasks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('skipped_tasks').upsert({household_id:HID,task_id:tid,task_type:type||'fixed',week_key:wk,day_index:di,skipped_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();if(mgr)refreshMgrWeek();else refreshWorker();
+  await loadAll();if(mgr)refreshMgrWeek(openDays,openLocs);else refreshWorker(openDays,openLocs);
 }
 
 async function togPeriodic(tid,mgr){
   const now=new Date();const yr=now.getFullYear(),mo=now.getMonth()+1;
+  const openDays=saveOpenState(mgr?'md':'wd');
+  const openLocs=saveAllLocStates();
   const ex=D.pChecks.find(c=>c.task_id===tid&&c.year===yr&&c.month===mo);
   if(ex){await sb.from('monthly_checks').delete().eq('task_id',tid).eq('year',yr).eq('month',mo).eq('household_id',HID);}
   else{await sb.from('monthly_checks').upsert({household_id:HID,task_id:tid,year:yr,month:mo,checked_by:CU?.id,checked_date:now.toISOString().slice(0,10)},{onConflict:'household_id,task_id,year,month'});}
-  await loadAll();if(mgr)refreshMgrWeek();else refreshWorker();
+  await loadAll();if(mgr)refreshMgrWeek(openDays,openLocs);else refreshWorker(openDays,openLocs);
 }
 
 async function saveNote(lid,wk,di,val){
@@ -1721,11 +1727,10 @@ function renderRcList(){
   const byWk={};sorted.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
   let html='';
   Object.keys(byWk).sort().forEach(w=>{
-    const wDate=new Date(w);
-    const ms=MONTHS_SHORT;
-    const sunDate=new Date(wDate);sunDate.setDate(wDate.getDate()-1);
-    const satDate=new Date(wDate);satDate.setDate(wDate.getDate()+5);
-    const lbl=`${sunDate.getDate()} ${ms[sunDate.getMonth()]} – ${satDate.getDate()} ${ms[satDate.getMonth()]} ${satDate.getFullYear()}`;
+    const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
+    const mon=new Date(w+'T12:00:00');
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
     html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
   });
