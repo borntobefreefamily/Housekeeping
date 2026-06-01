@@ -589,6 +589,26 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 </div>
 
+<div class="modal-bg" id="recipe-modal">
+  <div class="modal">
+    <div class="modal-title" id="rc-modal-title">Recept bewerken</div>
+    <input type="hidden" id="rc-edit-id">
+    <label class="flbl" id="rc-edit-lbl1">Gerecht</label>
+    <input class="finput" id="rc-edit-name" type="text">
+    <label class="flbl" id="rc-edit-lbl2">Link (optioneel)</label>
+    <input class="finput" id="rc-edit-url" type="url" placeholder="https://...">
+    <label class="flbl" id="rc-edit-lbl3">Dag</label>
+    <select class="finput" id="rc-edit-day"></select>
+    <label class="flbl" id="rc-edit-lbl4">Week</label>
+    <select class="finput" id="rc-edit-wk"></select>
+    <div style="display:flex;gap:8px;margin-top:.75rem">
+      <button class="save-btn" onclick="saveRecipeEdit()" style="flex:1" id="rc-edit-save-btn">Opslaan</button>
+      <button class="save-btn" onclick="closeRecipeModal()" style="flex:1;background:var(--steam);color:var(--text)" id="rc-edit-cancel-btn">Annuleren</button>
+      <button class="save-btn" onclick="deleteRecipeEdit()" style="flex:1;background:var(--danger)" id="rc-edit-delete-btn">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
 </div>
 <script>
 // Mobile viewport fix — Android Chrome adresbalk telt mee in 100vh
@@ -1064,7 +1084,20 @@ function renderDayBody(di,wk,isMgr){
     html+='</div>';
   });
 
-  // 3. Dagelijkse basis
+  // 3. Recepten
+  if(recs.length){
+    html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
+    recs.forEach(r=>{
+      html+=`<div class="recipe-item">`;
+      if(r.url)html+=`<a href="${r.url}" target="_blank">&#8599; ${r.name}</a>`;
+      else html+=`<span>${r.name}</span>`;
+      html+=`<button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px;flex-shrink:0">&#9998;</button>`;
+      html+=`</div>`;
+    });
+    html+='</div>';
+  }
+
+  // 4. Dagelijkse basis
   if(dailyTasks.length){
     const done=dailyTasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
     const uid=`daily-${di}`;
@@ -1085,19 +1118,6 @@ function renderDayBody(di,wk,isMgr){
       });
     });
     html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#fe7f2d;cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
-  }
-
-  // 4. Recepten
-  if(recs.length){
-    html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
-    recs.forEach(r=>{
-      html+=`<div class="recipe-item">`;
-      if(r.url)html+=`<a href="${r.url}" target="_blank">&#8599; ${r.name}</a>`;
-      else html+=`<span>${r.name}</span>`;
-      if(isMgr)html+=`<button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button>`;
-      html+=`</div>`;
-    });
-    html+='</div>';
   }
 
   // 5. Locaties (mainLocs, dan Buiten)
@@ -1239,7 +1259,7 @@ function renderWorkerRcList(){
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span></div>`).join('');
+    html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`).join('');
   });
   el.innerHTML=html;
 }
@@ -1791,6 +1811,65 @@ async function addRecipe(){
 
 async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await loadAll();renderRcList();renderMgrWeek();}
 
+function openRecipeEdit(id){
+  const r=D.recipes.find(x=>x.id===id);if(!r)return;
+  document.getElementById('rc-edit-id').value=id;
+  document.getElementById('rc-edit-name').value=r.name||'';
+  document.getElementById('rc-edit-url').value=r.url||'';
+  // Day dropdown
+  const dd=document.getElementById('rc-edit-day');
+  dd.innerHTML=dayArr().map((d,i)=>`<option value="${i}"${i===r.day_index?' selected':''}>${d}</option>`).join('');
+  // Week dropdown
+  const wd=document.getElementById('rc-edit-wk');
+  wd.innerHTML='';
+  for(let i=0;i<6;i++){
+    const wk=wkey(wOff+i);
+    const opt=document.createElement('option');
+    opt.value=wk;
+    opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(wOff+i);
+    if(wk===r.week_key)opt.selected=true;
+    wd.appendChild(opt);
+  }
+  // Also add current recipe week if not in list (past week)
+  const existing=[...wd.options].map(o=>o.value);
+  if(!existing.includes(r.week_key)){
+    const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
+    const mon=new Date(r.week_key+'T12:00:00');
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
+    const opt=document.createElement('option');opt.value=r.week_key;opt.textContent=lbl;opt.selected=true;
+    wd.insertBefore(opt,wd.firstChild);
+  }
+  // Labels
+  document.getElementById('rc-modal-title').textContent=tr('editRecipe')||'Recept bewerken';
+  document.getElementById('rc-edit-lbl1').textContent=tr('dish')||'Gerecht';
+  document.getElementById('rc-edit-lbl2').textContent=tr('link')||'Link (optioneel)';
+  document.getElementById('rc-edit-lbl3').textContent=tr('day')||'Dag';
+  document.getElementById('rc-edit-lbl4').textContent=tr('week')||'Week';
+  document.getElementById('rc-edit-save-btn').textContent=tr('save')||'Opslaan';
+  document.getElementById('rc-edit-cancel-btn').textContent=tr('cancel')||'Annuleren';
+  document.getElementById('rc-edit-delete-btn').textContent=tr('delete')||'Verwijderen';
+  document.getElementById('recipe-modal').classList.add('open');
+}
+async function saveRecipeEdit(){
+  const id=document.getElementById('rc-edit-id').value;
+  const name=document.getElementById('rc-edit-name').value.trim();
+  const url=document.getElementById('rc-edit-url').value.trim();
+  const day=parseInt(document.getElementById('rc-edit-day').value);
+  const week_key=document.getElementById('rc-edit-wk').value;
+  if(!name)return;
+  await sb.from('recipes').update({name,url:url||null,day_index:day,week_key}).eq('id',id);
+  await loadAll();closeRecipeModal();renderRcList();renderMgrWeek();
+  if(CU?.role==='worker')refreshWorker();
+}
+async function deleteRecipeEdit(){
+  const id=document.getElementById('rc-edit-id').value;
+  await sb.from('recipes').delete().eq('id',id);
+  await loadAll();closeRecipeModal();renderRcList();renderMgrWeek();
+  if(CU?.role==='worker')refreshWorker();
+}
+function closeRecipeModal(){document.getElementById('recipe-modal').classList.remove('open');}
+
 function renderRcList(){
   const el=document.getElementById('rc-list');if(!el)return;
   if(!D.recipes.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noRecipes')}</div>`;return;}
@@ -1806,7 +1885,7 @@ function renderRcList(){
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`).join('');
+    html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`).join('');
   });
   el.innerHTML=html;
 }
