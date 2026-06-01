@@ -762,7 +762,7 @@ const I={
 };
 const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
 
-function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.toISOString().slice(0,10);}
+function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
 
 function wlbl(off){
   if(off===wOff)return tr('thisWeek');
@@ -1333,10 +1333,10 @@ function restoreOpenState(openIds){
 }
 
 // Soft refresh: only update day body contents + progress, keep open state
-function refreshMgrWeek(preOpenDays,preOpenLocs){
+function refreshMgrWeek(){
   const wk=wkey(wOff);
-  const openDays=preOpenDays||saveOpenState('md');
-  const openLocs=preOpenLocs||saveAllLocStates();
+  const openDays=saveOpenState('md');
+  const openLocs=saveAllLocStates();
   const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   showDays.forEach(di=>{
@@ -1366,10 +1366,10 @@ function refreshMgrWeek(preOpenDays,preOpenLocs){
   restoreOpenState([...openDays,...openLocs]);
 }
 
-function refreshWorker(preOpenDays,preOpenLocs){
+function refreshWorker(){
   const wk=wkey(wOff);
-  const openDays=preOpenDays||saveOpenState('wd');
-  const openLocs=preOpenLocs||saveAllLocStates();
+  const openDays=saveOpenState('wd');
+  const openLocs=saveAllLocStates();
   const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   allDi.forEach(di=>{
@@ -1400,30 +1400,112 @@ function refreshWorker(preOpenDays,preOpenLocs){
 
 async function togTask(tid,wk,di,mgr){
   const k=tid+'_'+wk+'_'+di;
-  const openDays=saveOpenState(mgr?'md':'wd');
-  const openLocs=saveAllLocStates();
-  if(D.checks[k]?.on){await sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
+  const wasOn=!!D.checks[k]?.on;
+  // Optimistic DOM update — no re-render needed
+  const cb=event?.target?.closest?.('.cb')||document.querySelector(`.cb[onclick*="'${tid}'"][onclick*="${di}"]`);
+  if(cb){
+    const row=cb.closest('.task-row');
+    if(wasOn){
+      cb.classList.remove('on');cb.innerHTML='';
+      if(row){row.classList.remove('done-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.remove('done');
+        const badge=row.querySelector('.badge-who');if(badge)badge.remove();
+      }
+    } else {
+      cb.classList.add('on');cb.innerHTML='&#10003;';
+      if(row){row.classList.add('done-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.add('done');
+        if(CU){const badge=document.createElement('span');badge.className='badge-who';badge.style.cssText=`background:${ucol(CU.id)}20;color:${ucol(CU.id)}`;badge.textContent=CU.name;txt.appendChild(badge);}
+      }
+    }
+  }
+  // Update progress counts
+  if(wasOn){delete D.checks[k];}else{D.checks[k]={on:true,by:CU?.id};}
+  updDayProg(di,wk,mgr);
+  // Save to DB in background
+  if(wasOn){await sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();if(mgr)refreshMgrWeek(openDays,openLocs);else refreshWorker(openDays,openLocs);
+  await loadAll();updDayProg(di,wk,mgr);
 }
 
 async function skipTask(tid,wk,di,mgr,type){
   const k=tid+'_'+wk+'_'+di;
-  const openDays=saveOpenState(mgr?'md':'wd');
   const openLocs=saveAllLocStates();
   if(D.skipped[k]){await sb.from('skipped_tasks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('skipped_tasks').upsert({household_id:HID,task_id:tid,task_type:type||'fixed',week_key:wk,day_index:di,skipped_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();if(mgr)refreshMgrWeek(openDays,openLocs);else refreshWorker(openDays,openLocs);
+  await loadAll();
+  const pfx=mgr?'md':'wd';
+  const body=document.getElementById(pfx+di);
+  if(body)body.innerHTML=renderDayBody(di,wk,mgr);
+  restoreOpenState(openLocs);
+  updDayProg(di,wk,mgr);
 }
 
 async function togPeriodic(tid,mgr){
   const now=new Date();const yr=now.getFullYear(),mo=now.getMonth()+1;
-  const openDays=saveOpenState(mgr?'md':'wd');
-  const openLocs=saveAllLocStates();
+  const cb=event?.target?.closest?.('.cb')||document.querySelector(`.cb[onclick*="'${tid}'"]`);
   const ex=D.pChecks.find(c=>c.task_id===tid&&c.year===yr&&c.month===mo);
-  if(ex){await sb.from('monthly_checks').delete().eq('task_id',tid).eq('year',yr).eq('month',mo).eq('household_id',HID);}
-  else{await sb.from('monthly_checks').upsert({household_id:HID,task_id:tid,year:yr,month:mo,checked_by:CU?.id,checked_date:now.toISOString().slice(0,10)},{onConflict:'household_id,task_id,year,month'});}
-  await loadAll();if(mgr)refreshMgrWeek(openDays,openLocs);else refreshWorker(openDays,openLocs);
+  if(cb){
+    const row=cb.closest('.task-row');
+    if(ex){cb.classList.remove('on');cb.innerHTML='';if(row){row.classList.remove('monthly-done-row');row.classList.add('monthly-due-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.remove('done');}}
+    else{cb.classList.add('on');cb.innerHTML='&#10003;';if(row){row.classList.add('monthly-done-row');row.classList.remove('monthly-due-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.add('done');}}
+  }
+  if(ex){D.pChecks=D.pChecks.filter(c=>!(c.task_id===tid&&c.year===yr&&c.month===mo));await sb.from('monthly_checks').delete().eq('task_id',tid).eq('year',yr).eq('month',mo).eq('household_id',HID);}
+  else{D.pChecks.push({task_id:tid,year:yr,month:mo,checked_by:CU?.id});await sb.from('monthly_checks').upsert({household_id:HID,task_id:tid,year:yr,month:mo,checked_by:CU?.id,checked_date:now.toISOString().slice(0,10)},{onConflict:'household_id,task_id,year,month'});}
+  const wk=wkey(wOff);const allDi=[...new Set(D.workdays)];allDi.forEach(d=>updDayProg(d,wk,mgr));
+  await loadAll();allDi.forEach(d=>updDayProg(d,wk,mgr));
+}
+
+function updDayProg(di,wk,mgr){
+  const pfx=mgr?'md':'wd';const cpfx=mgr?'mdc':'wdc';
+  const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
+  const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+  let dt=0,dd=0;
+  D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+  sd.forEach(sr=>{
+    const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+    dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+    const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
+    dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+  });
+  ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+  // Update day progress text
+  const prog=document.querySelector(`#${cpfx}${di}`)?.closest('.day-card')?.querySelector('.day-prog-txt');
+  if(prog)prog.textContent=`${dd}/${dt}`;
+  // Update loc-section counts
+  document.querySelectorAll(`[id^="lb-"][id$="-${di}"] , [id^="lb-daily-${di}"]`).forEach(lb=>{
+    const hdr=lb.previousElementSibling||lb.closest('.loc-block')?.querySelector('.loc-section-hdr');
+    if(hdr){
+      const cnt=hdr.querySelector('.loc-section-count');
+      if(cnt){
+        const rows=lb.querySelectorAll('.task-row');
+        const doneRows=lb.querySelectorAll('.task-row.done-row, .task-row.monthly-done-row');
+        cnt.textContent=`${doneRows.length}/${rows.length}`;
+      }
+    }
+  });
+  // Update overall progress bar
+  updTotalProg(wk,mgr);
+}
+
+function updTotalProg(wk,mgr){
+  const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
+  let tot=0,done=0;
+  allDi.forEach(di=>{
+    const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
+    const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+    const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+    if(!sd.length&&!ex.length&&!rc.length)return;
+    D.tasks.filter(t=>t.is_daily).forEach(t=>{tot++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)done++;});
+    sd.forEach(sr=>{
+      const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+      tot+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)done++;});
+      const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
+      tot+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))done++;});
+    });
+    ex.forEach(e=>{tot++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)done++;});
+  });
+  const pct=tot?Math.round(done/tot*100):0;
+  const progEl=document.getElementById(mgr?'m-prog':'w-prog');
+  if(progEl)progEl.innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
 }
 
 async function saveNote(lid,wk,di,val){
