@@ -359,6 +359,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="form-card">
       <label class="flbl" id="rc-lbl-dish"></label><input class="finput" type="text" id="rc-name" placeholder="">
       <label class="flbl" id="rc-lbl-link"></label><input class="finput" type="url" id="rc-url" placeholder="https://...">
+      <label class="flbl">Kok</label><select class="finput" id="rc-who"><option value="">— niet toegewezen —</option></select>
       <div class="f2">
         <div><label class="flbl" id="rc-lbl-day"></label><select class="finput" id="rc-day"></select></div>
         <div><label class="flbl" id="rc-lbl-week"></label><select class="finput" id="rc-wk"><option value="0" id="rc-w0"></option><option value="1" id="rc-w1"></option></select></div>
@@ -635,6 +636,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <input class="finput" id="rc-edit-url" type="url" placeholder="https://...">
     <label class="flbl" id="rc-edit-lbl3">Dag</label>
     <select class="finput" id="rc-edit-day"></select>
+    <label class="flbl">Kok</label>
+    <select class="finput" id="rc-edit-who"><option value="">— niet toegewezen —</option></select>
     <label class="flbl" id="rc-edit-lbl4">Week</label>
     <select class="finput" id="rc-edit-wk"></select>
     <div style="display:flex;gap:8px;margin-top:.75rem">
@@ -1139,7 +1142,54 @@ async function renderLog(){
 }
 
 // ═══════════════ RENDER HELPERS ═══════════════
+// Simplified child view — only their personal tasks, recipe, and their location
+function renderChildDay(di,wk){
+  let html='';
+  const myLocs=D.ulocs.filter(ul=>ul.user_id===CU.id).map(ul=>ul.location_id);
+
+  // 1. Personal tasks (big, prominent)
+  const myTasks=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
+  if(myTasks.length){
+    myTasks.forEach(t=>{
+      const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+      const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
+      html+=`<div class="task-row${ck?' done-row':''}" style="padding:10px 0">`;
+      html+=`<div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},false)">${ck?'&#10003;':''}</div>`;
+      html+=`<div style="flex:1"><span class="task-txt${ck?' done':''}" style="font-size:15px;font-weight:600">${tx(t)}</span>`;
+      if(locName)html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${locName}</div>`;
+      html+=`</div></div>`;
+    });
+  }
+
+  // 2. Recipe assigned to me
+  const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
+  if(recs.length){
+    html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
+    recs.forEach(r=>{
+      html+=`<div class="recipe-item">`;
+      if(r.url)html+=`<a href="${r.url}" target="_blank">&#8599; ${r.name}</a>`;
+      else html+=`<span>${r.name}</span>`;
+      html+=`<button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px;flex-shrink:0">&#9998;</button>`;
+      html+=`</div>`;
+    });
+    html+='</div>';
+  }
+
+  // 3. My location(s) only
+  const schedDay=D.sched.filter(s=>s.week_key===wk&&s.day_index===di&&myLocs.includes(s.location_id));
+  schedDay.forEach(sr=>{
+    const loc=D.locs.find(l=>l.id===sr.location_id);
+    if(loc)html+=renderLocBlock(loc,wk,di,false);
+  });
+
+  if(!html)html=`<div style="color:var(--muted);font-size:13px;padding:8px 0">${tr('noTasks')}</div>`;
+  return html;
+}
+
 function renderDayBody(di,wk,isMgr){
+  // Child gets simplified view
+  if(CU?.role==='child')return renderChildDay(di,wk);
+
   const focus=getFocus(di);
   const schedDay=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
   const schedIds=schedDay.map(s=>s.location_id);
@@ -1177,9 +1227,12 @@ function renderDayBody(di,wk,isMgr){
   if(recs.length){
     html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
     recs.forEach(r=>{
+      const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;
+      const cookBadge=cook?`<span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${cook.avatar||''} ${cook.name}</span>`:'';
       html+=`<div class="recipe-item">`;
       if(r.url)html+=`<a href="${r.url}" target="_blank">&#8599; ${r.name}</a>`;
       else html+=`<span>${r.name}</span>`;
+      html+=cookBadge;
       html+=`<button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 5px;flex-shrink:0">&#9998;</button>`;
       html+=`</div>`;
     });
@@ -1258,6 +1311,18 @@ function renderLocBlock(loc,wk,di,isMgr){
     });
   }
 
+  // Personal tasks at this location (shown in manager view with child badge)
+  const persAtLoc=D.persTasks.filter(t=>t.location_id===loc.id&&t.day_index===di);
+  if(persAtLoc.length&&isMgr){
+    lb+=`<span class="slbl">Persoonlijke taken</span>`;
+    persAtLoc.forEach(t=>{
+      const owner=D.users.find(u=>u.id===t.user_id);
+      const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+      const ownerBadge=owner?`<span style="font-size:10px;color:#fff;background:${ucol(t.user_id)};padding:1px 6px;border-radius:8px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
+      lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl||t.text_pt||''}${ownerBadge}</span></div>`;
+    });
+  }
+
   lb+=`<span class="slbl" style="margin-top:.5rem">${tr('notes')}</span>`;
   if(isMgr){
     lb+=`<div style="font-size:12px;color:var(--muted);padding:.25rem 0;min-height:18px;font-style:italic">${note||'\u2014'}</div>`;
@@ -1284,23 +1349,40 @@ function renderWorker(){
   updWkLbls();
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
+    const isChild=CU?.role==='child';
+    const myLocs=isChild?D.ulocs.filter(ul=>ul.user_id===CU.id).map(ul=>ul.location_id):[];
     const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
     let tot=0,done=0,html='';
     allDi.forEach(di=>{
-      const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
-      const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
-      const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-      if(!sd.length&&!ex.length&&!rc.length)return;
-      let dt=0,dd=0;
-      sd.forEach(sr=>{
-        const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
-        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-        const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
-        dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
-      });
-      ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
-      tot+=dt;done+=dd;
-      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+      if(isChild){
+        const pt=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
+        const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
+        const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di&&myLocs.includes(s.location_id));
+        if(!pt.length&&!rc.length&&!sd.length)return;
+        let dt=pt.length,dd=0;
+        pt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+        sd.forEach(sr=>{
+          const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+          dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+        });
+        tot+=dt;done+=dd;
+        html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+      } else {
+        const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
+        const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+        const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+        if(!sd.length&&!ex.length&&!rc.length)return;
+        let dt=0,dd=0;
+        sd.forEach(sr=>{
+          const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
+          dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+          const dp=D.periodic.filter(pt2=>(pt2.location_id===sr.location_id||(pt2.location_ids&&pt2.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt2));
+          dt+=dp.length;dp.forEach(pt2=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt2.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+        });
+        ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+        tot+=dt;done+=dd;
+        html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+      }
     });
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
@@ -1348,7 +1430,7 @@ function renderWorkerRcList(){
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`).join('');
+    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px">${cook.avatar||''} ${cook.name}</span>`:'';return `<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}${cookLbl}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}${cookLbl}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`;}).join('');
   });
   el.innerHTML=html;
 }
@@ -1359,7 +1441,7 @@ async function addRecipeWorker(){
   const day=parseInt(document.getElementById('w-rc-day').value);
   const wk=document.getElementById('w-rc-wk').value;
   if(!name)return;
-  await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null});
+  await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null,assigned_to:CU?.role==='child'?CU.id:null,created_by:CU?.id});
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('w-rc-name').value='';document.getElementById('w-rc-url').value='';
   await loadAll();renderWorkerRcList();
@@ -1482,27 +1564,45 @@ function refreshWorker(){
   const wk=wkey(wOff);
   const openDays=saveOpenState('wd');
   const openLocs=saveAllLocStates();
+  const isChild=CU?.role==='child';
+  const myLocs=isChild?D.ulocs.filter(ul=>ul.user_id===CU.id).map(ul=>ul.location_id):[];
   const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   allDi.forEach(di=>{
-    const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
-    const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
-    const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-    if(!sd.length&&!ex.length&&!rc.length)return;
-    let dt=0,dd=0;
-    D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-    sd.forEach(sr=>{
-      const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
-      dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-      const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
-      dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
-    });
-    ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
-    tot+=dt;done+=dd;
+    if(isChild){
+      // Child: only count personal tasks + their location tasks + their recipes
+      const pt=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
+      const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
+      const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di&&myLocs.includes(s.location_id));
+      let dt=pt.length,dd=0;
+      pt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      sd.forEach(sr=>{
+        const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      });
+      if(!pt.length&&!rc.length&&!sd.length)return;
+      tot+=dt;done+=dd;
+    } else {
+      // Worker: everything
+      const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
+      const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+      const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
+      if(!sd.length&&!ex.length&&!rc.length)return;
+      let dt=0,dd=0;
+      D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      sd.forEach(sr=>{
+        const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
+        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+        const dp=D.periodic.filter(pt2=>(pt2.location_id===sr.location_id||(pt2.location_ids&&pt2.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt2));
+        dt+=dp.length;dp.forEach(pt2=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt2.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+      });
+      ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
+      tot+=dt;done+=dd;
+    }
     const body=document.getElementById('wd'+di);
     const prog=document.querySelector(`#wdc${di}`)?.closest('.day-card')?.querySelector('.day-prog-txt');
     if(body)body.innerHTML=renderDayBody(di,wk,false);
-    if(prog)prog.textContent=`${dd}/${dt}`;
+    if(prog)prog.textContent=`${done}/${tot}`;
   });
   const pct=tot?Math.round(done/tot*100):0;
   const progEl=document.getElementById('w-prog');
@@ -1879,6 +1979,9 @@ function renderRecSels(){
   const ds=document.getElementById('rc-day');
   if(ds)ds.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const rn=document.getElementById('rc-name');if(rn)rn.placeholder=tr('dish');
+  // Person dropdown (kok)
+  const who=document.getElementById('rc-who');
+  if(who)who.innerHTML=`<option value="">— niet toegewezen —</option>`+D.users.map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');
   const wsel=document.getElementById('rc-wk');
   if(wsel){
     wsel.innerHTML='';
@@ -1896,10 +1999,11 @@ async function addRecipe(){
   const url=document.getElementById('rc-url').value.trim();
   const day=parseInt(document.getElementById('rc-day').value);
   const wk=document.getElementById('rc-wk').value;
+  const assignedTo=document.getElementById('rc-who')?.value||null;
   if(!name){alert('Vul een gerechtnaam in');return;}
   if(isNaN(day)){alert('Kies een dag');return;}
   if(!wk){alert('Kies een week');return;}
-  const{data,error}=await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null}).select();
+  const{data,error}=await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null,assigned_to:assignedTo,created_by:CU.id}).select();
   if(error){alert('Fout bij opslaan recept: '+error.message);console.error(error);return;}
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
@@ -1913,31 +2017,28 @@ function openRecipeEdit(id){
   document.getElementById('rc-edit-id').value=id;
   document.getElementById('rc-edit-name').value=r.name||'';
   document.getElementById('rc-edit-url').value=r.url||'';
-  // Day dropdown
   const dd=document.getElementById('rc-edit-day');
   dd.innerHTML=dayArr().map((d,i)=>`<option value="${i}"${i===r.day_index?' selected':''}>${d}</option>`).join('');
-  // Week dropdown
+  // Person dropdown
+  const whoSel=document.getElementById('rc-edit-who');
+  if(whoSel)whoSel.innerHTML=`<option value="">— niet toegewezen —</option>`+D.users.map(u=>`<option value="${u.id}"${u.id===r.assigned_to?' selected':''}>${u.avatar||''} ${u.name}</option>`).join('');
   const wd=document.getElementById('rc-edit-wk');
   wd.innerHTML='';
   for(let i=0;i<6;i++){
     const wk=wkey(wOff+i);
-    const opt=document.createElement('option');
-    opt.value=wk;
+    const opt=document.createElement('option');opt.value=wk;
     opt.textContent=i===0?tr('thisWeek'):i===1?tr('nextWeek'):wlbl(wOff+i);
     if(wk===r.week_key)opt.selected=true;
     wd.appendChild(opt);
   }
-  // Also add current recipe week if not in list (past week)
   const existing=[...wd.options].map(o=>o.value);
   if(!existing.includes(r.week_key)){
     const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
-    const mon=new Date(r.week_key+'T12:00:00');
-    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const mon=new Date(r.week_key+'T12:00:00');const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     const opt=document.createElement('option');opt.value=r.week_key;opt.textContent=lbl;opt.selected=true;
     wd.insertBefore(opt,wd.firstChild);
   }
-  // Labels
   document.getElementById('rc-modal-title').textContent=tr('editRecipe')||'Recept bewerken';
   document.getElementById('rc-edit-lbl1').textContent=tr('dish')||'Gerecht';
   document.getElementById('rc-edit-lbl2').textContent=tr('link')||'Link (optioneel)';
@@ -1954,8 +2055,9 @@ async function saveRecipeEdit(){
   const url=document.getElementById('rc-edit-url').value.trim();
   const day=parseInt(document.getElementById('rc-edit-day').value);
   const week_key=document.getElementById('rc-edit-wk').value;
+  const assignedTo=document.getElementById('rc-edit-who')?.value||null;
   if(!name)return;
-  await sb.from('recipes').update({name,url:url||null,day_index:day,week_key}).eq('id',id);
+  await sb.from('recipes').update({name,url:url||null,day_index:day,week_key,assigned_to:assignedTo}).eq('id',id);
   await loadAll();closeRecipeModal();renderRcList();renderMgrWeek();
   if(isWkr())refreshWorker();
 }
@@ -1982,7 +2084,7 @@ function renderRcList(){
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>`<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`).join('');
+    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?`<span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px;margin-left:4px">${cook.avatar||''} ${cook.name}</span>`:'';return `<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}${cookLbl}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`;}).join('');
   });
   el.innerHTML=html;
 }
