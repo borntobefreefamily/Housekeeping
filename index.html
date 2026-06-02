@@ -83,6 +83,20 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .prog-bar{height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
 .prog-fill{height:100%;background:#fcca46;border-radius:3px;transition:width .4s}
 .prog-pct{font-size:13px;font-weight:600;color:rgba(255,255,255,.7);margin-top:5px}
+.fam-card{background:var(--white);border-radius:var(--r);padding:0;margin-bottom:.875rem;border:1.5px solid var(--border);overflow:hidden}
+.fam-hdr{display:flex;align-items:center;padding:.65rem .9rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fam-av{font-size:20px;margin-right:8px}
+.fam-name{font-weight:600;font-size:14px;flex:1}
+.fam-prog{display:flex;align-items:center;gap:8px}
+.fam-prog-bar{width:60px;height:6px;background:var(--steam);border-radius:3px;overflow:hidden}
+.fam-prog-fill{height:100%;border-radius:3px;transition:width .3s}
+.fam-prog-txt{font-size:11px;color:var(--muted);min-width:32px;text-align:right}
+.fam-body{display:none;padding:0 .9rem .65rem}
+.fam-body.open{display:block}
+.fam-day-lbl{font-size:11px;font-weight:600;color:var(--caramel);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;margin-bottom:2px}
+.fam-task{font-size:13px;color:var(--text);padding:2px 0;display:flex;align-items:center;gap:6px}
+.fam-task.done{color:var(--muted);text-decoration:line-through}
+.fam-loc-badge{font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px}
 
 /* DAY CARD */
 .day-card{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;background:var(--white)}
@@ -346,7 +360,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="wbtn" onclick="chWeek(1)">&#8250;</button>
       <button class="wk-jump" onclick="openJump()">&#128197;</button>
     </div>
-    <div class="scroll"><div id="m-prog"></div><div id="m-days"></div></div>
+    <div class="scroll"><div id="m-prog"></div><div id="m-family"></div><div id="m-days"></div></div>
   </div>
 
   <div id="mt-plan" class="scroll" style="display:none">
@@ -1462,6 +1476,54 @@ function mTab(n){
   if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();}
 }
 
+// ═══════════════ GEZIN OVERZICHT ═══════════════
+function renderFamilyOverview(wk){
+  const el=document.getElementById('m-family');if(!el)return;
+  // Only for admin/parent
+  if(!isMgr())return;
+  const kids=D.users.filter(u=>u.role==='child');
+  if(!kids.length){el.innerHTML='';return;}
+  let html=`<div class="fam-card"><div class="fam-hdr" onclick="togEl('fam-body','fam-chev')" style="background:var(--steam)"><span style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;flex:1">👨‍👩‍👧‍👦 Gezin</span><span class="chev" id="fam-chev">&#9662;</span></div><div class="fam-body" id="fam-body">`;
+  kids.forEach(kid=>{
+    const tasks=D.persTasks.filter(t=>t.user_id===kid.id);
+    const col=ucol(kid.id);
+    let tot=0,done=0;
+    tasks.forEach(t=>{
+      tot++;
+      if(D.checks[t.id+'_'+wk+'_'+t.day_index]?.on)done++;
+    });
+    const pct=tot?Math.round(done/tot*100):0;
+    const kidId='fam-kid-'+kid.id.slice(0,6);
+    html+=`<div style="border-bottom:1px solid var(--border);padding:8px 0">`;
+    html+=`<div style="display:flex;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="togEl('${kidId}','${kidId}-c')">`;
+    html+=`<span class="fam-av">${kid.avatar||kid.name[0]}</span>`;
+    html+=`<span class="fam-name">${kid.name}</span>`;
+    html+=`<div class="fam-prog"><div class="fam-prog-bar"><div class="fam-prog-fill" style="width:${pct}%;background:${col}"></div></div><span class="fam-prog-txt">${done}/${tot}</span><span class="chev" id="${kidId}-c" style="font-size:10px">&#9662;</span></div>`;
+    html+=`</div>`;
+    // Expandable tasks per day
+    html+=`<div class="fam-body" id="${kidId}">`;
+    const byDay={};tasks.forEach(t=>{if(!byDay[t.day_index])byDay[t.day_index]=[];byDay[t.day_index].push(t);});
+    Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
+      html+=`<div class="fam-day-lbl">${dayArr()[di]}</div>`;
+      byDay[di].forEach(t=>{
+        const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+        const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
+        const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
+        const byName=ck&&by?` ✓ ${uname(by)}`:'';
+        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
+      });
+      // Show recipe if assigned to this kid on this day
+      const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===parseInt(di)&&r.assigned_to===kid.id);
+      recs.forEach(r=>{
+        html+=`<div class="fam-task" style="color:var(--caramel)"><span>🍳</span><span>${r.name}</span></div>`;
+      });
+    });
+    html+=`</div></div>`;
+  });
+  html+=`</div></div>`;
+  el.innerHTML=html;
+}
+
 function renderMgrWeek(){
   if(!CU)return;
   ensureWeekSched(wOff).then(()=>{
@@ -1487,6 +1549,7 @@ function renderMgrWeek(){
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
     const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
+    renderFamilyOverview(wk);
   });
 }
 
@@ -1545,6 +1608,7 @@ function refreshMgrWeek(){
   const pct=tot?Math.round(done/tot*100):0;
   const progEl=document.getElementById('m-prog');
   if(progEl)progEl.innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
+  renderFamilyOverview(wk);
   restoreOpenState([...openDays,...openLocs]);
 }
 
