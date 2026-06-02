@@ -660,7 +660,7 @@ const I={
     recipesTitle:'Recepten toevoegen',extra:'extra',
     progress:'Voortgang week',tasks:'taken',
     recentChanges:'Recente wijzigingen',noChanges:'Geen wijzigingen.',
-    noTasks:'Geen taken gepland.',worker:'Medewerker',admin:'Beheerder',
+    noTasks:'Geen taken gepland.',worker:'Medewerker',admin:'Beheerder',parent:'Ouder',child:'Kind',
     pinWrong:'Onjuiste PIN',pinHint:'Voer je PIN in',
     pinTitle:'Jouw huis,',pinTitleSpan:'op orde.',pinSub:'Structuur met warmte',
     skip:'Overslaan',skipped:'Overgeslagen',
@@ -724,7 +724,7 @@ const I={
     recipesTitle:'Adicionar receita',extra:'extra',
     progress:'Progresso da semana',tasks:'tarefas',
     recentChanges:'Alterações recentes',noChanges:'Sem alterações.',
-    noTasks:'Sem tarefas para esta semana.',worker:'Colaboradora',admin:'Administrador',
+    noTasks:'Sem tarefas para esta semana.',worker:'Colaboradora',admin:'Administrador',parent:'Pai/Mãe',child:'Filho(a)',
     pinWrong:'PIN incorreto',pinHint:'Introduza o seu PIN',
     pinTitle:'A sua casa,',pinTitleSpan:'em ordem.',pinSub:'Estrutura com carinho',
     skip:'Ignorar',skipped:'Ignorado',
@@ -794,8 +794,11 @@ function wlbl(off){
   return `${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
 }
 
-function ucol(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '#7A5C3E';const n=u.name.toLowerCase();if(n.includes('tijn'))return '#2c5f8a';if(n.includes('suzan'))return '#4A6741';return '#7A5C3E';}
+function ucol(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '#7A5C3E';const colors=['#2c5f8a','#4A6741','#7A5C3E','#6a4c93','#C45C5C','#1a6b5a','#fe7f2d','#2c7bf1'];let h=0;for(let i=0;i<u.name.length;i++)h=u.name.charCodeAt(i)+((h<<5)-h);return colors[Math.abs(h)%colors.length];}
 function uname(uid){return D.users.find(u=>u.id===uid)?.name||'';}
+// Role helpers — admin+parent see manager screen, child+worker see worker screen
+function isMgr(u){const r=(u||CU)?.role;return r==='admin'||r==='parent';}
+function isWkr(u){const r=(u||CU)?.role;return r==='worker'||r==='child';}
 function locName(lid){return D.locs.find(l=>l.id===lid)?.name||'';}
 function locColor(lid){return D.locs.find(l=>l.id===lid)?.color||'#888';}
 function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[];}
@@ -855,7 +858,7 @@ function setupRT(){
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
         await loadAll();
-        if(CU?.role==='worker'||CU?.role==='child')refreshWorker();
+        if(isWkr())refreshWorker();
         else refreshMgrWeek();
         updLogBadge();
       },600);
@@ -903,8 +906,8 @@ function setSessionLang(l){
   const ps=document.getElementById('pin-sub');if(ps)ps.textContent=tr('pinSub');
   const ph=document.getElementById('pin-hint');if(ph)ph.textContent=tr('pinHint');
   // Re-render current view
-  if(CU?.role==='worker')renderWorker();
-  else if(CU?.role==='admin')renderManager();
+  if(isWkr())renderWorker();
+  else if(isMgr())renderManager();
 }
 
 function updateManagerLabels(){
@@ -963,8 +966,8 @@ async function chkPin(){
       const np=prompt(user.language==='pt'?'Escolha um novo PIN (4 dígitos):':'Kies een nieuwe PIN (4 cijfers):');
       if(np&&/^\d{4}$/.test(np)){await sb.from('users').update({pin:np}).eq('id',user.id);await loadAll();CU=D.users.find(u=>u.id===user.id);}
     }
-    showScr(user.role==='admin'?'manager':'worker');
-    if(user.role==='worker')updLogBadge();
+    showScr(isMgr(user)?'manager':'worker');
+    if(isWkr(user))updLogBadge();
   } else {
     document.getElementById('pin-err').textContent=tr('pinWrong');
     pin='';updDots();
@@ -973,7 +976,7 @@ async function chkPin(){
 
 function logout(){CU=null;wOff=0;pin='';updDots();document.getElementById('pin-err').textContent='';setSessionLang('nl');showScr('pin');}
 function showScr(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('s-'+n)?.classList.add('active');if(n==='worker')renderWorker();if(n==='manager')renderManager();}
-function chWeek(d){wOff+=d;updWkLbls();if(CU?.role==='worker')renderWorker();else renderMgrWeek();}
+function chWeek(d){wOff+=d;updWkLbls();if(isWkr())renderWorker();else renderMgrWeek();}
 function updWkLbls(){
   const l=wlbl(wOff);
   ['w-wk-lbl','m-wk-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;});
@@ -1017,7 +1020,7 @@ function openJump(){
   el.innerHTML=html;
   document.getElementById('jump-modal').classList.add('open');
 }
-function jumpToWeek(off){wOff=off;updWkLbls();closeJump();if(CU?.role==='worker')renderWorker();else renderMgrWeek();}
+function jumpToWeek(off){wOff=off;updWkLbls();closeJump();if(isWkr())renderWorker();else renderMgrWeek();}
 function closeJump(){document.getElementById('jump-modal').classList.remove('open');}
 
 // WORKER TABS
@@ -1194,9 +1197,9 @@ function renderWorker(){
   if(!CU)return;
   const col=ucol(CU.id);
   document.getElementById('w-av').style.background=col;
-  document.getElementById('w-av').textContent=CU.name[0];
+  document.getElementById('w-av').textContent=CU.avatar||CU.name[0];
   document.getElementById('w-name').textContent=CU.name;
-  document.getElementById('w-sub').textContent=tr('worker');
+  document.getElementById('w-sub').textContent=tr(CU.role);
   const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
   const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
@@ -1289,9 +1292,12 @@ function renderManager(){
   if(!CU)return;
   const col=ucol(CU.id);
   document.getElementById('m-av').style.background=col;
-  document.getElementById('m-av').textContent=CU.name[0];
+  document.getElementById('m-av').textContent=CU.avatar||CU.name[0];
   document.getElementById('m-name').textContent=CU.name;
-  document.getElementById('m-sub').textContent=tr('admin');
+  document.getElementById('m-sub').textContent=tr(CU.role);
+  // Hide Instellingen for non-admin
+  const instTab=document.getElementById('t-inst');
+  if(instTab)instTab.style.display=CU.role==='admin'?'':'none';
   updateManagerLabels();
   updWkLbls();renderMgrWeek();
 }
@@ -1873,13 +1879,13 @@ async function saveRecipeEdit(){
   if(!name)return;
   await sb.from('recipes').update({name,url:url||null,day_index:day,week_key}).eq('id',id);
   await loadAll();closeRecipeModal();renderRcList();renderMgrWeek();
-  if(CU?.role==='worker')refreshWorker();
+  if(isWkr())refreshWorker();
 }
 async function deleteRecipeEdit(){
   const id=document.getElementById('rc-edit-id').value;
   await sb.from('recipes').delete().eq('id',id);
   await loadAll();closeRecipeModal();renderRcList();renderMgrWeek();
-  if(CU?.role==='worker')refreshWorker();
+  if(isWkr())refreshWorker();
 }
 function closeRecipeModal(){document.getElementById('recipe-modal').classList.remove('open');}
 
@@ -2273,7 +2279,7 @@ async function autoTr(fId,tId){
 
 async function ensureSetup(){
   if(!D.users.find(u=>u.name.toLowerCase().includes('suzan'))){
-    await sb.from('users').insert({household_id:HID,name:'Suzan',role:'admin',pin:'9999',language:'nl'});
+    await sb.from('users').insert({household_id:HID,name:'Suzan',role:'parent',pin:'9999',language:'nl'});
   }
 }
 
