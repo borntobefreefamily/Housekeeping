@@ -908,7 +908,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -927,6 +927,7 @@ async function loadAll(){
     safeQ(sb.from('global_categories').select('*').eq('household_id',HID).order('name')),
     safeQ(sb.from('user_locations').select('*').eq('household_id',HID)),
     safeQ(sb.from('personal_tasks').select('*').eq('household_id',HID).order('sort_order')),
+    safeQ(sb.from('task_reactions').select('*').eq('household_id',HID)),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
@@ -936,6 +937,7 @@ async function loadAll(){
   D.globalCats=gc.data||[];
   D.ulocs=ul.data||[];
   D.persTasks=ptk.data||[];
+  D.reactions=trx.data||[];
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -944,7 +946,7 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks'];
+  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions'];
   tbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
@@ -1169,6 +1171,8 @@ function renderChildDay(di,wk){
       html+=`<div class="task-row${ck?' done-row':''}" style="padding:10px 0">`;
       html+=`<div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},false)">${ck?'&#10003;':''}</div>`;
       html+=`<div style="flex:1"><span class="task-txt${ck?' done':''}" style="font-size:15px;font-weight:600">${tx(t)}</span>`;
+      const rxBadges=renderReactionBadges(t.id,wk,di);
+      if(rxBadges)html+=`<span style="margin-left:6px">${rxBadges}</span>`;
       if(locName)html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${locName}</div>`;
       html+=`</div></div>`;
     });
@@ -1477,6 +1481,53 @@ function mTab(n){
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
+const REACT_EMOJIS=['👍','🎉','⭐','💪','🏆'];
+
+function getReactions(tid,wk,di){
+  return D.reactions.filter(r=>r.task_id===tid&&r.week_key===wk&&r.day_index===di);
+}
+
+function renderReactionBadges(tid,wk,di){
+  const rx=getReactions(tid,wk,di);
+  if(!rx.length)return '';
+  return rx.map(r=>`<span style="font-size:14px" title="${uname(r.reactor_id)}">${r.emoji}</span>`).join('');
+}
+
+function renderReactionBtn(tid,wk,di,taskType){
+  return `<button onclick="showReactPicker(event,'${tid}','${wk}',${di},'${taskType}')" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;color:var(--muted);-webkit-tap-highlight-color:transparent" title="Reactie">☺</button>`;
+}
+
+function showReactPicker(evt,tid,wk,di,taskType){
+  evt.stopPropagation();
+  // Remove existing picker
+  document.getElementById('react-picker')?.remove();
+  const picker=document.createElement('div');
+  picker.id='react-picker';
+  picker.style.cssText='position:fixed;z-index:200;background:var(--white);border-radius:12px;padding:6px 8px;box-shadow:0 4px 20px rgba(0,0,0,.2);display:flex;gap:4px';
+  REACT_EMOJIS.forEach(e=>{
+    const btn=document.createElement('span');
+    btn.textContent=e;
+    btn.style.cssText='font-size:24px;cursor:pointer;padding:2px 4px;-webkit-tap-highlight-color:transparent';
+    btn.onclick=()=>{addReaction(tid,wk,di,taskType,e);picker.remove();};
+    picker.appendChild(btn);
+  });
+  // Position near click
+  const rect=evt.target.getBoundingClientRect();
+  picker.style.top=(rect.bottom+4)+'px';
+  picker.style.left=Math.min(rect.left,window.innerWidth-200)+'px';
+  document.body.appendChild(picker);
+  // Close on outside click
+  setTimeout(()=>{document.addEventListener('click',function h(){picker.remove();document.removeEventListener('click',h);});},10);
+}
+
+async function addReaction(tid,wk,di,taskType,emoji){
+  await sb.from('task_reactions').upsert({
+    household_id:HID,task_id:tid,task_type:taskType,
+    week_key:wk,day_index:di,reactor_id:CU.id,emoji
+  },{onConflict:'task_id,week_key,day_index,reactor_id'});
+  await loadAll();
+  if(isMgr())renderFamilyOverview(wk);
+}
 function renderFamilyOverview(wk){
   const el=document.getElementById('m-family');if(!el)return;
   // Only for admin/parent
@@ -1510,7 +1561,9 @@ function renderFamilyOverview(wk){
         const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
         const byName=ck&&by?` ✓ ${uname(by)}`:'';
-        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
+        const rxBadges=renderReactionBadges(t.id,wk,parseInt(di));
+        const rxBtn=ck?renderReactionBtn(t.id,wk,parseInt(di),'personal'):'';
+        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
       });
       // Show recipe if assigned to this kid on this day
       const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===parseInt(di)&&r.assigned_to===kid.id);
