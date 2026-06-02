@@ -843,14 +843,22 @@ async function loadAll(){
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
 }
 
+let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
   const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log'];
   tbls.forEach(tbl=>{
-    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},async()=>{
-      await loadAll();
-      if(CU?.role==='worker'){updWorkerView();updLogBadge();}
-      else updMgrView();
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
+      // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
+      if(Date.now()<_rtSkipUntil)return;
+      // Debounce: multiple changes within 600ms → one refresh
+      clearTimeout(_rtTimer);
+      _rtTimer=setTimeout(async()=>{
+        await loadAll();
+        if(CU?.role==='worker'||CU?.role==='child')refreshWorker();
+        else refreshMgrWeek();
+        updLogBadge();
+      },600);
     }).subscribe();
     rtSubs.push(ch);
   });
@@ -1077,7 +1085,7 @@ function renderDayBody(di,wk,isMgr){
     const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
     const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
     const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
+    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
     if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
     if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
     if(isMgr)html+=`<button onclick="delExtraConfirm('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button>`;
@@ -1110,7 +1118,7 @@ function renderDayBody(di,wk,isMgr){
         const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
         const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-        lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
+        lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
         if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
         if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
         if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
@@ -1148,7 +1156,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
       const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
       const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask('${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
+      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
       if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
       if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
@@ -1162,7 +1170,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       const now=new Date();
       const ck=!!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);
       const skipped=!!D.skipped[pt.id+'_'+wk+'_'+di];
-      lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic('${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months||1)}</span></span>`;
+      lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic(this,'${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months||1)}</span></span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${tr('skip')}">&#8864;</button>`;
       if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${esc(pt.text_nl)}','${esc(pt.text_pt||'')}','${pt.interval_months||1}')">&#9998;</button>`;
       lb+='</div>';
@@ -1418,36 +1426,37 @@ function refreshWorker(){
   restoreOpenState([...openDays,...openLocs]);
 }
 
-async function togTask(tid,wk,di,mgr){
+async function togTask(el,tid,wk,di,mgr){
   const k=tid+'_'+wk+'_'+di;
   const wasOn=!!D.checks[k]?.on;
-  // Optimistic DOM update — no re-render needed
-  const cb=event?.target?.closest?.('.cb')||document.querySelector(`.cb[onclick*="'${tid}'"][onclick*="${di}"]`);
-  if(cb){
-    const row=cb.closest('.task-row');
-    if(wasOn){
-      cb.classList.remove('on');cb.innerHTML='';
-      if(row){row.classList.remove('done-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.remove('done');
-        const badge=row.querySelector('.badge-who');if(badge)badge.remove();
-      }
-    } else {
-      cb.classList.add('on');cb.innerHTML='&#10003;';
-      if(row){row.classList.add('done-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.add('done');
-        if(CU){const badge=document.createElement('span');badge.className='badge-who';badge.style.cssText=`background:${ucol(CU.id)}20;color:${ucol(CU.id)}`;badge.textContent=CU.name;txt.appendChild(badge);}
-      }
+  _rtSkipUntil=Date.now()+2000; // Ignore own realtime echo for 2s
+  // Direct DOM update — no re-render
+  const cb=el.closest('.cb')||el;
+  const row=cb.closest('.task-row');
+  if(wasOn){
+    cb.classList.remove('on');cb.innerHTML='';
+    if(row){row.classList.remove('done-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.remove('done');
+      const badge=row.querySelector('.badge-who');if(badge)badge.remove();
     }
+    delete D.checks[k];
+  } else {
+    cb.classList.add('on');cb.innerHTML='&#10003;';
+    if(row){row.classList.add('done-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.add('done');
+      if(CU){const badge=document.createElement('span');badge.className='badge-who';badge.style.cssText=`background:${ucol(CU.id)}20;color:${ucol(CU.id)}`;badge.textContent=CU.name;txt.appendChild(badge);}
+    }
+    D.checks[k]={on:true,by:CU?.id};
   }
-  // Update progress counts
-  if(wasOn){delete D.checks[k];}else{D.checks[k]={on:true,by:CU?.id};}
-  updDayProg(di,wk,mgr);
-  // Save to DB in background
-  if(wasOn){await sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
-  else{await sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
-  await loadAll();updDayProg(di,wk,mgr);
+  // Update counters in DOM
+  updLocCount(cb);
+  updTotalProg(wk,mgr);
+  // Save to DB in background (no await, no reload, no re-render)
+  if(wasOn){sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID).then();}
+  else{sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'}).then();}
 }
 
 async function skipTask(tid,wk,di,mgr,type){
   const k=tid+'_'+wk+'_'+di;
+  _rtSkipUntil=Date.now()+2000;
   const openLocs=saveAllLocStates();
   if(D.skipped[k]){await sb.from('skipped_tasks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID);}
   else{await sb.from('skipped_tasks').upsert({household_id:HID,task_id:tid,task_type:type||'fixed',week_key:wk,day_index:di,skipped_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'});}
@@ -1456,54 +1465,58 @@ async function skipTask(tid,wk,di,mgr,type){
   const body=document.getElementById(pfx+di);
   if(body)body.innerHTML=renderDayBody(di,wk,mgr);
   restoreOpenState(openLocs);
-  updDayProg(di,wk,mgr);
+  updTotalProg(wk,mgr);
 }
 
-async function togPeriodic(tid,mgr){
+async function togPeriodic(el,tid,mgr){
   const now=new Date();const yr=now.getFullYear(),mo=now.getMonth()+1;
-  const cb=event?.target?.closest?.('.cb')||document.querySelector(`.cb[onclick*="'${tid}'"]`);
+  _rtSkipUntil=Date.now()+2000;
+  const cb=el.closest('.cb')||el;
+  const row=cb.closest('.task-row');
   const ex=D.pChecks.find(c=>c.task_id===tid&&c.year===yr&&c.month===mo);
-  if(cb){
-    const row=cb.closest('.task-row');
-    if(ex){cb.classList.remove('on');cb.innerHTML='';if(row){row.classList.remove('monthly-done-row');row.classList.add('monthly-due-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.remove('done');}}
-    else{cb.classList.add('on');cb.innerHTML='&#10003;';if(row){row.classList.add('monthly-done-row');row.classList.remove('monthly-due-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.add('done');}}
+  if(ex){
+    cb.classList.remove('on');cb.innerHTML='';
+    if(row){row.classList.remove('monthly-done-row');row.classList.add('monthly-due-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.remove('done');}
+    D.pChecks=D.pChecks.filter(c=>!(c.task_id===tid&&c.year===yr&&c.month===mo));
+    sb.from('monthly_checks').delete().eq('task_id',tid).eq('year',yr).eq('month',mo).eq('household_id',HID).then();
+  } else {
+    cb.classList.add('on');cb.innerHTML='&#10003;';
+    if(row){row.classList.add('monthly-done-row');row.classList.remove('monthly-due-row');const txt=row.querySelector('.task-txt');if(txt)txt.classList.add('done');}
+    D.pChecks.push({task_id:tid,year:yr,month:mo,checked_by:CU?.id});
+    sb.from('monthly_checks').upsert({household_id:HID,task_id:tid,year:yr,month:mo,checked_by:CU?.id,checked_date:now.toISOString().slice(0,10)},{onConflict:'household_id,task_id,year,month'}).then();
   }
-  if(ex){D.pChecks=D.pChecks.filter(c=>!(c.task_id===tid&&c.year===yr&&c.month===mo));await sb.from('monthly_checks').delete().eq('task_id',tid).eq('year',yr).eq('month',mo).eq('household_id',HID);}
-  else{D.pChecks.push({task_id:tid,year:yr,month:mo,checked_by:CU?.id});await sb.from('monthly_checks').upsert({household_id:HID,task_id:tid,year:yr,month:mo,checked_by:CU?.id,checked_date:now.toISOString().slice(0,10)},{onConflict:'household_id,task_id,year,month'});}
-  const wk=wkey(wOff);const allDi=[...new Set(D.workdays)];allDi.forEach(d=>updDayProg(d,wk,mgr));
-  await loadAll();allDi.forEach(d=>updDayProg(d,wk,mgr));
+  updLocCount(cb);
+  const wk=wkey(wOff);updTotalProg(wk,mgr);
 }
 
-function updDayProg(di,wk,mgr){
-  const pfx=mgr?'md':'wd';const cpfx=mgr?'mdc':'wdc';
-  const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
-  const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
-  let dt=0,dd=0;
-  D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-  sd.forEach(sr=>{
-    const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
-    dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-    const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
-    dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
-  });
-  ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
-  // Update day progress text
-  const prog=document.querySelector(`#${cpfx}${di}`)?.closest('.day-card')?.querySelector('.day-prog-txt');
-  if(prog)prog.textContent=`${dd}/${dt}`;
-  // Update loc-section counts
-  document.querySelectorAll(`[id^="lb-"][id$="-${di}"] , [id^="lb-daily-${di}"]`).forEach(lb=>{
-    const hdr=lb.previousElementSibling||lb.closest('.loc-block')?.querySelector('.loc-section-hdr');
+// Walk up from checkbox to update loc-section count and day count
+function updLocCount(cb){
+  // Update loc-block count (e.g. "3/10")
+  const locBody=cb.closest('.loc-body');
+  if(locBody){
+    const hdr=locBody.previousElementSibling;
     if(hdr){
       const cnt=hdr.querySelector('.loc-section-count');
       if(cnt){
-        const rows=lb.querySelectorAll('.task-row');
-        const doneRows=lb.querySelectorAll('.task-row.done-row, .task-row.monthly-done-row');
+        const rows=locBody.querySelectorAll('.task-row');
+        const doneRows=locBody.querySelectorAll('.task-row .cb.on');
         cnt.textContent=`${doneRows.length}/${rows.length}`;
       }
     }
-  });
-  // Update overall progress bar
-  updTotalProg(wk,mgr);
+  }
+  // Update day-card header count
+  const dayBody=cb.closest('[id^="wd"],[id^="md"]');
+  if(dayBody){
+    const dayCard=dayBody.closest('.day-card');
+    if(dayCard){
+      const prog=dayCard.querySelector('.day-prog-txt');
+      if(prog){
+        const allCbs=dayBody.querySelectorAll('.cb');
+        const doneCbs=dayBody.querySelectorAll('.cb.on');
+        prog.textContent=`${doneCbs.length}/${allCbs.length}`;
+      }
+    }
+  }
 }
 
 function updTotalProg(wk,mgr){
