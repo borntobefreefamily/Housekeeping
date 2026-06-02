@@ -1145,7 +1145,6 @@ async function renderLog(){
 // Simplified child view — only their personal tasks, recipe, and their location
 function renderChildDay(di,wk){
   let html='';
-  const myLocs=D.ulocs.filter(ul=>ul.user_id===CU.id).map(ul=>ul.location_id);
 
   // 1. Personal tasks (big, prominent)
   const myTasks=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
@@ -1174,13 +1173,6 @@ function renderChildDay(di,wk){
     });
     html+='</div>';
   }
-
-  // 3. My location(s) only
-  const schedDay=D.sched.filter(s=>s.week_key===wk&&s.day_index===di&&myLocs.includes(s.location_id));
-  schedDay.forEach(sr=>{
-    const loc=D.locs.find(l=>l.id===sr.location_id);
-    if(loc)html+=renderLocBlock(loc,wk,di,false);
-  });
 
   if(!html)html=`<div style="color:var(--muted);font-size:13px;padding:8px 0">${tr('noTasks')}</div>`;
   return html;
@@ -1350,21 +1342,17 @@ function renderWorker(){
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
     const isChild=CU?.role==='child';
-    const myLocs=isChild?D.ulocs.filter(ul=>ul.user_id===CU.id).map(ul=>ul.location_id):[];
     const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
     let tot=0,done=0,html='';
-    allDi.forEach(di=>{
+    // For children: check all 7 days for personal tasks
+    const daysToCheck=isChild?[0,1,2,3,4,5,6]:allDi;
+    daysToCheck.forEach(di=>{
       if(isChild){
         const pt=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
         const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
-        const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di&&myLocs.includes(s.location_id));
-        if(!pt.length&&!rc.length&&!sd.length)return;
+        if(!pt.length&&!rc.length)return;
         let dt=pt.length,dd=0;
         pt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-        sd.forEach(sr=>{
-          const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
-          dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-        });
         tot+=dt;done+=dd;
         html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       } else {
@@ -1565,22 +1553,15 @@ function refreshWorker(){
   const openDays=saveOpenState('wd');
   const openLocs=saveAllLocStates();
   const isChild=CU?.role==='child';
-  const myLocs=isChild?D.ulocs.filter(ul=>ul.user_id===CU.id).map(ul=>ul.location_id):[];
-  const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
+  const allDi=isChild?[0,1,2,3,4,5,6]:[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   allDi.forEach(di=>{
     if(isChild){
-      // Child: only count personal tasks + their location tasks + their recipes
       const pt=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
       const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
-      const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di&&myLocs.includes(s.location_id));
+      if(!pt.length&&!rc.length)return;
       let dt=pt.length,dd=0;
       pt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-      sd.forEach(sr=>{
-        const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
-        dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
-      });
-      if(!pt.length&&!rc.length&&!sd.length)return;
       tot+=dt;done+=dd;
     } else {
       // Worker: everything
