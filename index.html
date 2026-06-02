@@ -875,8 +875,8 @@ const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
 function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
 
 function wlbl(off){
-  if(off===wOff)return tr('thisWeek');
-  if(off===wOff+1)return tr('nextWeek');
+  if(off===0)return tr('thisWeek');
+  if(off===1)return tr('nextWeek');
   const mon=new Date();mon.setDate(mon.getDate()-((mon.getDay()+6)%7)+off*7);
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
@@ -2441,7 +2441,7 @@ function closeUserModal(){document.getElementById('user-modal').classList.remove
 // ═══════════════ PERSONAL TASKS ═══════════════
 function renderPersForm(){
   const usel=document.getElementById('pt-user');
-  if(usel)usel.innerHTML=D.users.filter(u=>u.role==='child'||u.role==='parent').map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');
+  if(usel)usel.innerHTML=D.users.filter(u=>u.role!=='worker').map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');
   const dsel=document.getElementById('pt-day');
   if(dsel)dsel.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const lsel=document.getElementById('pt-loc');
