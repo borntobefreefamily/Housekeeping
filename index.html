@@ -460,6 +460,35 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="day-body" id="extra-list-body">
       <div id="ex-list"></div>
     </div>
+
+    <div class="collapse-hdr" onclick="togEl('pers-form-body','pers-form-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">Persoonlijke taak toevoegen</div>
+      <span class="chev" id="pers-form-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="pers-form-body">
+      <div class="form-card" style="margin-top:6px">
+        <label class="flbl">Gezinslid</label>
+        <select class="finput" id="pt-user"></select>
+        <label class="flbl">Dag</label>
+        <select class="finput" id="pt-day"></select>
+        <label class="flbl">Locatie (waar)</label>
+        <select class="finput" id="pt-loc"><option value="">— geen —</option></select>
+        <label class="flbl">Omschrijving (NL)</label>
+        <input class="finput" type="text" id="pt-nl" onblur="autoTr('pt-nl','pt-pt')">
+        <label class="flbl">Descrição (PT)</label>
+        <input class="finput" type="text" id="pt-pt">
+        <button class="save-btn" onclick="addPersonalTask()">+ Toevoegen</button>
+        <div id="pt-flash" class="flash" style="opacity:0"></div>
+      </div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('pers-list-body','pers-list-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">Vaste taken per gezinslid</div>
+      <span class="chev" id="pers-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="pers-list-body">
+      <div id="pers-list"></div>
+    </div>
   </div>
 
   <div id="mt-inst" class="scroll" style="display:none">
@@ -862,7 +891,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -880,6 +909,7 @@ async function loadAll(){
     safeQ(sb.from('change_log').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(50)),
     safeQ(sb.from('global_categories').select('*').eq('household_id',HID).order('name')),
     safeQ(sb.from('user_locations').select('*').eq('household_id',HID)),
+    safeQ(sb.from('personal_tasks').select('*').eq('household_id',HID).order('sort_order')),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
@@ -888,6 +918,7 @@ async function loadAll(){
   D.focusDef=fd.data||[];D.focusWk=fw.data||[];
   D.globalCats=gc.data||[];
   D.ulocs=ul.data||[];
+  D.persTasks=ptk.data||[];
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -896,7 +927,7 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log'];
+  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks'];
   tbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
@@ -1357,7 +1388,7 @@ function mTab(n){
   if(n==='week')renderMgrWeek();
   if(n==='plan')renderPlan();
   if(n==='recipe'){renderRecSels();renderRcList();}
-  if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();}
+  if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();}
   if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();}
 }
 
@@ -1964,6 +1995,8 @@ function openEdit(id,type,nl,pt,interval){
   document.getElementById('edit-task-type').value=type;
   document.getElementById('edit-nl').value=nl;
   document.getElementById('edit-pt').value=pt;
+  // Clean up personal task extra fields if present
+  const persW=document.getElementById('edit-pers-extra');if(persW)persW.style.display='none';
   document.getElementById('edit-modal-title').textContent=type==='periodic'?tr('editPeriodic'):type==='extra'?tr('editExtra'):tr('editTask');
   const sw=document.getElementById('edit-scope-wrap');if(sw)sw.style.display=type==='extra'?'block':'none';
   document.getElementById('edit-scope-lbl').textContent=tr('changeFor');
@@ -2070,9 +2103,10 @@ async function deleteFromEdit(){
       await sb.from('extra_tasks').delete().eq('id',id);
     }
   }
+  else if(type==='personal'){await sb.from('personal_tasks').delete().eq('id',id);}
   else{await sb.from('fixed_tasks').delete().eq('id',id);}
   await logChange(tr('delete'));
-  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();renderExList();
+  await loadAll();renderMgrWeek();renderFixedList();renderPeriodicList();renderExList();renderPersList();
   closeModal();
 }
 
@@ -2082,6 +2116,7 @@ async function saveEdit(){
   const nl=document.getElementById('edit-nl').value.trim();
   const pt=document.getElementById('edit-pt').value.trim();
   if(!nl)return;
+  if(type==='personal'){return savePersEdit();}
   if(type==='extra'){
     const cat=document.getElementById('edit-cat-e')?.value||'Algemeen';
     const newDate=document.getElementById('edit-extra-date')?.value;
@@ -2255,6 +2290,99 @@ async function deleteUser(){
 }
 
 function closeUserModal(){document.getElementById('user-modal').classList.remove('open');}
+
+// ═══════════════ PERSONAL TASKS ═══════════════
+function renderPersForm(){
+  const usel=document.getElementById('pt-user');
+  if(usel)usel.innerHTML=D.users.filter(u=>u.role==='child'||u.role==='parent').map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');
+  const dsel=document.getElementById('pt-day');
+  if(dsel)dsel.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  const lsel=document.getElementById('pt-loc');
+  if(lsel)lsel.innerHTML=`<option value="">— geen —</option>`+D.locs.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+}
+
+function renderPersList(){
+  const el=document.getElementById('pers-list');if(!el)return;
+  let html='';
+  const usersWithTasks=[...new Set(D.persTasks.map(t=>t.user_id))];
+  usersWithTasks.forEach(uid=>{
+    const u=D.users.find(x=>x.id===uid);if(!u)return;
+    const tasks=D.persTasks.filter(t=>t.user_id===uid);
+    const col=ucol(uid);
+    html+=`<div class="loc-section" style="margin-bottom:10px"><div class="loc-section-hdr" style="background:${col}"><span class="loc-section-name">${u.avatar||''} ${u.name}</span><span class="loc-section-count">${tasks.length} taken</span></div><div class="loc-section-body">`;
+    const byDay={};tasks.forEach(t=>{if(!byDay[t.day_index])byDay[t.day_index]=[];byDay[t.day_index].push(t);});
+    Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
+      html+=`<span class="slbl">${dayArr()[di]}</span>`;
+      byDay[di].forEach(t=>{
+        const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
+        html+=`<div class="task-row"><span class="task-txt">${t.text_nl||t.text_pt||''}${locName?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locName}</span>`:''}</span>`;
+        html+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button>`;
+        html+=`<button onclick="delPersTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px">&#10005;</button>`;
+        html+=`</div>`;
+      });
+    });
+    html+=`</div></div>`;
+  });
+  if(!html)html=`<div style="color:var(--muted);font-size:13px;padding:8px 0">Nog geen persoonlijke taken</div>`;
+  el.innerHTML=html;
+}
+
+async function addPersonalTask(){
+  const userId=document.getElementById('pt-user').value;
+  const day=parseInt(document.getElementById('pt-day').value);
+  const locId=document.getElementById('pt-loc').value||null;
+  const nl=document.getElementById('pt-nl').value.trim();
+  const pt=document.getElementById('pt-pt').value.trim();
+  if(!nl){alert('Vul een omschrijving in');return;}
+  if(!userId){alert('Kies een gezinslid');return;}
+  await sb.from('personal_tasks').insert({household_id:HID,user_id:userId,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id});
+  const uName=D.users.find(x=>x.id===userId)?.name||'';
+  await logChange(`Persoonlijke taak: "${nl}" voor ${uName} (${dayArr()[day]})`);
+  document.getElementById('pt-nl').value='';document.getElementById('pt-pt').value='';
+  await loadAll();renderPersList();doFlash('pt-flash');
+}
+
+async function savePersEdit(){
+  const id=document.getElementById('edit-task-id').value;
+  const nl=document.getElementById('edit-nl').value.trim();
+  const pt=document.getElementById('edit-pt').value.trim();
+  const dayEl=document.getElementById('edit-pers-day');
+  const locEl=document.getElementById('edit-pers-loc');
+  if(!nl)return;
+  const upd={text_nl:nl,text_pt:pt||null};
+  if(dayEl)upd.day_index=parseInt(dayEl.value);
+  if(locEl)upd.location_id=locEl.value||null;
+  await sb.from('personal_tasks').update(upd).eq('id',id);
+  await loadAll();document.getElementById('task-modal').classList.remove('open');renderPersList();renderMgrWeek();
+}
+
+function openPersEdit(id){
+  const t=D.persTasks.find(x=>x.id===id);if(!t)return;
+  document.getElementById('edit-task-id').value=id;
+  document.getElementById('edit-task-type').value='personal';
+  document.getElementById('edit-nl').value=t.text_nl||'';
+  document.getElementById('edit-pt').value=t.text_pt||'';
+  document.getElementById('edit-modal-title').textContent='Persoonlijke taak bewerken';
+  const ivW=document.getElementById('edit-iv-wrap');if(ivW)ivW.style.display='none';
+  const mlW=document.getElementById('edit-multi-wrap');if(mlW)mlW.style.display='none';
+  const dlW=document.getElementById('edit-daily-wrap');if(dlW)dlW.style.display='none';
+  let persWrap=document.getElementById('edit-pers-extra');
+  if(!persWrap){persWrap=document.createElement('div');persWrap.id='edit-pers-extra';document.getElementById('edit-pt').after(persWrap);}
+  let h='<label class="flbl">Dag</label><select class="finput" id="edit-pers-day">';
+  dayArr().forEach((d,i)=>{h+=`<option value="${i}"${i===t.day_index?' selected':''}>${d}</option>`;});
+  h+='</select><label class="flbl">Locatie</label><select class="finput" id="edit-pers-loc"><option value="">— geen —</option>';
+  D.locs.forEach(l=>{h+=`<option value="${l.id}"${l.id===t.location_id?' selected':''}>${l.name}</option>`;});
+  h+='</select>';
+  persWrap.innerHTML=h;
+  persWrap.style.display='block';
+  document.getElementById('task-modal').classList.add('open');
+}
+
+async function delPersTask(id){
+  if(!confirm('Verwijderen?'))return;
+  await sb.from('personal_tasks').delete().eq('id',id);
+  await loadAll();renderPersList();renderMgrWeek();
+}
 
 function renderGlobalCatList(){
   const el=document.getElementById('gcat-list');if(!el)return;
