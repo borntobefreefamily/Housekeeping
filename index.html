@@ -473,6 +473,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="save-btn" onclick="saveProfile()" id="inst-save-btn">Opslaan</button>
       <div id="inst-flash" class="flash" style="opacity:0"></div>
     </div>
+    <div class="sec-title" id="inst-users-title">Gebruikers</div>
+    <div class="form-card">
+      <div id="user-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="save-btn" onclick="openUserEdit(null)" style="width:100%" id="add-user-btn">+ Gebruiker toevoegen</button>
+      </div>
+    </div>
     <div class="sec-title" id="inst-wd-title">Werkdagen</div>
     <div class="form-card">
       <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
@@ -605,6 +612,43 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="save-btn" onclick="saveRecipeEdit()" style="flex:1" id="rc-edit-save-btn">Opslaan</button>
       <button class="save-btn" onclick="closeRecipeModal()" style="flex:1;background:var(--steam);color:var(--text)" id="rc-edit-cancel-btn">Annuleren</button>
       <button class="save-btn" onclick="deleteRecipeEdit()" style="flex:1;background:var(--danger)" id="rc-edit-delete-btn">Verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="user-modal">
+  <div class="modal">
+    <div class="modal-title" id="um-title">Gebruiker bewerken</div>
+    <input type="hidden" id="um-id">
+    <label class="flbl">Naam</label>
+    <input class="finput" id="um-name" type="text">
+    <label class="flbl">PIN (4 cijfers)</label>
+    <input class="finput" id="um-pin" type="password" maxlength="4" inputmode="numeric" placeholder="••••">
+    <label class="flbl">Rol</label>
+    <select class="finput" id="um-role">
+      <option value="admin">Beheerder</option>
+      <option value="parent">Ouder</option>
+      <option value="child">Kind</option>
+      <option value="worker">Medewerker</option>
+    </select>
+    <label class="flbl">Taal</label>
+    <select class="finput" id="um-lang">
+      <option value="nl">Nederlands</option>
+      <option value="pt">Português</option>
+      <option value="en">English</option>
+    </select>
+    <label class="flbl">Avatar (emoji)</label>
+    <div id="um-avatar-pick" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+    <label class="flbl">Standaarddagen</label>
+    <div id="um-days" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+    <label class="flbl">Locaties</label>
+    <div id="um-locs" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;margin-top:.75rem">
+      <button class="save-btn" onclick="saveUser()" style="flex:1">Opslaan</button>
+      <button class="save-btn" onclick="closeUserModal()" style="flex:1;background:var(--steam);color:var(--text)">Annuleren</button>
+    </div>
+    <div id="um-del-wrap" style="margin-top:8px;display:none">
+      <button class="save-btn" onclick="deleteUser()" style="width:100%;background:var(--danger)">Gebruiker verwijderen</button>
     </div>
   </div>
 </div>
@@ -818,7 +862,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -828,19 +872,22 @@ async function loadAll(){
     safeQ(sb.from('skipped_tasks').select('*').eq('household_id',HID)),
     safeQ(sb.from('day_notes').select('*').eq('household_id',HID)),
     safeQ(sb.from('recipes').select('*').eq('household_id',HID)),
-    safeQ(sb.from('households').select('workdays').eq('id',HID)),
+    safeQ(sb.from('households').select('*').eq('id',HID)),
     safeQ(sb.from('day_focus_defaults').select('*').eq('household_id',HID)),
     safeQ(sb.from('day_focus').select('*').eq('household_id',HID)),
     safeQ(sb.from('monthly_tasks').select('*').eq('household_id',HID).order('interval_months')),
     safeQ(sb.from('monthly_checks').select('*').eq('household_id',HID)),
     safeQ(sb.from('change_log').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(50)),
     safeQ(sb.from('global_categories').select('*').eq('household_id',HID).order('name')),
+    safeQ(sb.from('user_locations').select('*').eq('household_id',HID)),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
   D.workdays=hh.data?.[0]?.workdays||[0,1,3,4];
+  D.settings=hh.data?.[0]?.settings||{};
   D.focusDef=fd.data||[];D.focusWk=fw.data||[];
   D.globalCats=gc.data||[];
+  D.ulocs=ul.data||[];
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -1311,7 +1358,7 @@ function mTab(n){
   if(n==='plan')renderPlan();
   if(n==='recipe'){renderRecSels();renderRcList();}
   if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();}
-  if(n==='inst'){renderGlobalCatList();renderLocList();loadInstForm();}
+  if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();}
 }
 
 function renderMgrWeek(){
@@ -2081,6 +2128,134 @@ async function saveEdit(){
 }
 
 // ═══════════════ GLOBAL CATEGORIES ═══════════════
+// ═══════════════ USER MANAGEMENT ═══════════════
+const AVATARS=['👨‍💼','👩‍🌾','🏠','🌸','⚡','🌊','🔥','🌿','☀️','🎨','🎵','🐾','🦊','🌙','💎','🍀'];
+const ROLE_LABELS={admin:'Beheerder',parent:'Ouder',child:'Kind',worker:'Medewerker'};
+
+function renderUserList(){
+  const el=document.getElementById('user-list');if(!el)return;
+  let html='';
+  D.users.sort((a,b)=>{const ro={admin:0,parent:1,child:2,worker:3};return (ro[a.role]||9)-(ro[b.role]||9)||a.name.localeCompare(b.name);});
+  D.users.forEach(u=>{
+    const locs=D.ulocs.filter(ul=>ul.user_id===u.id).map(ul=>{const loc=D.locs.find(l=>l.id===ul.location_id);return loc?loc.name:null;}).filter(Boolean);
+    const days=(u.default_days||[]).map(d=>dayArr()[d]).join(', ');
+    html+=`<div class="task-row" style="padding:8px 0;align-items:flex-start;cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="openUserEdit('${u.id}')">`;
+    html+=`<span style="font-size:22px;margin-right:8px;line-height:1">${u.avatar||u.name[0]}</span>`;
+    html+=`<div style="flex:1;min-width:0">`;
+    html+=`<div style="font-weight:600;font-size:14px">${u.name}</div>`;
+    html+=`<div style="font-size:11px;color:var(--muted)">${ROLE_LABELS[u.role]||u.role}${u.language?' · '+u.language.toUpperCase():''}${days?' · '+days:''}</div>`;
+    if(locs.length)html+=`<div style="font-size:11px;color:var(--caramel);margin-top:2px">${locs.join(', ')}</div>`;
+    html+=`</div>`;
+    html+=`<span style="color:var(--muted);font-size:14px;padding:4px">&#9998;</span>`;
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
+}
+
+function openUserEdit(uid){
+  const u=uid?D.users.find(x=>x.id===uid):null;
+  document.getElementById('um-id').value=uid||'';
+  document.getElementById('um-title').textContent=u?'Gebruiker bewerken':'Nieuwe gebruiker';
+  document.getElementById('um-name').value=u?.name||'';
+  document.getElementById('um-pin').value='';
+  document.getElementById('um-role').value=u?.role||'child';
+  document.getElementById('um-lang').value=u?.language||'nl';
+  // Avatar picker
+  const ap=document.getElementById('um-avatar-pick');
+  const selAv=u?.avatar||'';
+  ap.innerHTML=AVATARS.map(a=>`<span style="font-size:28px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid ${a===selAv?'var(--caramel)':'transparent'};-webkit-tap-highlight-color:transparent" onclick="pickAvatar(this,'${a}')">${a}</span>`).join('');
+  // Default days
+  const dd=document.getElementById('um-days');
+  const selDays=u?.default_days||[];
+  dd.innerHTML=dayArr().map((d,i)=>`<button class="pill${selDays.includes(i)?' on':''}" onclick="togPill(this,${i})" style="font-size:12px;padding:6px 10px;border-radius:16px;border:1.5px solid var(--border);background:${selDays.includes(i)?'var(--caramel)':'var(--white)'};color:${selDays.includes(i)?'#fff':'var(--text)'};cursor:pointer;-webkit-tap-highlight-color:transparent">${d}</button>`).join('');
+  // Location pills
+  const lp=document.getElementById('um-locs');
+  const selLocs=D.ulocs.filter(ul=>ul.user_id===uid).map(ul=>ul.location_id);
+  lp.innerHTML=D.locs.map(loc=>`<button class="pill${selLocs.includes(loc.id)?' on':''}" data-lid="${loc.id}" onclick="togLocPill(this)" style="font-size:12px;padding:6px 10px;border-radius:16px;border:1.5px solid ${loc.color||'var(--border)'};background:${selLocs.includes(loc.id)?(loc.color||'var(--caramel)'):'var(--white)'};color:${selLocs.includes(loc.id)?'#fff':'var(--text)'};cursor:pointer;-webkit-tap-highlight-color:transparent">${loc.name}</button>`).join('');
+  // Delete button only for existing non-self users
+  const dw=document.getElementById('um-del-wrap');
+  dw.style.display=(u&&u.id!==CU.id)?'block':'none';
+  document.getElementById('user-modal').classList.add('open');
+}
+
+function pickAvatar(el,emoji){
+  el.parentElement.querySelectorAll('span').forEach(s=>s.style.borderColor='transparent');
+  el.style.borderColor='var(--caramel)';
+  el.dataset.selected='1';
+}
+function togPill(el,idx){
+  const on=el.classList.toggle('on');
+  el.style.background=on?'var(--caramel)':'var(--white)';
+  el.style.color=on?'#fff':'var(--text)';
+}
+function togLocPill(el){
+  const on=el.classList.toggle('on');
+  const col=el.style.borderColor||'var(--caramel)';
+  el.style.background=on?col:'var(--white)';
+  el.style.color=on?'#fff':'var(--text)';
+}
+
+async function saveUser(){
+  const uid=document.getElementById('um-id').value;
+  const name=document.getElementById('um-name').value.trim();
+  const pin=document.getElementById('um-pin').value.trim();
+  const role=document.getElementById('um-role').value;
+  const lang=document.getElementById('um-lang').value;
+  if(!name){alert('Vul een naam in');return;}
+  // Gather avatar
+  const avEl=document.querySelector('#um-avatar-pick span[style*="var(--caramel)"]');
+  const avatar=avEl?avEl.textContent:'';
+  // Gather default days
+  const days=[];
+  document.querySelectorAll('#um-days .pill.on').forEach((el,i)=>{
+    const idx=dayArr().indexOf(el.textContent);if(idx>=0)days.push(idx);
+  });
+  // Gather locations
+  const locIds=[];
+  document.querySelectorAll('#um-locs .pill.on').forEach(el=>{locIds.push(el.dataset.lid);});
+
+  if(uid){
+    // Update existing user
+    const upd={name,role,language:lang,avatar,default_days:days};
+    if(pin&&/^\d{4}$/.test(pin))upd.pin=pin;
+    await sb.from('users').update(upd).eq('id',uid);
+    // Sync user_locations: delete old, insert new
+    await sb.from('user_locations').delete().eq('user_id',uid);
+    if(locIds.length){
+      const rows=locIds.map(lid=>({household_id:HID,user_id:uid,location_id:lid}));
+      await sb.from('user_locations').insert(rows);
+    }
+    await logChange(`Gebruiker bijgewerkt: ${name}`);
+  } else {
+    // Create new user
+    if(!pin||!/^\d{4}$/.test(pin)){alert('PIN moet 4 cijfers zijn');return;}
+    const{data,error}=await sb.from('users').insert({household_id:HID,name,pin,role,language:lang,avatar,default_days:days}).select();
+    if(error){alert('Fout: '+error.message);return;}
+    const newId=data[0].id;
+    if(locIds.length){
+      const rows=locIds.map(lid=>({household_id:HID,user_id:newId,location_id:lid}));
+      await sb.from('user_locations').insert(rows);
+    }
+    await logChange(`Nieuwe gebruiker: ${name} (${ROLE_LABELS[role]})`);
+  }
+  await loadAll();
+  if(uid===CU.id)CU=D.users.find(x=>x.id===CU.id);
+  closeUserModal();renderUserList();
+}
+
+async function deleteUser(){
+  const uid=document.getElementById('um-id').value;
+  if(!uid||uid===CU.id)return;
+  const u=D.users.find(x=>x.id===uid);
+  if(!confirm(`Weet je zeker dat je "${u?.name}" wilt verwijderen?`))return;
+  await sb.from('user_locations').delete().eq('user_id',uid);
+  await sb.from('users').delete().eq('id',uid);
+  await logChange(`Gebruiker verwijderd: ${u?.name}`);
+  await loadAll();closeUserModal();renderUserList();
+}
+
+function closeUserModal(){document.getElementById('user-modal').classList.remove('open');}
+
 function renderGlobalCatList(){
   const el=document.getElementById('gcat-list');if(!el)return;
   const title=document.getElementById('inst-gcat-title');if(title)title.textContent=tr('globalCats');
