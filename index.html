@@ -303,6 +303,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="hdr-r">
       <div class="lang-toggle"><button class="lang-btn" id="wl-nl" onclick="setSessionLang('nl')">🇳🇱</button><button class="lang-btn" id="wl-pt" onclick="setSessionLang('pt')">🇵🇹</button></div>
       <div class="weather-chip" id="w-weather">&#9728;</div>
+      <button onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">🔔<span class="notif-badge" id="w-notif-badge" style="display:none">0</span></button>
       <button class="btn-out" onclick="logout()">&#8617;</button>
     </div>
   </div>
@@ -1127,7 +1128,7 @@ async function chkPin(){
       if(np&&/^\d{4}$/.test(np)){await sb.from('users').update({pin:np}).eq('id',user.id);await loadAll();CU=D.users.find(u=>u.id===user.id);}
     }
     showScr(isMgr(user)?'manager':'worker');
-    if(isWkr(user))updLogBadge();
+    if(isWkr(user)){updLogBadge();updNotifBadge();}
   } else {
     document.getElementById('pin-err').textContent=tr('pinWrong');
     pin='';updDots();
@@ -1710,10 +1711,12 @@ function renderNotifList(){
 }
 
 function updNotifBadge(){
-  const badge=document.getElementById('m-notif-badge');if(!badge)return;
   const unread=D.notifs.filter(n=>!n.read).length;
-  badge.textContent=unread;
-  badge.style.display=unread>0?'flex':'none';
+  ['m-notif-badge','w-notif-badge'].forEach(id=>{
+    const badge=document.getElementById(id);if(!badge)return;
+    badge.textContent=unread;
+    badge.style.display=unread>0?'flex':'none';
+  });
 }
 
 async function markNotifRead(id){
@@ -1839,18 +1842,36 @@ async function denySwap(swapId){
 }
 function renderFamilyOverview(wk){
   const el=document.getElementById('m-family');if(!el)return;
-  // Only for admin/parent
   if(!isMgr())return;
   const kids=D.users.filter(u=>u.role==='child');
   if(!kids.length){el.innerHTML='';return;}
   let html=`<div class="fam-card"><div class="fam-hdr" onclick="togEl('fam-body','fam-chev')" style="background:var(--steam)"><span style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;flex:1">👨‍👩‍👧‍👦 Gezin</span><span class="chev" id="fam-chev">&#9662;</span></div><div class="fam-body" id="fam-body">`;
+  
+  // Show pending swap requests at top
+  const pendingSwaps=D.swaps.filter(s=>s.status==='pending'&&s.week_key===wk);
+  if(pendingSwaps.length){
+    html+=`<div style="background:#fff8f0;border-radius:8px;padding:8px;margin-bottom:8px">`;
+    pendingSwaps.forEach(s=>{
+      const kid=D.users.find(u=>u.id===s.requester_id);
+      const typeLbl=s.recurring?'(elke week)':'(deze week)';
+      html+=`<div style="font-size:13px;margin-bottom:6px"><strong>${kid?.avatar||''} ${kid?.name||'?'}</strong> wil <strong>${dayArr()[s.original_day]}</strong> → <strong>${dayArr()[s.requested_day]}</strong> ${typeLbl}`;
+      if(s.reason)html+=` <em style="color:var(--muted)">"${s.reason}"</em>`;
+      html+=`<div style="display:flex;gap:6px;margin-top:4px"><button onclick="approveSwap('${s.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:4px 12px;font-size:12px;cursor:pointer">✓ Goedkeuren</button><button onclick="denySwap('${s.id}')" style="background:#c45c5c;color:#fff;border:none;border-radius:var(--rs);padding:4px 12px;font-size:12px;cursor:pointer">✕ Afwijzen</button></div></div>`;
+    });
+    html+=`</div>`;
+  }
+
   kids.forEach(kid=>{
     const tasks=D.persTasks.filter(t=>t.user_id===kid.id);
+    const kidSwaps=D.swaps.filter(s=>s.requester_id===kid.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring);
     const col=ucol(kid.id);
     let tot=0,done=0;
     tasks.forEach(t=>{
+      // Find effective day for this task (swap-aware)
+      const movedTo=kidSwaps.find(s=>s.original_day===t.day_index);
+      const checkDay=movedTo?movedTo.requested_day:t.day_index;
       tot++;
-      if(D.checks[t.id+'_'+wk+'_'+t.day_index]?.on)done++;
+      if(D.checks[t.id+'_'+wk+'_'+checkDay]?.on)done++;
     });
     const pct=tot?Math.round(done/tot*100):0;
     const kidId='fam-kid-'+kid.id.slice(0,6);
@@ -1860,21 +1881,27 @@ function renderFamilyOverview(wk){
     html+=`<span class="fam-name">${kid.name}</span>`;
     html+=`<div class="fam-prog"><div class="fam-prog-bar"><div class="fam-prog-fill" style="width:${pct}%;background:${col}"></div></div><span class="fam-prog-txt">${done}/${tot}</span><span class="chev" id="${kidId}-c" style="font-size:10px">&#9662;</span></div>`;
     html+=`</div>`;
-    // Expandable tasks per day
+    // Build day→tasks map with swap awareness
     html+=`<div class="fam-body" id="${kidId}">`;
-    const byDay={};tasks.forEach(t=>{if(!byDay[t.day_index])byDay[t.day_index]=[];byDay[t.day_index].push(t);});
-    Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
-      html+=`<div class="fam-day-lbl">${dayArr()[di]}</div>`;
-      byDay[di].forEach(t=>{
-        const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+    const dayMap={};
+    tasks.forEach(t=>{
+      const movedTo=kidSwaps.find(s=>s.original_day===t.day_index);
+      const displayDay=movedTo?movedTo.requested_day:t.day_index;
+      if(!dayMap[displayDay])dayMap[displayDay]=[];
+      dayMap[displayDay].push({...t,_origDay:t.day_index,_displayDay:displayDay,_swapped:!!movedTo});
+    });
+    Object.keys(dayMap).sort((a,b)=>a-b).forEach(di=>{
+      const hasSwapped=dayMap[di].some(t=>t._swapped);
+      html+=`<div class="fam-day-lbl">${dayArr()[di]}${hasSwapped?' <span style="font-size:9px;color:var(--caramel)">🔄 geruild</span>':''}</div>`;
+      dayMap[di].forEach(t=>{
+        const ck=!!D.checks[t.id+'_'+wk+'_'+parseInt(di)]?.on;
         const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
-        const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
+        const by=D.checks[t.id+'_'+wk+'_'+parseInt(di)]?.by;
         const byName=ck&&by?` ✓ ${uname(by)}`:'';
         const rxBadges=renderReactionBadges(t.id,wk,parseInt(di));
         const rxBtn=ck?renderReactionBtn(t.id,wk,parseInt(di),'personal'):'';
         html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
       });
-      // Show recipe if assigned to this kid on this day
       const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===parseInt(di)&&r.assigned_to===kid.id);
       recs.forEach(r=>{
         html+=`<div class="fam-task" style="color:var(--caramel)"><span>🍳</span><span>${r.name}</span></div>`;
