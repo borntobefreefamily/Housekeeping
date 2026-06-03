@@ -64,6 +64,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .tab{flex:1;white-space:nowrap;padding:11px 4px;font-size:11px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;min-width:0;position:relative;-webkit-tap-highlight-color:transparent}
 .tab.on{color:var(--caramel);border-bottom-color:var(--caramel)}
 .notif-dot{position:absolute;top:6px;right:2px;width:7px;height:7px;background:var(--caramel);border-radius:50%;display:none}
+.notif-badge{position:absolute;top:-2px;right:-4px;background:#c45c5c;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.notif-panel{display:none;position:fixed;top:0;right:0;width:min(320px,85vw);height:100%;background:var(--white);z-index:150;box-shadow:-4px 0 20px rgba(0,0,0,.15);flex-direction:column}
+.notif-panel.open{display:flex}
+.notif-panel-hdr{padding:1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding-top:calc(1rem + env(safe-area-inset-top,0))}
+.notif-panel-body{flex:1;overflow-y:auto;padding:.5rem}
+.notif-item{padding:10px;border-radius:var(--rs);margin-bottom:4px;font-size:13px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.notif-item.unread{background:#f0f4ff}
+.notif-item .notif-title{font-weight:600;margin-bottom:2px}
+.notif-item .notif-time{font-size:11px;color:var(--muted)}
 
 /* WEEK NAV */
 .wk-nav{display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:var(--espresso);flex-shrink:0;gap:4px}
@@ -342,6 +351,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="hdr-r">
       <div class="lang-toggle"><button class="lang-btn" id="ml-nl" onclick="setSessionLang('nl')">🇳🇱</button><button class="lang-btn" id="ml-pt" onclick="setSessionLang('pt')">🇵🇹</button></div>
       <div class="weather-chip" id="m-weather">&#9728;</div>
+      <button class="btn-notif" id="m-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">🔔<span class="notif-badge" id="m-notif-badge" style="display:none">0</span></button>
       <button class="btn-out" onclick="logout()">&#8617;</button>
     </div>
   </div>
@@ -676,6 +686,18 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 </div>
 
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-hdr">
+    <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">Meldingen</span>
+    <button onclick="toggleNotifPanel()" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <div class="notif-panel-body" id="notif-list"></div>
+  <div style="padding:8px;border-top:1px solid var(--border)">
+    <button onclick="markAllRead()" class="save-btn" style="width:100%;background:var(--steam);color:var(--text);font-size:12px">Alles gelezen</button>
+  </div>
+</div>
+<div class="notif-overlay" id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
+
 <div class="modal-bg" id="user-modal">
   <div class="modal">
     <div class="modal-title" id="um-title">Gebruiker bewerken</div>
@@ -922,7 +944,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -943,6 +965,7 @@ async function loadAll(){
     safeQ(sb.from('personal_tasks').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('task_reactions').select('*').eq('household_id',HID)),
     safeQ(sb.from('location_notes').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
+    safeQ(sb.from('notifications').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(30)),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
@@ -954,6 +977,7 @@ async function loadAll(){
   D.persTasks=ptk.data||[];
   D.reactions=trx.data||[];
   D.lnotes=ln.data||[];
+  D.notifs=(nf.data||[]).filter(n=>n.user_id===CU?.id);
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -962,7 +986,7 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes'];
+  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes','notifications'];
   tbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
@@ -973,7 +997,7 @@ function setupRT(){
         await loadAll();
         if(isWkr())refreshWorker();
         else refreshMgrWeek();
-        updLogBadge();
+        updLogBadge();updNotifBadge();
       },600);
     }).subscribe();
     rtSubs.push(ch);
@@ -1299,6 +1323,25 @@ function renderDayBody(di,wk,isMgr){
         lb+='</div>';
       });
     });
+    // Notes for daily basis
+    const dailyNote=D.notes[DAILY_ID+'_'+wk+'_'+di]||'';
+    if(isMgr){
+      lb+=`<span class="slbl" style="margin-top:.5rem">${tr('notes')}</span>`;
+      lb+=`<div style="font-size:12px;color:var(--muted);padding:.25rem 0;min-height:18px;font-style:italic">${dailyNote||'\u2014'}</div>`;
+    } else {
+      lb+=`<span class="slbl" style="margin-top:.5rem">${tr('notes')}</span>`;
+      lb+=`<textarea class="notes-area" placeholder="${tr('notesHint')}" onchange="saveNote('${DAILY_ID}','${wk}',${di},this.value)">${dailyNote}</textarea>`;
+    }
+    // Persistent notes for daily basis
+    const dailyActiveNotes=D.lnotes.filter(n=>n.location_id===DAILY_ID&&!n.resolved);
+    if(dailyActiveNotes.length){
+      lb+=`<div style="margin-top:6px;background:#f0f4ff;border-radius:8px;padding:6px 8px">`;
+      dailyActiveNotes.forEach(n=>{const who=D.users.find(x=>x.id===n.created_by);const dt=new Date(n.created_at);const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
+        lb+=`<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:13px"><span style="flex:1"><strong style="color:${ucol(n.created_by)}">${who?.name||'?'}</strong> ${n.note} <span style="font-size:10px;color:var(--muted)">${dlbl}</span></span><button onclick="resolveNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;-webkit-tap-highlight-color:transparent" title="Opgelost">☑</button></div>`;
+      });
+      lb+=`</div>`;
+    }
+    lb+=`<div style="display:flex;gap:4px;margin-top:6px"><input type="text" class="finput" style="flex:1;font-size:12px;padding:6px 8px" placeholder="Notitie toevoegen..." id="ln-${uid}" onkeydown="if(event.key==='Enter')addLocNote('${DAILY_ID}','${wk}',${di},'ln-${uid}')"><button onclick="addLocNote('${DAILY_ID}','${wk}',${di},'ln-${uid}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">+</button></div>`;
     html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#fe7f2d;cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
   }
 
@@ -1518,6 +1561,7 @@ function renderManager(){
   if(instTab)instTab.style.display=CU.role==='admin'?'':'none';
   updateManagerLabels();
   updWkLbls();renderMgrWeek();
+  updNotifBadge();
 }
 
 function mTab(n){
@@ -1579,6 +1623,64 @@ async function addReaction(tid,wk,di,taskType,emoji){
   },{onConflict:'task_id,week_key,day_index,reactor_id'});
   await loadAll();
   if(isMgr())renderFamilyOverview(wk);
+}
+
+// ═══════════════ NOTIFICATIONS ═══════════════
+function toggleNotifPanel(){
+  const p=document.getElementById('notif-panel');
+  const o=document.getElementById('notif-overlay');
+  const isOpen=p.classList.toggle('open');
+  o.style.display=isOpen?'block':'none';
+  if(isOpen)renderNotifList();
+}
+
+function renderNotifList(){
+  const el=document.getElementById('notif-list');if(!el)return;
+  if(!D.notifs.length){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:1rem;text-align:center">Geen meldingen</div>`;return;}
+  const now=new Date();
+  el.innerHTML=D.notifs.map(n=>{
+    const dt=new Date(n.created_at);
+    const diff=Math.floor((now-dt)/60000);
+    const ts=diff<60?`${diff}min geleden`:diff<1440?`${Math.floor(diff/60)}u geleden`:`${Math.floor(diff/1440)}d geleden`;
+    const title=lg()==='pt'?(n.title_pt||n.title_nl):lg()==='en'?(n.title_en||n.title_nl):n.title_nl;
+    const body=n.body||{};
+    return `<div class="notif-item${n.read?'':' unread'}" onclick="markNotifRead('${n.id}')"><div class="notif-title">${title||'Melding'}</div>${body.detail?`<div style="font-size:12px;color:var(--text)">${body.detail}</div>`:''}<div class="notif-time">${ts}</div></div>`;
+  }).join('');
+}
+
+function updNotifBadge(){
+  const badge=document.getElementById('m-notif-badge');if(!badge)return;
+  const unread=D.notifs.filter(n=>!n.read).length;
+  badge.textContent=unread;
+  badge.style.display=unread>0?'flex':'none';
+}
+
+async function markNotifRead(id){
+  await sb.from('notifications').update({read:true}).eq('id',id);
+  const n=D.notifs.find(x=>x.id===id);if(n)n.read=true;
+  renderNotifList();updNotifBadge();
+}
+
+async function markAllRead(){
+  const unread=D.notifs.filter(n=>!n.read);
+  if(!unread.length)return;
+  await sb.from('notifications').update({read:true}).in('id',unread.map(n=>n.id));
+  unread.forEach(n=>n.read=true);
+  renderNotifList();updNotifBadge();
+}
+
+// Send notification to admin/parent when child completes a task
+async function notifyParents(taskName){
+  if(CU?.role!=='child')return;
+  const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
+  const rows=parents.map(p=>({
+    household_id:HID,user_id:p.id,type:'task_completed',
+    title_nl:`${CU.avatar||''} ${CU.name} heeft een taak afgevinkt`,
+    title_pt:`${CU.avatar||''} ${CU.name} completou uma tarefa`,
+    title_en:`${CU.avatar||''} ${CU.name} completed a task`,
+    body:{detail:taskName,child_id:CU.id}
+  }));
+  if(rows.length)await sb.from('notifications').insert(rows);
 }
 function renderFamilyOverview(wk){
   const el=document.getElementById('m-family');if(!el)return;
@@ -1785,7 +1887,11 @@ async function togTask(el,tid,wk,di,mgr){
   updTotalProg(wk,mgr);
   // Save to DB in background (no await, no reload, no re-render)
   if(wasOn){sb.from('task_checks').delete().eq('task_id',tid).eq('week_key',wk).eq('day_index',di).eq('household_id',HID).then();}
-  else{sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'}).then();}
+  else{
+    sb.from('task_checks').upsert({household_id:HID,task_id:tid,task_type:'fixed',week_key:wk,day_index:di,checked_by:CU?.id},{onConflict:'household_id,task_id,week_key,day_index'}).then();
+    // Notify parents when child completes a task
+    if(CU?.role==='child'){const t=D.persTasks.find(x=>x.id===tid);notifyParents(t?.text_nl||'taak');}
+  }
 }
 
 async function skipTask(tid,wk,di,mgr,type){
