@@ -1515,14 +1515,13 @@ function renderWorker(){
     const mySwaps=isChild?D.swaps.filter(s=>s.requester_id===CU.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring):[];
     daysToCheck.forEach(di=>{
       if(isChild){
-        // Calculate effective day considering swaps
         const movedAway=mySwaps.some(s=>s.original_day===di);
         const movedHere=mySwaps.find(s=>s.requested_day===di);
         const effectiveDay=movedAway?-1:movedHere?movedHere.original_day:di;
         const pt=effectiveDay>=0?D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===effectiveDay):[];
         const rc=effectiveDay>=0?D.recipes.filter(r=>r.week_key===wk&&r.day_index===effectiveDay&&r.assigned_to===CU.id):[];
-        // Show day if tasks moved here, or has own tasks (not moved away)
-        if(!pt.length&&!rc.length&&!movedAway)return;
+        // Always show: own tasks, swap targets, or moved-away days
+        if(!pt.length&&!rc.length&&!movedAway&&!movedHere)return;
         if(movedAway&&!movedHere){
           // Day exists but tasks moved away — still show with message
           html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">—</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
@@ -2033,7 +2032,7 @@ function refreshWorker(){
       const effectiveDay=movedAway?-1:movedHere?movedHere.original_day:di;
       const pt=effectiveDay>=0?D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===effectiveDay):[];
       const rc=effectiveDay>=0?D.recipes.filter(r=>r.week_key===wk&&r.day_index===effectiveDay&&r.assigned_to===CU.id):[];
-      if(!pt.length&&!rc.length&&!movedAway)return;
+      if(!pt.length&&!rc.length&&!movedAway&&!movedHere)return;
       let dt=pt.length,dd=0;
       pt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
