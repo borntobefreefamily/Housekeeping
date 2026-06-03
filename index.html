@@ -1010,17 +1010,30 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes','notifications','swap_requests'];
-  tbls.forEach(tbl=>{
+  // Tables that need soft refresh (preserves open state)
+  const softTbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes','notifications'];
+  // Tables that need full re-render (new day cards may appear)
+  const hardTbls=['swap_requests'];
+  softTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
-      // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
       if(Date.now()<_rtSkipUntil)return;
-      // Debounce: multiple changes within 600ms → one refresh
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
         await loadAll();
         if(isWkr())refreshWorker();
         else refreshMgrWeek();
+        updLogBadge();updNotifBadge();
+      },600);
+    }).subscribe();
+    rtSubs.push(ch);
+  });
+  hardTbls.forEach(tbl=>{
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
+      clearTimeout(_rtTimer);
+      _rtTimer=setTimeout(async()=>{
+        await loadAll();
+        if(isWkr())renderWorker();
+        else renderMgrWeek();
         updLogBadge();updNotifBadge();
       },600);
     }).subscribe();
@@ -1854,8 +1867,12 @@ function renderFamilyOverview(wk){
     pendingSwaps.forEach(s=>{
       const kid=D.users.find(u=>u.id===s.requester_id);
       const typeLbl=s.recurring?'(elke week)':'(deze week)';
+      // Show which tasks are on that day
+      const tasksOnDay=D.persTasks.filter(t=>t.user_id===s.requester_id&&t.day_index===s.original_day);
+      const taskNames=tasksOnDay.map(t=>t.text_nl||t.text_pt||'').join(', ');
       html+=`<div style="font-size:13px;margin-bottom:6px"><strong>${kid?.avatar||''} ${kid?.name||'?'}</strong> wil <strong>${dayArr()[s.original_day]}</strong> → <strong>${dayArr()[s.requested_day]}</strong> ${typeLbl}`;
       if(s.reason)html+=` <em style="color:var(--muted)">"${s.reason}"</em>`;
+      if(taskNames)html+=`<div style="font-size:12px;color:var(--muted);margin-top:2px">Taken: ${taskNames}</div>`;
       html+=`<div style="display:flex;gap:6px;margin-top:4px"><button onclick="approveSwap('${s.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:4px 12px;font-size:12px;cursor:pointer">✓ Goedkeuren</button><button onclick="denySwap('${s.id}')" style="background:#c45c5c;color:#fff;border:none;border-radius:var(--rs);padding:4px 12px;font-size:12px;cursor:pointer">✕ Afwijzen</button></div></div>`;
     });
     html+=`</div>`;
