@@ -1687,8 +1687,11 @@ function renderNotifList(){
     const body=n.body||{};
     let actions='';
     if(n.type==='swap_request'&&isMgr()){
-      const swap=D.swaps.find(s=>s.requester_id===body.child_id&&s.original_day===parseInt(body.swap_from)&&s.requested_day===parseInt(body.swap_to)&&s.status==='pending');
+      // Try exact match first, then broader match
+      let swap=D.swaps.find(s=>s.requester_id===body.child_id&&s.original_day===parseInt(body.swap_from)&&s.requested_day===parseInt(body.swap_to)&&s.status==='pending');
+      if(!swap)swap=D.swaps.find(s=>s.requester_id===body.child_id&&s.status==='pending');
       if(swap)actions=`<div style="display:flex;gap:6px;margin-top:6px"><button onclick="event.stopPropagation();approveSwap('${swap.id}')" style="flex:1;background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:6px;font-size:12px;cursor:pointer">✓ Goedkeuren</button><button onclick="event.stopPropagation();denySwap('${swap.id}')" style="flex:1;background:#c45c5c;color:#fff;border:none;border-radius:var(--rs);padding:6px;font-size:12px;cursor:pointer">✕ Afwijzen</button></div>`;
+      else actions=`<div style="font-size:11px;color:var(--muted);margin-top:4px">Verzoek niet meer beschikbaar</div>`;
     }
     return `<div class="notif-item${n.read?'':' unread'}" onclick="markNotifRead('${n.id}')"><div class="notif-title">${title||'Melding'}</div>${body.detail?`<div style="font-size:12px;color:var(--text)">${body.detail}</div>`:''}${body.reason?`<div style="font-size:11px;color:var(--muted);font-style:italic">"${body.reason}"</div>`:''}${actions}<div class="notif-time">${ts}</div></div>`;
   }).join('');
