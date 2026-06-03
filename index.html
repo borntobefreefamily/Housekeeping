@@ -561,6 +561,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="form-card" style="max-height:300px;overflow-y:auto">
       <div id="m-log-list"></div>
     </div>
+
+    <div class="sec-title">Notities zoeken</div>
+    <div class="form-card">
+      <div style="display:flex;gap:4px">
+        <input type="text" class="finput" id="note-search" placeholder="Zoek in notities..." style="flex:1" onkeydown="if(event.key==='Enter')searchNotes()">
+        <button onclick="searchNotes()" class="save-btn" style="width:auto;padding:8px 14px">🔍</button>
+      </div>
+      <div id="note-search-results" style="margin-top:8px"></div>
+    </div>
   </div>
 </div>
 
@@ -913,7 +922,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -933,6 +942,7 @@ async function loadAll(){
     safeQ(sb.from('user_locations').select('*').eq('household_id',HID)),
     safeQ(sb.from('personal_tasks').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('task_reactions').select('*').eq('household_id',HID)),
+    safeQ(sb.from('location_notes').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
@@ -943,6 +953,7 @@ async function loadAll(){
   D.ulocs=ul.data||[];
   D.persTasks=ptk.data||[];
   D.reactions=trx.data||[];
+  D.lnotes=ln.data||[];
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -951,7 +962,7 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions'];
+  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes'];
   tbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
@@ -1359,6 +1370,28 @@ function renderLocBlock(loc,wk,di,isMgr){
     lb+=`<textarea class="notes-area" placeholder="${tr('notesHint')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
     lb+=`<button class="save-btn" onclick="doFlash('fl-${uid}')">${tr('save')}</button><div id="fl-${uid}" class="flash" style="opacity:0">${tr('saved')}</div>`;
   }
+  // Persistent location notes
+  const activeNotes=D.lnotes.filter(n=>n.location_id===loc.id&&!n.resolved);
+  if(activeNotes.length){
+    const mgrNotes=activeNotes.filter(n=>{const u=D.users.find(x=>x.id===n.created_by);return u&&(u.role==='admin'||u.role==='parent');});
+    const wrkNotes=activeNotes.filter(n=>{const u=D.users.find(x=>x.id===n.created_by);return !u||u.role==='worker'||u.role==='child';});
+    if(mgrNotes.length){
+      lb+=`<div style="margin-top:6px;background:#f0f4ff;border-radius:8px;padding:6px 8px">`;
+      mgrNotes.forEach(n=>{const who=D.users.find(x=>x.id===n.created_by);const dt=new Date(n.created_at);const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
+        lb+=`<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:13px"><span style="flex:1"><strong style="color:${ucol(n.created_by)}">${who?.name||'?'}</strong> ${n.note} <span style="font-size:10px;color:var(--muted)">${dlbl}</span></span><button onclick="resolveNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;-webkit-tap-highlight-color:transparent" title="Opgelost">☑</button></div>`;
+      });
+      lb+=`</div>`;
+    }
+    if(wrkNotes.length){
+      lb+=`<div style="margin-top:6px;background:#fff8f0;border-radius:8px;padding:6px 8px">`;
+      wrkNotes.forEach(n=>{const who=D.users.find(x=>x.id===n.created_by);const dt=new Date(n.created_at);const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
+        lb+=`<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:13px"><span style="flex:1"><strong style="color:${ucol(n.created_by)}">${who?.name||'?'}</strong> ${n.note} <span style="font-size:10px;color:var(--muted)">${dlbl}</span></span><button onclick="resolveNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 2px;-webkit-tap-highlight-color:transparent" title="Opgelost">☑</button></div>`;
+      });
+      lb+=`</div>`;
+    }
+  }
+  // Add note input
+  lb+=`<div style="display:flex;gap:4px;margin-top:6px"><input type="text" class="finput" style="flex:1;font-size:12px;padding:6px 8px" placeholder="Notitie toevoegen..." id="ln-${uid}" onkeydown="if(event.key==='Enter')addLocNote('${loc.id}','${wk}',${di},'ln-${uid}')"><button onclick="addLocNote('${loc.id}','${wk}',${di},'ln-${uid}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">+</button></div>`;
   return `<div class="loc-block"><div class="loc-section-hdr" style="background:${loc.color};cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${loc.name}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${total}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
 }
 
@@ -1847,6 +1880,38 @@ async function saveNote(lid,wk,di,val){
   await loadAll();
 }
 function doFlash(id){const fl=document.getElementById(id);if(!fl)return;fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',2000);}
+
+async function addLocNote(locId,wk,di,inputId){
+  const inp=document.getElementById(inputId);if(!inp)return;
+  const text=inp.value.trim();if(!text)return;
+  await sb.from('location_notes').insert({household_id:HID,location_id:locId,week_key:wk,day_index:di,note:text,created_by:CU.id});
+  const locName=D.locs.find(l=>l.id===locId)?.name||'';
+  await logChange(`Notitie bij ${locName}: "${text}"`);
+  inp.value='';
+  await loadAll();if(isMgr())refreshMgrWeek();else refreshWorker();
+}
+
+async function resolveNote(noteId){
+  await sb.from('location_notes').update({resolved:true,resolved_by:CU.id,resolved_at:new Date().toISOString()}).eq('id',noteId);
+  await loadAll();if(isMgr())refreshMgrWeek();else refreshWorker();
+}
+
+async function searchNotes(){
+  const q=document.getElementById('note-search')?.value.trim().toLowerCase();
+  const el=document.getElementById('note-search-results');if(!el||!q)return;
+  // Search all notes (including resolved) from DB
+  const{data}=await sb.from('location_notes').select('*').eq('household_id',HID).ilike('note','%'+q+'%').order('created_at',{ascending:false}).limit(30);
+  if(!data||!data.length){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:4px">Geen resultaten</div>`;return;}
+  el.innerHTML=data.map(n=>{
+    const loc=D.locs.find(l=>l.id===n.location_id);
+    const who=D.users.find(u=>u.id===n.created_by);
+    const dt=new Date(n.created_at);
+    const dlbl=`${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}`;
+    const dayName=dayArr()[n.day_index]||'';
+    const resolved=n.resolved?`<span style="font-size:10px;color:var(--muted);background:var(--done-bg);padding:1px 5px;border-radius:6px">✓ opgelost</span>`:`<span style="font-size:10px;color:#c45c5c;background:#ffeaea;padding:1px 5px;border-radius:6px">open</span>`;
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${n.note}</strong>${resolved}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${loc?.name||'?'} · ${dayName} · ${dlbl} · ${who?.name||'?'}</div></div>`;
+  }).join('');
+}
 
 async function editFocus(di){
   const cur=getFocus(di)||'';
