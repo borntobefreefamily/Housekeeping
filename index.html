@@ -556,6 +556,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="set-row" style="margin-top:8px"><div><div class="set-lbl">Taken vertalen naar PT</div><div class="set-sub">Vertaalt alle taken zonder Portugese tekst</div></div><button class="btn-sm" onclick="translateAllTasks()" id="translate-btn">Vertalen</button></div>
       <div id="translate-flash" class="flash" style="opacity:0">Vertaling klaar!</div>
     </div>
+
+    <div class="sec-title">Activiteitenlog</div>
+    <div class="form-card" style="max-height:300px;overflow-y:auto">
+      <div id="m-log-list"></div>
+    </div>
   </div>
 </div>
 
@@ -1157,6 +1162,20 @@ async function renderLog(){
   }).join('');
 }
 
+function renderMgrLog(){
+  const el=document.getElementById('m-log-list');if(!el)return;
+  if(!D.log.length){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:4px 0">Geen wijzigingen</div>`;return;}
+  const now=new Date();
+  el.innerHTML=D.log.map(l=>{
+    const dt=new Date(l.created_at);
+    const diff=Math.floor((now-dt)/60000);
+    const ts=diff<60?`${diff}min`:diff<1440?`${Math.floor(diff/60)}u`:`${Math.floor(diff/1440)}d`;
+    const who=uname(l.user_id)||'Systeem';
+    const wc=ucol(l.user_id);
+    return `<div class="clog-item"><div class="clog-who" style="color:${wc}">${who}</div><div class="clog-txt">${l.description}</div><div class="clog-time">${ts} geleden</div></div>`;
+  }).join('');
+}
+
 // ═══════════════ RENDER HELPERS ═══════════════
 // Simplified child view — only their personal tasks, recipe, and their location
 function renderChildDay(di,wk){
@@ -1477,7 +1496,7 @@ function mTab(n){
   if(n==='plan')renderPlan();
   if(n==='recipe'){renderRecSels();renderRcList();}
   if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();}
-  if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();}
+  if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
