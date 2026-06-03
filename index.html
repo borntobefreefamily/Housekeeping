@@ -698,6 +698,27 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 </div>
 <div class="notif-overlay" id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
 
+<div class="modal-bg" id="swap-modal">
+  <div class="modal">
+    <div class="modal-title">Dag ruilen</div>
+    <input type="hidden" id="sw-from-day">
+    <div id="sw-from-lbl" style="font-size:14px;font-weight:600;margin-bottom:10px"></div>
+    <label class="flbl">Ruilen naar</label>
+    <select class="finput" id="sw-to-day"></select>
+    <label class="flbl">Type</label>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="pill on" id="sw-once" onclick="swType(false)" style="flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--caramel);background:var(--caramel);color:#fff;cursor:pointer;font-size:13px">Alleen deze week</button>
+      <button class="pill" id="sw-recur" onclick="swType(true)" style="flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-size:13px">Elke week</button>
+    </div>
+    <label class="flbl">Reden (optioneel)</label>
+    <input class="finput" type="text" id="sw-reason" placeholder="Bijv. tandarts op maandag">
+    <div style="display:flex;gap:8px;margin-top:.75rem">
+      <button class="save-btn" onclick="submitSwapRequest()" style="flex:1">Verzoek indienen</button>
+      <button class="save-btn" onclick="closeSwapModal()" style="flex:1;background:var(--steam);color:var(--text)">Annuleren</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="user-modal">
   <div class="modal">
     <div class="modal-title" id="um-title">Gebruiker bewerken</div>
@@ -944,7 +965,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -966,6 +987,7 @@ async function loadAll(){
     safeQ(sb.from('task_reactions').select('*').eq('household_id',HID)),
     safeQ(sb.from('location_notes').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
     safeQ(sb.from('notifications').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(30)),
+    safeQ(sb.from('swap_requests').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
@@ -978,6 +1000,7 @@ async function loadAll(){
   D.reactions=trx.data||[];
   D.lnotes=ln.data||[];
   D.notifs=(nf.data||[]).filter(n=>n.user_id===CU?.id);
+  D.swaps=sw.data||[];
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.notes={};(dn.data||[]).forEach(n=>{D.notes[n.location_id+'_'+n.week_key+'_'+n.day_index]=n.note;});
@@ -986,7 +1009,7 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes','notifications'];
+  const tbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes','notifications','swap_requests'];
   tbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       // Skip realtime events briefly after own action (togTask/skipTask set _rtSkipUntil)
@@ -1216,8 +1239,22 @@ function renderMgrLog(){
 function renderChildDay(di,wk){
   let html='';
 
-  // 1. Personal tasks (big, prominent)
-  const myTasks=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di);
+  // Check for approved one-time swaps that affect this day
+  const mySwaps=D.swaps.filter(s=>s.requester_id===CU.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring);
+  // Tasks moved AWAY from this day (original_day=di, moved to requested_day)
+  const movedAway=mySwaps.some(s=>s.original_day===di);
+  // Tasks moved TO this day (requested_day=di, from original_day)
+  const movedHere=mySwaps.find(s=>s.requested_day===di);
+  const effectiveDay=movedAway?-1:movedHere?movedHere.original_day:di;
+
+  // 1. Personal tasks
+  const myTasks=effectiveDay>=0?D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===effectiveDay):[];
+  if(movedAway){
+    html+=`<div style="color:var(--muted);font-size:12px;font-style:italic;padding:4px 0">Taken verplaatst naar ${dayArr()[mySwaps.find(s=>s.original_day===di).requested_day]}</div>`;
+  }
+  if(movedHere){
+    html+=`<div style="color:var(--caramel);font-size:12px;font-weight:600;padding:4px 0">📅 Verplaatst van ${dayArr()[movedHere.original_day]}</div>`;
+  }
   if(myTasks.length){
     myTasks.forEach(t=>{
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
@@ -1232,8 +1269,9 @@ function renderChildDay(di,wk){
     });
   }
 
-  // 2. Recipe assigned to me
-  const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
+  // 2. Recipe assigned to me (also swap-aware)
+  const recDay=effectiveDay>=0?effectiveDay:di;
+  const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===recDay&&r.assigned_to===CU.id);
   if(recs.length){
     html+=`<div class="recipe-block"><span class="recipe-lbl">${tr('recipes')}</span>`;
     recs.forEach(r=>{
@@ -1467,7 +1505,10 @@ function renderWorker(){
         let dt=pt.length,dd=0;
         pt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
-        html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        const pendSwap=D.swaps.find(s=>s.requester_id===CU.id&&s.week_key===wk&&s.original_day===di&&s.status==='pending');
+        const swapBtn=`<button onclick="event.stopPropagation();openSwapModal(${di})" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 6px;-webkit-tap-highlight-color:transparent;color:var(--muted)" title="Dag ruilen">🔄</button>`;
+        const swapStatus=pendSwap?`<span style="font-size:10px;color:var(--caramel);margin-right:4px">⏳</span>`:'';
+        html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}</div><div style="display:flex;align-items:center">${swapStatus}${swapBtn}<span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       } else {
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
         const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
@@ -1644,7 +1685,13 @@ function renderNotifList(){
     const ts=diff<60?`${diff}min geleden`:diff<1440?`${Math.floor(diff/60)}u geleden`:`${Math.floor(diff/1440)}d geleden`;
     const title=lg()==='pt'?(n.title_pt||n.title_nl):lg()==='en'?(n.title_en||n.title_nl):n.title_nl;
     const body=n.body||{};
-    return `<div class="notif-item${n.read?'':' unread'}" onclick="markNotifRead('${n.id}')"><div class="notif-title">${title||'Melding'}</div>${body.detail?`<div style="font-size:12px;color:var(--text)">${body.detail}</div>`:''}<div class="notif-time">${ts}</div></div>`;
+    let actions='';
+    if(n.type==='swap_request'&&isMgr()){
+      // Find the related swap request
+      const swap=D.swaps.find(s=>s.requester_id===body.child_id&&s.original_day===body.swap_from&&s.requested_day===body.swap_to&&s.status==='pending');
+      if(swap)actions=`<div style="display:flex;gap:6px;margin-top:6px"><button onclick="event.stopPropagation();approveSwap('${swap.id}')" style="flex:1;background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:6px;font-size:12px;cursor:pointer">✓ Goedkeuren</button><button onclick="event.stopPropagation();denySwap('${swap.id}')" style="flex:1;background:#c45c5c;color:#fff;border:none;border-radius:var(--rs);padding:6px;font-size:12px;cursor:pointer">✕ Afwijzen</button></div>`;
+    }
+    return `<div class="notif-item${n.read?'':' unread'}" onclick="markNotifRead('${n.id}')"><div class="notif-title">${title||'Melding'}</div>${body.detail?`<div style="font-size:12px;color:var(--text)">${body.detail}</div>`:''}${body.reason?`<div style="font-size:11px;color:var(--muted);font-style:italic">"${body.reason}"</div>`:''}${actions}<div class="notif-time">${ts}</div></div>`;
   }).join('');
 }
 
@@ -1681,6 +1728,94 @@ async function notifyParents(taskName){
     body:{detail:taskName,child_id:CU.id}
   }));
   if(rows.length)await sb.from('notifications').insert(rows);
+}
+
+// ═══════════════ SWAP REQUESTS ═══════════════
+let _swRecurring=false;
+
+function openSwapModal(fromDay){
+  document.getElementById('sw-from-day').value=fromDay;
+  document.getElementById('sw-from-lbl').textContent=`${dayArr()[fromDay]} ruilen naar:`;
+  const sel=document.getElementById('sw-to-day');
+  sel.innerHTML=dayArr().map((d,i)=>i!==fromDay?`<option value="${i}">${d}</option>`:'').join('');
+  _swRecurring=false;
+  document.getElementById('sw-once').style.cssText='flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--caramel);background:var(--caramel);color:#fff;cursor:pointer;font-size:13px';
+  document.getElementById('sw-recur').style.cssText='flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-size:13px';
+  document.getElementById('sw-reason').value='';
+  document.getElementById('swap-modal').classList.add('open');
+}
+
+function swType(recur){
+  _swRecurring=recur;
+  document.getElementById('sw-once').style.cssText=`flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid ${recur?'var(--border)':'var(--caramel)'};background:${recur?'var(--white)':'var(--caramel)'};color:${recur?'var(--text)':'#fff'};cursor:pointer;font-size:13px`;
+  document.getElementById('sw-recur').style.cssText=`flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid ${recur?'var(--caramel)':'var(--border)'};background:${recur?'var(--caramel)':'var(--white)'};color:${recur?'#fff':'var(--text)'};cursor:pointer;font-size:13px`;
+}
+
+function closeSwapModal(){document.getElementById('swap-modal').classList.remove('open');}
+
+async function submitSwapRequest(){
+  const fromDay=parseInt(document.getElementById('sw-from-day').value);
+  const toDay=parseInt(document.getElementById('sw-to-day').value);
+  const reason=document.getElementById('sw-reason').value.trim();
+  const wk=wkey(wOff);
+  // Check for existing pending request
+  const existing=D.swaps.find(s=>s.requester_id===CU.id&&s.week_key===wk&&s.original_day===fromDay&&s.status==='pending');
+  if(existing){alert('Er staat al een wisselverzoek open voor deze dag');return;}
+  await sb.from('swap_requests').insert({
+    household_id:HID,requester_id:CU.id,original_day:fromDay,
+    requested_day:toDay,week_key:wk,recurring:_swRecurring,reason:reason||null
+  });
+  // Notify parents
+  const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
+  const typeLbl=_swRecurring?'(elke week)':'(deze week)';
+  const rows=parents.map(p=>({
+    household_id:HID,user_id:p.id,type:'swap_request',
+    title_nl:`${CU.avatar||''} ${CU.name} wil ${dayArr()[fromDay]} ruilen naar ${dayArr()[toDay]} ${typeLbl}`,
+    title_pt:`${CU.avatar||''} ${CU.name} quer trocar ${dayArr()[fromDay]} para ${dayArr()[toDay]} ${typeLbl}`,
+    title_en:`${CU.avatar||''} ${CU.name} wants to swap ${dayArr()[fromDay]} to ${dayArr()[toDay]} ${typeLbl}`,
+    body:{swap_from:fromDay,swap_to:toDay,child_id:CU.id,reason}
+  }));
+  if(rows.length)await sb.from('notifications').insert(rows);
+  await loadAll();closeSwapModal();renderWorker();
+}
+
+async function approveSwap(swapId){
+  const sw=D.swaps.find(s=>s.id===swapId);if(!sw)return;
+  await sb.from('swap_requests').update({status:'approved',approved_by:CU.id,approved_at:new Date().toISOString()}).eq('id',swapId);
+  if(sw.recurring){
+    // Permanent: update personal_tasks.day_index + user.default_days
+    await sb.from('personal_tasks').update({day_index:sw.requested_day}).eq('user_id',sw.requester_id).eq('day_index',sw.original_day);
+    const user=D.users.find(u=>u.id===sw.requester_id);
+    if(user){
+      const newDays=(user.default_days||[]).map(d=>d===sw.original_day?sw.requested_day:d);
+      await sb.from('users').update({default_days:newDays}).eq('id',sw.requester_id);
+    }
+    // Move recipes for this user
+    await sb.from('recipes').update({day_index:sw.requested_day}).eq('assigned_to',sw.requester_id).eq('day_index',sw.original_day);
+  }
+  // Notify child
+  const child=D.users.find(u=>u.id===sw.requester_id);
+  if(child)await sb.from('notifications').insert({
+    household_id:HID,user_id:child.id,type:'swap_approved',
+    title_nl:`✅ Wissel goedgekeurd: ${dayArr()[sw.original_day]} → ${dayArr()[sw.requested_day]}`,
+    title_pt:`✅ Troca aprovada: ${dayArr()[sw.original_day]} → ${dayArr()[sw.requested_day]}`,
+    body:{swap_id:swapId}
+  });
+  await logChange(`Wissel goedgekeurd: ${child?.name} ${dayArr()[sw.original_day]} → ${dayArr()[sw.requested_day]}`);
+  await loadAll();renderFamilyOverview(wkey(wOff));renderMgrWeek();updNotifBadge();
+}
+
+async function denySwap(swapId){
+  const sw=D.swaps.find(s=>s.id===swapId);if(!sw)return;
+  await sb.from('swap_requests').update({status:'denied'}).eq('id',swapId);
+  const child=D.users.find(u=>u.id===sw.requester_id);
+  if(child)await sb.from('notifications').insert({
+    household_id:HID,user_id:child.id,type:'swap_denied',
+    title_nl:`❌ Wissel afgewezen: ${dayArr()[sw.original_day]} → ${dayArr()[sw.requested_day]}`,
+    title_pt:`❌ Troca recusada: ${dayArr()[sw.original_day]} → ${dayArr()[sw.requested_day]}`,
+    body:{swap_id:swapId}
+  });
+  await loadAll();renderFamilyOverview(wkey(wOff));updNotifBadge();
 }
 function renderFamilyOverview(wk){
   const el=document.getElementById('m-family');if(!el)return;
