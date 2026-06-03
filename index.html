@@ -1010,10 +1010,10 @@ async function loadAll(){
 let _rtTimer=null, _rtSkipUntil=0;
 function setupRT(){
   rtSubs.forEach(s=>sb.removeChannel(s));rtSubs=[];
-  // Tables that need soft refresh (preserves open state)
-  const softTbls=['week_schedule','task_checks','skipped_tasks','extra_tasks','day_notes','recipes','day_focus','monthly_checks','change_log','personal_tasks','task_reactions','location_notes','notifications'];
-  // Tables that need full re-render (new day cards may appear)
-  const hardTbls=['swap_requests'];
+  // Soft: preserves open state (frequent changes like checks)
+  const softTbls=['task_checks','skipped_tasks','monthly_checks','task_reactions'];
+  // Hard: full re-render (structural changes, new tabs may appear)
+  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests'];
   softTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
@@ -1734,6 +1734,11 @@ function updNotifBadge(){
 async function markNotifRead(id){
   await sb.from('notifications').update({read:true}).eq('id',id);
   const n=D.notifs.find(x=>x.id===id);if(n)n.read=true;
+  // If swap notification, force full re-render to show new day tabs
+  if(n&&(n.type==='swap_approved'||n.type==='swap_denied')){
+    await loadAll();
+    if(isWkr())renderWorker();else renderMgrWeek();
+  }
   renderNotifList();updNotifBadge();
 }
 
