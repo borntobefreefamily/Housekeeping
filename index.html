@@ -1286,7 +1286,7 @@ function renderChildDay(di,wk){
     if(t._swapped)html+=`<div style="font-size:11px;color:var(--caramel);margin-top:2px">📅 van ${dayArr()[t._fromDay]}</div>`;
     else if(locName)html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${locName}</div>`;
     html+=`</div>`;
-    if(!ck)html+=`<button onclick="event.stopPropagation();openSwapModal('${t.id}',${t._swapped?t._fromDay:di})" style="background:none;border:none;cursor:pointer;font-size:13px;padding:4px 6px;color:var(--muted);-webkit-tap-highlight-color:transparent" title="Verplaatsen">🔄</button>`;
+    if(!ck)html+=`<button onclick="event.stopPropagation();openSwapModal('${t.id}',${t._swapped?t._fromDay:di})" style="background:none;border:none;cursor:pointer;font-size:20px;padding:8px;color:var(--muted);-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center" title="Verplaatsen">🔄</button>`;
     html+=`</div>`;
   });
 
