@@ -373,11 +373,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="w-shop-title">Boodschappenlijst</div>
       <div id="w-shop-summary"></div>
       <div class="form-card">
-        <label class="flbl" id="w-shop-lbl-item">Artikel</label>
-        <div class="shop-add-row">
-          <input class="finput" type="text" id="w-shop-name" placeholder="bijv. Melk" style="margin:0">
-          <input class="finput qty-input" type="text" id="w-shop-qty" placeholder="Hoev." style="margin:0">
-        </div>
+        <label class="flbl" id="w-shop-lbl-nl">Artikel (NL)</label>
+        <input class="finput" type="text" id="w-shop-name" placeholder="bijv. Melk" onblur="autoTr('w-shop-name','w-shop-name-pt')">
+        <div class="fhint" id="w-shop-auto-hint">↳ Portugese vertaling automatisch</div>
+        <label class="flbl" id="w-shop-lbl-pt">Artigo (PT)</label>
+        <input class="finput" type="text" id="w-shop-name-pt" placeholder="">
+        <label class="flbl" id="w-shop-lbl-qty">Hoeveelheid</label>
+        <input class="finput" type="text" id="w-shop-qty" placeholder="bijv. 500g, 2 stuks">
         <div style="margin-top:6px">
           <label class="flbl" id="w-shop-lbl-recipe">Recept (optioneel)</label>
           <select class="finput" id="w-shop-recipe"><option value="">— Algemeen —</option></select>
@@ -446,11 +448,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="sec-title" id="m-shop-title">Boodschappenlijst</div>
     <div id="m-shop-summary"></div>
     <div class="form-card">
-      <label class="flbl" id="m-shop-lbl-item">Artikel</label>
-      <div class="shop-add-row">
-        <input class="finput" type="text" id="m-shop-name" placeholder="bijv. Melk" style="margin:0">
-        <input class="finput qty-input" type="text" id="m-shop-qty" placeholder="Hoev." style="margin:0">
-      </div>
+      <label class="flbl" id="m-shop-lbl-nl">Artikel (NL)</label>
+      <input class="finput" type="text" id="m-shop-name" placeholder="bijv. Melk" onblur="autoTr('m-shop-name','m-shop-name-pt')">
+      <div class="fhint" id="m-shop-auto-hint">↳ Portugese vertaling automatisch</div>
+      <label class="flbl" id="m-shop-lbl-pt">Artigo (PT)</label>
+      <input class="finput" type="text" id="m-shop-name-pt" placeholder="">
+      <label class="flbl" id="m-shop-lbl-qty">Hoeveelheid</label>
+      <input class="finput" type="text" id="m-shop-qty" placeholder="bijv. 500g, 2 stuks">
       <div style="margin-top:6px">
         <label class="flbl" id="m-shop-lbl-recipe">Recept (optioneel)</label>
         <select class="finput" id="m-shop-recipe"><option value="">— Algemeen —</option></select>
@@ -919,6 +923,8 @@ const I={
     addRecipeTitle:'Recept toevoegen',plannedRecipes:'Geplande recepten',noRecipes:'Geen recepten gepland.',
     // Shopping
     tabShopping:'🛒',shopTitle:'Boodschappenlijst',shopItem:'Artikel',shopQty:'Hoev.',
+    shopNl:'Artikel (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Hoeveelheid',shopQtyPlaceholder:'bijv. 500g, 2 stuks',
+    shopAutoHint:'↳ Portugese vertaling automatisch',
     shopRecipe:'Recept (optioneel)',shopGeneral:'— Algemeen —',shopAdd:'+ Toevoegen',
     shopNoItems:'Geen boodschappen gepland.',shopGeneralTitle:'Overige boodschappen',
     shopBought:'gekocht',shopOf:'van',shopAll:'Alles gekocht! ✓',
@@ -989,6 +995,8 @@ const I={
     addRecipeTitle:'Adicionar receita',plannedRecipes:'Receitas planeadas',noRecipes:'Sem receitas planeadas.',
     // Shopping
     tabShopping:'🛒',shopTitle:'Lista de compras',shopItem:'Artigo',shopQty:'Qtd.',
+    shopNl:'Artigo (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Quantidade',shopQtyPlaceholder:'ex. 500g, 2 unidades',
+    shopAutoHint:'↳ Tradução portuguesa automática',
     shopRecipe:'Receita (opcional)',shopGeneral:'— Geral —',shopAdd:'+ Adicionar',
     shopNoItems:'Sem compras planeadas.',shopGeneralTitle:'Outras compras',
     shopBought:'comprados',shopOf:'de',shopAll:'Tudo comprado! ✓',
@@ -2680,8 +2688,14 @@ function renderShopping(prefix){
   // Update labels
   const titleEl=document.getElementById(prefix+'-shop-title');
   if(titleEl)titleEl.textContent=tr('shopTitle');
-  const lblItem=document.getElementById(prefix+'-shop-lbl-item');
-  if(lblItem)lblItem.textContent=tr('shopItem');
+  const lblNl=document.getElementById(prefix+'-shop-lbl-nl');
+  if(lblNl)lblNl.textContent=tr('shopNl');
+  const lblPt=document.getElementById(prefix+'-shop-lbl-pt');
+  if(lblPt)lblPt.textContent=tr('shopPt');
+  const lblQty=document.getElementById(prefix+'-shop-lbl-qty');
+  if(lblQty)lblQty.textContent=tr('shopQtyLbl');
+  const autoHint=document.getElementById(prefix+'-shop-auto-hint');
+  if(autoHint)autoHint.textContent=tr('shopAutoHint');
   const lblRec=document.getElementById(prefix+'-shop-lbl-recipe');
   if(lblRec)lblRec.textContent=tr('shopRecipe');
   const addBtn=document.getElementById(prefix+'-shop-add-btn');
@@ -2689,7 +2703,7 @@ function renderShopping(prefix){
   const nameInp=document.getElementById(prefix+'-shop-name');
   if(nameInp)nameInp.placeholder=tr('shopItem');
   const qtyInp=document.getElementById(prefix+'-shop-qty');
-  if(qtyInp)qtyInp.placeholder=tr('shopQty');
+  if(qtyInp)qtyInp.placeholder=tr('shopQtyPlaceholder');
 
   // Populate recipe dropdown for current week range (current + next 3)
   const recSel=document.getElementById(prefix+'-shop-recipe');
@@ -2769,18 +2783,16 @@ function renderShopList(prefix,wk){
     rItems.forEach(item=>{
       html+=renderShopItem(item);
     });
-    if(isMgr()){
-      html+=`<div class="shop-add-row" style="margin-top:4px;margin-bottom:2px">`;
-      html+=`<input type="text" id="shop-inline-${rid}" placeholder="${tr('shopItem')}..." style="flex:1;border:1px solid var(--border);border-radius:var(--rs);padding:5px 8px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif">`;
-      html+=`<input type="text" id="shop-inline-q-${rid}" placeholder="${tr('shopQty')}" style="width:55px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 6px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif">`;
-      html+=`<button onclick="addShopInline('${rid}','${recipe.week_key}')" class="shop-add-btn" style="padding:5px 10px;font-size:12px">+</button>`;
-      html+=`</div>`;
-    }
+    html+=`<div class="shop-add-row" style="margin-top:4px;margin-bottom:2px">`;
+    html+=`<input type="text" id="shop-inline-${rid}" placeholder="${tr('shopItem')}..." style="flex:1;border:1px solid var(--border);border-radius:var(--rs);padding:5px 8px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif">`;
+    html+=`<input type="text" id="shop-inline-q-${rid}" placeholder="${tr('shopQty')}" style="width:55px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 6px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif">`;
+    html+=`<button onclick="addShopInline('${rid}','${recipe.week_key}')" class="shop-add-btn" style="padding:5px 10px;font-size:12px">+</button>`;
+    html+=`</div>`;
     html+=`</div></div>`;
   });
 
   // General items
-  if(general.length){
+  if(general.length||true){
     html+=`<div class="shop-section">`;
     html+=`<div class="shop-recipe-hdr general">`;
     html+=`<span style="font-size:15px">🛒</span>`;
@@ -2790,6 +2802,11 @@ function renderShopList(prefix,wk){
     general.forEach(item=>{
       html+=renderShopItem(item);
     });
+    html+=`<div class="shop-add-row" style="margin-top:4px;margin-bottom:2px">`;
+    html+=`<input type="text" id="shop-inline-general" placeholder="${tr('shopItem')}..." style="flex:1;border:1px solid var(--border);border-radius:var(--rs);padding:5px 8px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif">`;
+    html+=`<input type="text" id="shop-inline-q-general" placeholder="${tr('shopQty')}" style="width:55px;border:1px solid var(--border);border-radius:var(--rs);padding:5px 6px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif">`;
+    html+=`<button onclick="addShopInline(null,'${weeks[0]}')" class="shop-add-btn" style="padding:5px 10px;font-size:12px">+</button>`;
+    html+=`</div>`;
     html+=`</div></div>`;
   }
 
@@ -2801,12 +2818,13 @@ function renderShopItem(item){
   const checked=item.checked;
   const checkedBy=checked&&item.checked_by?D.users.find(u=>u.id===item.checked_by):null;
   const byLbl=checkedBy?` · ${checkedBy.avatar||''} ${checkedBy.name}`:'';
+  const displayName=(lg()==='pt'&&item.name_pt)?item.name_pt:item.name;
   let html=`<div class="shop-item">`;
   html+=`<button class="cb${checked?' on':''}" onclick="togShopItem('${item.id}',${checked})">${checked?'✓':''}</button>`;
-  html+=`<span class="shop-item-name${checked?' bought':''}">${esc(item.name)}</span>`;
+  html+=`<span class="shop-item-name${checked?' bought':''}">${esc(displayName)}</span>`;
   if(item.quantity)html+=`<span class="shop-item-qty">${esc(item.quantity)}</span>`;
   if(checked)html+=`<span style="font-size:10px;color:var(--muted)">${byLbl}</span>`;
-  if(isMgr())html+=`<button class="shop-item-del" onclick="delShopItem('${item.id}')">✕</button>`;
+  html+=`<button class="shop-item-del" onclick="delShopItem('${item.id}')">✕</button>`;
   html+=`</div>`;
   return html;
 }
@@ -2846,6 +2864,7 @@ function wlbl2(wk){
 
 async function addShopItem(prefix){
   const name=document.getElementById(prefix+'-shop-name').value.trim();
+  const namePt=document.getElementById(prefix+'-shop-name-pt')?.value?.trim()||null;
   const qty=document.getElementById(prefix+'-shop-qty').value.trim();
   const recipeId=document.getElementById(prefix+'-shop-recipe').value||null;
   if(!name)return;
@@ -2855,25 +2874,42 @@ async function addShopItem(prefix){
     const r=D.recipes.find(x=>x.id===recipeId);
     if(r)wk=r.week_key;
   }
-  await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId,week_key:wk,name,quantity:qty||null,created_by:CU.id});
+  const{data}=await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId,week_key:wk,name,name_pt:namePt,quantity:qty||null,created_by:CU.id}).select();
   document.getElementById(prefix+'-shop-name').value='';
+  document.getElementById(prefix+'-shop-name-pt').value='';
   document.getElementById(prefix+'-shop-qty').value='';
   await loadAll();renderShopping(prefix);
+  // Auto-translate if PT was empty
+  if(!namePt&&data?.[0]?.id)autoTranslateShopItem(data[0].id,name);
 }
 
 async function addShopInline(recipeId,wk){
-  const nameEl=document.getElementById('shop-inline-'+recipeId);
-  const qtyEl=document.getElementById('shop-inline-q-'+recipeId);
+  const key=recipeId||'general';
+  const nameEl=document.getElementById('shop-inline-'+key);
+  const qtyEl=document.getElementById('shop-inline-q-'+key);
   const name=nameEl?.value?.trim();
   if(!name)return;
   const qty=qtyEl?.value?.trim()||null;
-  await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId,week_key:wk,name,quantity:qty,created_by:CU.id});
+  const{data}=await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId||null,week_key:wk,name,quantity:qty,created_by:CU.id}).select();
   await loadAll();
   // Re-render the active shopping tab
   const mShop=document.getElementById('mt-shop');
   if(mShop&&mShop.style.display!=='none')renderShopping('m');
   const wShop=document.getElementById('wmt-shop');
   if(wShop&&wShop.style.display!=='none')renderShopping('w');
+  // Background auto-translate to PT
+  if(data?.[0]?.id)autoTranslateShopItem(data[0].id,name);
+}
+
+async function autoTranslateShopItem(id,text){
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
+        system:'Vertaal naar Europees Portugees. Alleen de vertaling, geen uitleg.',
+        messages:[{role:'user',content:text}]})});
+    const d=await res.json();const tx=d.content?.[0]?.text?.trim();
+    if(tx)await sb.from('shopping_items').update({name_pt:tx}).eq('id',id);
+  }catch(e){}
 }
 
 async function togShopItem(id,currentChecked){
