@@ -2761,7 +2761,7 @@ function renderShopList(prefix,wk){
     html+=`<div class="shop-section">`;
     html+=`<div class="shop-recipe-hdr">`;
     html+=`<span style="font-size:15px">🍳</span>`;
-    html+=`<span class="shop-recipe-name">${esc(recipe.name)}${reminderBadge}</span>`;
+    html+=`<span class="shop-recipe-name">${recipe.url?`<a href="${recipe.url}" target="_blank" style="color:var(--espresso);text-decoration:none">${esc(recipe.name)} <span style="font-size:11px;color:var(--caramel)">↗</span></a>`:`${esc(recipe.name)}`}${reminderBadge}</span>`;
     html+=`<span class="shop-recipe-day">${dayLbl}${wkLbl}</span>`;
     html+=cookBadge;
     html+=`</div>`;
