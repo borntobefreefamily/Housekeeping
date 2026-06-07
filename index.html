@@ -248,6 +248,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .collapse-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:.5rem 0}
 .collapse-hdr .sec-title{margin:0;padding:0;border:none;flex:1}
 
+/* Task tab group headers */
+.group-hdr{font-size:14px;font-weight:700;color:var(--white);padding:.55rem .85rem;margin-top:.5rem;border-radius:var(--rs);display:flex;align-items:center;gap:6px;letter-spacing:.02em}
+#grp-overzicht{background:#1a6b5a}
+#grp-toevoegen{background:var(--caramel)}
+
 /* SETTINGS */
 .set-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}
 .set-row:last-child{border-bottom:none}
@@ -465,6 +470,44 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 
   <div id="mt-taken" class="scroll" style="display:none">
+    <!-- ═══ GROUP: OVERZICHT ═══ -->
+    <div class="group-hdr" id="grp-overzicht"><span>📋</span> <span id="grp-overzicht-lbl">Overzicht</span></div>
+
+    <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
+      <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
+      <span class="chev" id="fixed-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="fixed-list-body">
+      <div id="fixed-list"></div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('periodic-list-body','periodic-list-chev')">
+      <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken per locatie</div>
+      <span class="chev" id="periodic-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="periodic-list-body">
+      <div id="periodic-list"></div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('extra-list-body','extra-list-chev')">
+      <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken per locatie</div>
+      <span class="chev" id="extra-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="extra-list-body">
+      <div id="ex-list"></div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('pers-list-body','pers-list-chev')">
+      <div class="sec-title" id="pers-list-title" style="margin:0;border:none;padding:0">Vaste taken per gezinslid</div>
+      <span class="chev" id="pers-list-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="pers-list-body">
+      <div id="pers-list"></div>
+    </div>
+
+    <!-- ═══ GROUP: TOEVOEGEN ═══ -->
+    <div class="group-hdr" id="grp-toevoegen"><span>➕</span> <span id="grp-toevoegen-lbl">Toevoegen</span></div>
+
     <!-- Unified new task form -->
     <div class="collapse-hdr" onclick="togEl('taken-form-body','taken-form-chev')">
       <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
@@ -501,6 +544,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <div id="nt-interval-wrap" style="display:none">
           <label class="flbl" id="nt-lbl-interval">Interval</label>
           <select class="finput" id="nt-interval">
+            <option value="0">Elke week</option>
             <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
             <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
             <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
@@ -532,33 +576,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
     </div>
 
-    <!-- Existing tasks lists -->
-    <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
-      <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
-      <span class="chev" id="fixed-list-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="fixed-list-body">
-      <div id="fixed-list"></div>
-    </div>
-
-    <div class="collapse-hdr" onclick="togEl('periodic-list-body','periodic-list-chev')">
-      <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken per locatie</div>
-      <span class="chev" id="periodic-list-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="periodic-list-body">
-      <div id="periodic-list"></div>
-    </div>
-
-    <div class="collapse-hdr" onclick="togEl('extra-list-body','extra-list-chev')">
-      <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken per locatie</div>
-      <span class="chev" id="extra-list-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="extra-list-body">
-      <div id="ex-list"></div>
-    </div>
-
     <div class="collapse-hdr" onclick="togEl('pers-form-body','pers-form-chev')">
-      <div class="sec-title" style="margin:0;border:none;padding:0">Persoonlijke taak toevoegen</div>
+      <div class="sec-title" id="pers-form-title" style="margin:0;border:none;padding:0">Persoonlijke taak toevoegen</div>
       <span class="chev" id="pers-form-chev">&#9662;</span>
     </div>
     <div class="day-body" id="pers-form-body">
@@ -576,14 +595,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <button class="save-btn" onclick="addPersonalTask()">+ Toevoegen</button>
         <div id="pt-flash" class="flash" style="opacity:0"></div>
       </div>
-    </div>
-
-    <div class="collapse-hdr" onclick="togEl('pers-list-body','pers-list-chev')">
-      <div class="sec-title" style="margin:0;border:none;padding:0">Vaste taken per gezinslid</div>
-      <span class="chev" id="pers-list-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="pers-list-body">
-      <div id="pers-list"></div>
     </div>
   </div>
 
@@ -682,6 +693,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="edit-interval-wrap" style="display:none">
       <label class="flbl">Interval</label>
       <select class="finput" id="edit-interval">
+        <option value="0">Elke week</option>
         <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
         <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
         <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
@@ -889,6 +901,9 @@ const I={
     due:'Vervalt',
     interval1:'Elke maand',interval2:'Elke 2 maanden',interval3:'Elke 3 maanden',
     interval4:'Elke 4 maanden',interval6:'Elke 6 maanden',interval12:'Jaarlijks',
+    interval0:'Elke week',
+    grpOverview:'Overzicht',grpAdd:'Toevoegen',
+    persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
     // Tabs
     tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabTasks:'Taken',tabSettings:'Instellingen',
     // New task form
@@ -962,6 +977,9 @@ const I={
     due:'Vence',
     interval1:'Mensal',interval2:'A cada 2 meses',interval3:'A cada 3 meses',
     interval4:'A cada 4 meses',interval6:'A cada 6 meses',interval12:'Anual',
+    interval0:'Semanal',
+    grpOverview:'Visão geral',grpAdd:'Adicionar',
+    persTasks:'Tarefas fixas por membro',addPersTask:'Adicionar tarefa pessoal',
     // Tabs
     tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabTasks:'Tarefas',tabSettings:'Definições',
     // New task form
@@ -1042,13 +1060,36 @@ function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[
 function locCatsForLoc(lid){return locCats(lid);}
 
 function isPeriodicDue(task){
+  const now=new Date();
+  const isWeekly=(task.interval_months??1)===0;
+  if(isWeekly){
+    // Weekly: check if there's a check for the current ISO week
+    const wkNum=getISOWeek(now);
+    const yr=now.getFullYear();
+    const ex=D.pChecks.find(c=>c.task_id===task.id&&c.year===yr&&c.month===(wkNum+100));
+    return !ex;
+  }
   if(!D.pChecks.length)return true;
-  const checks=D.pChecks.filter(c=>c.task_id===task.id).sort((a,b)=>b.year*12+b.month-(a.year*12+a.month));
+  const checks=D.pChecks.filter(c=>c.task_id===task.id&&c.month<=12).sort((a,b)=>b.year*12+b.month-(a.year*12+a.month));
   if(!checks.length)return true;
   const last=checks[0];
-  const now=new Date();
   const monthsSince=(now.getFullYear()-last.year)*12+(now.getMonth()+1-last.month);
-  return monthsSince>=(task.interval_months||1);
+  return monthsSince>=(task.interval_months??1);
+}
+
+function getISOWeek(d){
+  const dt=new Date(d.valueOf());
+  dt.setHours(0,0,0,0);
+  dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);
+  const wk1=new Date(dt.getFullYear(),0,4);
+  return 1+Math.round(((dt-wk1)/86400000-3+(wk1.getDay()+6)%7)/7);
+}
+
+function isPeriodicChecked(pt){
+  const now=new Date();const yr=now.getFullYear();
+  const isWeekly=(pt.interval_months??1)===0;
+  const mo=isWeekly?getISOWeek(now)+100:now.getMonth()+1;
+  return !!D.pChecks.find(c=>c.task_id===pt.id&&c.year===yr&&c.month===mo);
 }
 
 function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'maanden'}`;}
@@ -1182,6 +1223,8 @@ function updateManagerLabels(){
     't-taken':tr('tabTasks'),'t-inst':tr('tabSettings'),
     'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
+    'grp-overzicht-lbl':tr('grpOverview'),'grp-toevoegen-lbl':tr('grpAdd'),
+    'pers-list-title':tr('persTasks'),'pers-form-title':tr('addPersTask'),
     'nt-lbl-type':tr('type'),'nt-type-fixed':tr('typeFixed'),
     'nt-type-periodic':tr('typePeriodic'),'nt-type-extra':tr('typeExtra'),
     'nt-lbl-nl':tr('descNl'),'nt-lbl-pt':tr('descPt'),
@@ -1208,7 +1251,7 @@ function updateManagerLabels(){
   const sw=document.getElementById('nt-wk');
   if(sw){if(sw.options[0])sw.options[0].text=tr('thisWeek');if(sw.options[1])sw.options[1].text=tr('nextWeek');if(sw.options[2])sw.options[2].text=tr('in2weeks');}
   const iv=document.getElementById('nt-interval');
-  if(iv){[1,2,3,4,6,12].forEach((v,i)=>{if(iv.options[i])iv.options[i].text=tr('interval'+v);});}
+  if(iv){[0,1,2,3,4,6,12].forEach((v,i)=>{if(iv.options[i])iv.options[i].text=tr('interval'+v);});}
 }
 
 async function init(){
@@ -1508,7 +1551,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   const duePeriodicTasks=D.periodic.filter(pt=>(pt.location_id===loc.id||(pt.location_ids&&pt.location_ids.includes(loc.id)))&&isPeriodicDue(pt));
   const total=tasks.length+duePeriodicTasks.length;
   const done=tasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length
-    +duePeriodicTasks.filter(pt=>{const now=new Date();return !!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);}).length;
+    +duePeriodicTasks.filter(pt=>isPeriodicChecked(pt)).length;
 
   // Group by category
   const cats=[...new Set(tasks.map(t=>t.category||tr('general')))];
@@ -1536,11 +1579,11 @@ function renderLocBlock(loc,wk,di,isMgr){
     lb+=`<span class="slbl">${tr('periodicLabel')}</span>`;
     duePeriodicTasks.forEach(pt=>{
       const now=new Date();
-      const ck=!!D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1);
+      const ck=isPeriodicChecked(pt);
       const skipped=!!D.skipped[pt.id+'_'+wk+'_'+di];
-      lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic(this,'${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months||1)}</span></span>`;
+      lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic(this,'${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months??1)}</span></span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${tr('skip')}">&#8864;</button>`;
-      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${esc(pt.text_nl)}','${esc(pt.text_pt||'')}','${pt.interval_months||1}')">&#9998;</button>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${esc(pt.text_nl)}','${esc(pt.text_pt||'')}','${pt.interval_months??1}')">&#9998;</button>`;
       lb+='</div>';
     });
   }
@@ -1637,7 +1680,7 @@ function renderWorker(){
           const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
           dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
           const dp=D.periodic.filter(pt2=>(pt2.location_id===sr.location_id||(pt2.location_ids&&pt2.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt2));
-          dt+=dp.length;dp.forEach(pt2=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt2.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+          dt+=dp.length;dp.forEach(pt2=>{if(isPeriodicChecked(pt2))dd++;});
         });
         ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
@@ -2035,7 +2078,7 @@ function renderMgrWeek(){
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
         dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
-        dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+        dt+=dp.length;dp.forEach(pt=>{if(isPeriodicChecked(pt))dd++;});
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
@@ -2091,7 +2134,7 @@ function refreshMgrWeek(){
       const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
       dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
       const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
-      dt+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+      dt+=dp.length;dp.forEach(pt=>{if(isPeriodicChecked(pt))dd++;});
     });
     ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
     tot+=dt;done+=dd;
@@ -2141,7 +2184,7 @@ function refreshWorker(){
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
         dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         const dp=D.periodic.filter(pt2=>(pt2.location_id===sr.location_id||(pt2.location_ids&&pt2.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt2));
-        dt+=dp.length;dp.forEach(pt2=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt2.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))dd++;});
+        dt+=dp.length;dp.forEach(pt2=>{if(isPeriodicChecked(pt2))dd++;});
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
@@ -2204,7 +2247,10 @@ async function skipTask(tid,wk,di,mgr,type){
 }
 
 async function togPeriodic(el,tid,mgr){
-  const now=new Date();const yr=now.getFullYear(),mo=now.getMonth()+1;
+  const now=new Date();const yr=now.getFullYear();
+  const task=D.periodic.find(p=>p.id===tid);
+  const isWeekly=task&&(task.interval_months??1)===0;
+  const mo=isWeekly?getISOWeek(now)+100:now.getMonth()+1;
   _rtSkipUntil=Date.now()+2000;
   const cb=el.closest('.cb')||el;
   const row=cb.closest('.task-row');
@@ -2267,7 +2313,7 @@ function updTotalProg(wk,mgr){
       const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
       tot+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)done++;});
       const dp=D.periodic.filter(pt=>(pt.location_id===sr.location_id||(pt.location_ids&&pt.location_ids.includes(sr.location_id)))&&isPeriodicDue(pt));
-      tot+=dp.length;dp.forEach(pt=>{const now=new Date();if(D.pChecks.find(c=>c.task_id===pt.id&&c.year===now.getFullYear()&&c.month===now.getMonth()+1))done++;});
+      tot+=dp.length;dp.forEach(pt=>{if(isPeriodicChecked(pt))done++;});
     });
     ex.forEach(e=>{tot++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)done++;});
   });
@@ -2515,13 +2561,13 @@ function renderPeriodicList(){
     const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
     tasks.forEach(t=>{
-      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span></div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
+      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span></div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
     });
     html+='</div></div>';
   });
   if(byLoc['none']){
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#8a7e74"><span class="loc-section-name">${tr('general')}</span></div><div class="loc-section-body">`;
-    byLoc['none'].forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months||1)}</span></div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months||1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
+    byLoc['none'].forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span></div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
     html+='</div></div>';
   }
   el.innerHTML=html;
@@ -2812,6 +2858,26 @@ function renderShopList(prefix,wk){
 
   el.innerHTML=html;
   renderShopSummary(prefix,items);
+  // Auto-translate untranslated items in background
+  autoTranslateMissing(items);
+}
+
+let _shopTranslating=false;
+async function autoTranslateMissing(items){
+  if(_shopTranslating)return;
+  const missing=items.filter(i=>i.name&&!i.name_pt);
+  if(!missing.length)return;
+  _shopTranslating=true;
+  for(const item of missing){
+    await autoTranslateShopItem(item.id,item.name);
+  }
+  _shopTranslating=false;
+  // Reload to show translations
+  await loadAll();
+  const mShop=document.getElementById('mt-shop');
+  if(mShop&&mShop.style.display!=='none')renderShopping('m');
+  const wShop=document.getElementById('wmt-shop');
+  if(wShop&&wShop.style.display!=='none')renderShopping('w');
 }
 
 function renderShopItem(item){
@@ -2965,10 +3031,12 @@ function openEdit(id,type,nl,pt,interval){
     if(type==='fixed'){
       const task=D.tasks.find(t=>t.id===id);
       const isDaily=task?.is_daily||false;
-      const curLid=task?.location_id;
       const curCat=task?.category||'Algemeen';
-      // Multi-select pills — all selected if daily
-      document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${l.id===curLid?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
+      // Find all locations that have this same task (match on text_nl)
+      const matchingTasks=D.tasks.filter(t=>t.text_nl===task?.text_nl&&!t.is_daily);
+      const matchLids=new Set(matchingTasks.map(t=>t.location_id).filter(Boolean));
+      // Multi-select pills — highlight all matching locations
+      document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${matchLids.has(l.id)?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
       const dailyCb=document.getElementById('edit-daily');
       if(dailyCb){
         dailyCb.checked=isDaily;
@@ -3093,23 +3161,43 @@ async function saveEdit(){
     const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
     await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat}).eq('id',id);
   } else {
-    // Fixed — multi-location + daily support
+    // Fixed — multi-location sync based on text_nl matching
     const isDaily=document.getElementById('edit-daily')?.checked||false;
     const cat=document.getElementById('edit-cat')?.value||'Algemeen';
     if(isDaily){
+      // Daily: update this task, remove any duplicates with same text_nl
+      const origTask=D.tasks.find(t=>t.id===id);
+      if(origTask){
+        const dupes=D.tasks.filter(t=>t.text_nl===origTask.text_nl&&t.id!==id);
+        for(const d of dupes)await sb.from('fixed_tasks').delete().eq('id',d.id);
+      }
       await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,location_id:null,is_daily:true,category:cat}).eq('id',id);
     } else {
       const selLocs=[...document.querySelectorAll('#edit-loc-pills .cpill.on')].map(el=>el.id.replace('elp-',''));
-      if(selLocs.length===1){
-        await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,location_id:selLocs[0],is_daily:false,category:cat}).eq('id',id);
-      } else if(selLocs.length>1){
-        // Multi-loc: update first, insert rest
-        await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,location_id:selLocs[0],is_daily:false,category:cat}).eq('id',id);
-        for(let i=1;i<selLocs.length;i++){
-          await sb.from('fixed_tasks').insert({household_id:HID,location_id:selLocs[i],is_daily:false,category:cat,text_nl:nl,text_pt:pt||nl});
+      const origTask=D.tasks.find(t=>t.id===id);
+      const origNl=origTask?.text_nl||nl;
+      // Find all existing tasks with the same text_nl
+      const existing=D.tasks.filter(t=>t.text_nl===origNl&&!t.is_daily);
+      const existingByLoc={};existing.forEach(t=>{if(t.location_id)existingByLoc[t.location_id]=t;});
+      const existingLids=new Set(Object.keys(existingByLoc));
+      const selectedLids=new Set(selLocs);
+      // Remove tasks for deselected locations
+      for(const lid of existingLids){
+        if(!selectedLids.has(lid)){
+          await sb.from('fixed_tasks').delete().eq('id',existingByLoc[lid].id);
         }
-      } else {
-        await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,category:cat}).eq('id',id);
+      }
+      // Update existing tasks at selected locations (text + category)
+      for(const lid of selectedLids){
+        if(existingLids.has(lid)){
+          await sb.from('fixed_tasks').update({text_nl:nl,text_pt:pt||nl,is_daily:false,category:cat}).eq('id',existingByLoc[lid].id);
+        }
+      }
+      // Insert new tasks for newly selected locations
+      for(const lid of selectedLids){
+        if(!existingLids.has(lid)){
+          await sb.from('fixed_tasks').insert({household_id:HID,location_id:lid,is_daily:false,category:cat,text_nl:nl,text_pt:pt||nl});
+        }
       }
     }
   }
