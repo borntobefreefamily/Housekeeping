@@ -207,7 +207,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 /* SAVE BTN */
 .save-btn{width:100%;padding:11px;background:var(--caramel);color:#fff;border:none;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:.75rem;font-family:'DM Sans',sans-serif;letter-spacing:.04em;transition:background .15s}
 .save-btn:active{background:var(--espresso)}
-.flash{font-size:11px;color:var(--moss);text-align:center;margin-top:5px;height:14px;transition:opacity .4s}
+.flash{font-size:12px;color:#1a6b5a;font-weight:600;text-align:center;margin-top:8px;padding:6px 10px;background:#e8f5e9;border-radius:var(--rs);border:1px solid #c8e6c9;transition:opacity .5s}
 
 /* PERIOD CARD */
 .period-card{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;background:var(--white)}
@@ -872,7 +872,7 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
@@ -903,6 +903,7 @@ const I={
     interval4:'Elke 4 maanden',interval6:'Elke 6 maanden',interval12:'Jaarlijks',
     interval0:'Elke week',
     grpOverview:'Overzicht',grpAdd:'Toevoegen',
+    allRead:'Alles gelezen',
     persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
     // Tabs
     tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabTasks:'Taken',tabSettings:'Instellingen',
@@ -979,6 +980,7 @@ const I={
     interval4:'A cada 4 meses',interval6:'A cada 6 meses',interval12:'Anual',
     interval0:'Semanal',
     grpOverview:'Visão geral',grpAdd:'Adicionar',
+    allRead:'Tudo lido',
     persTasks:'Tarefas fixas por membro',addPersTask:'Adicionar tarefa pessoal',
     // Tabs
     tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabTasks:'Tarefas',tabSettings:'Definições',
@@ -1543,6 +1545,30 @@ function renderDayBody(di,wk,isMgr){
   mainLocs.forEach(sr=>{const loc=D.locs.find(l=>l.id===sr.location_id);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);});
   if(hasBuiten){const loc=D.locs.find(l=>l.id===BUITEN_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
 
+  // 6. Persoonlijke taken niet gekoppeld aan een ingeplande locatie
+  if(isMgr){
+    const schedLids=new Set(sched.map(s=>s.location_id));
+    const orphanPers=D.persTasks.filter(t=>t.day_index===di&&(!t.location_id||!schedLids.has(t.location_id)));
+    if(orphanPers.length){
+      const uid2=`pers-${di}`;
+      const pDone=orphanPers.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
+      let pb='';
+      orphanPers.forEach(t=>{
+        const owner=D.users.find(u=>u.id===t.user_id);
+        const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
+        const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
+        const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
+        const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
+        const ownerBadge=owner?`<span style="font-size:10px;background:${ucol(owner.id)}20;color:${ucol(owner.id)};padding:1px 6px;border-radius:100px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
+        const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${D.locs.find(l=>l.id===t.location_id)?.name||''}</span>`:'';
+        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${t.text_nl}${ownerBadge}${locBadge}${byStr}</span>`;
+        if(!ck&&!skipped)pb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+        pb+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button></div>`;
+      });
+      html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#8e7cc3;cursor:pointer" onclick="togEl('lb-${uid2}','lc-${uid2}')"><span class="loc-section-name">📌 ${tr('addPersTask').replace('toevoegen','').replace('Adicionar ','').trim()}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${pDone}/${orphanPers.length}</span><span class="chev" id="lc-${uid2}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid2}">${pb}</div></div>`;
+    }
+  }
+
   return html;
 }
 
@@ -1834,7 +1860,13 @@ function toggleNotifPanel(){
   const o=document.getElementById('notif-overlay');
   const isOpen=p.classList.toggle('open');
   o.style.display=isOpen?'block':'none';
-  if(isOpen)renderNotifList();
+  if(isOpen){
+    renderNotifList();
+    const allReadBtn=p.querySelector('.save-btn');
+    if(allReadBtn)allReadBtn.textContent=tr('allRead')||'Alles gelezen';
+    const titleEl=p.querySelector('.notif-panel-hdr span');
+    if(titleEl)titleEl.textContent=lg()==='pt'?'Notificações':'Meldingen';
+  }
 }
 
 function renderNotifList(){
@@ -1881,9 +1913,12 @@ async function markNotifRead(id){
 async function markAllRead(){
   const unread=D.notifs.filter(n=>!n.read);
   if(!unread.length)return;
+  const btn=document.querySelector('#notif-panel .save-btn');
+  if(btn){btn.style.background='#1a6b5a';btn.style.color='#fff';btn.textContent='✓';}
   await sb.from('notifications').update({read:true}).in('id',unread.map(n=>n.id));
   unread.forEach(n=>n.read=true);
   renderNotifList();updNotifBadge();
+  setTimeout(()=>{if(btn){btn.style.background='var(--steam)';btn.style.color='var(--text)';btn.textContent=tr('allRead')||'Alles gelezen';}},1500);
 }
 
 // Send notification to admin/parent when child completes a task
@@ -2326,7 +2361,7 @@ async function saveNote(lid,wk,di,val){
   await sb.from('day_notes').upsert({household_id:HID,location_id:lid,week_key:wk,day_index:di,note:val,updated_at:new Date().toISOString()},{onConflict:'household_id,location_id,week_key,day_index'});
   await loadAll();
 }
-function doFlash(id){const fl=document.getElementById(id);if(!fl)return;fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',2000);}
+function doFlash(id,msg){const fl=document.getElementById(id);if(!fl)return;if(msg)fl.textContent='✓ '+msg;else if(!fl.textContent)fl.textContent='✓';fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',2500);}
 
 async function addLocNote(locId,wk,di,inputId){
   const inp=document.getElementById(inputId);if(!inp)return;
@@ -2509,7 +2544,7 @@ async function addUnifiedTask(){
   document.querySelectorAll('#nt-locs .cpill.on,#nt-days .cpill.on').forEach(el=>el.classList.remove('on'));
   const dailyCb=document.getElementById('nt-daily');if(dailyCb)dailyCb.checked=false;
   await loadAll();
-  doFlash('nt-flash');
+  doFlash('nt-flash',lg()==='pt'?'Tarefa adicionada':'Taak toegevoegd');
   renderFixedList();renderPeriodicList();renderExList();
 }
 
@@ -3035,6 +3070,7 @@ function openEdit(id,type,nl,pt,interval){
       // Find all locations that have this same task (match on text_nl)
       const matchingTasks=D.tasks.filter(t=>t.text_nl===task?.text_nl&&!t.is_daily);
       const matchLids=new Set(matchingTasks.map(t=>t.location_id).filter(Boolean));
+      const curLid=task?.location_id;
       // Multi-select pills — highlight all matching locations
       document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${matchLids.has(l.id)?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
       const dailyCb=document.getElementById('edit-daily');
@@ -3383,7 +3419,7 @@ async function addPersonalTask(){
   const uName=D.users.find(x=>x.id===userId)?.name||'';
   await logChange(`Persoonlijke taak: "${nl}" voor ${uName} (${dayArr()[day]})`);
   document.getElementById('pt-nl').value='';document.getElementById('pt-pt').value='';
-  await loadAll();renderPersList();doFlash('pt-flash');
+  await loadAll();renderPersList();doFlash('pt-flash',lg()==='pt'?'Tarefa adicionada':'Taak toegevoegd');
 }
 
 async function savePersEdit(){
