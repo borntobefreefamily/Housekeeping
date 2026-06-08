@@ -426,7 +426,17 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="wbtn" onclick="chWeek(1)">&#8250;</button>
       <button class="wk-jump" onclick="openJump()">&#128197;</button>
     </div>
-    <div class="scroll"><div id="m-prog"></div><div id="m-family"></div><div id="m-days"></div></div>
+    <div class="scroll"><div id="m-prog"></div><div id="m-family"></div><div id="m-days"></div>
+      <div id="m-recent-changes" style="margin-top:8px">
+        <div class="collapse-hdr" onclick="togEl('m-recent-body','m-recent-chev')">
+          <div class="sec-title" style="margin:0;padding:0;border:none;flex:1;font-size:13px" id="m-recent-title">📝 Recente wijzigingen</div>
+          <span class="chev" id="m-recent-chev">&#9662;</span>
+        </div>
+        <div class="day-body" id="m-recent-body">
+          <div id="m-wk-log-list" style="max-height:300px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="mt-plan" class="scroll" style="display:none">
@@ -1695,7 +1705,9 @@ function renderWorker(){
         let dt=allPt.length,dd=0;
         allPt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
-        html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        const hasMePersC=allPt.length>0;
+        const persStyleC=hasMePersC?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
+        html+=`<div class="day-card" style="${persStyleC}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersC?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       } else {
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
         const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
@@ -1710,7 +1722,9 @@ function renderWorker(){
         });
         ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
-        html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        const hasMePersW=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di);
+        const persStyleW=hasMePersW?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
+        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersW?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       }
     });
     const pct=tot?Math.round(done/tot*100):0;
@@ -2120,13 +2134,32 @@ function renderMgrWeek(){
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
-      html+=`<div class="day-card"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
+      const hasMePers=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di);
+      const persStyle=hasMePers?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
+      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePers?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
     });
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
     const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
     renderFamilyOverview(wk);
+    renderMgrWeekLog();
   });
+}
+
+function renderMgrWeekLog(){
+  const el=document.getElementById('m-wk-log-list');if(!el)return;
+  const titleEl=document.getElementById('m-recent-title');
+  if(titleEl)titleEl.textContent='📝 '+(lg()==='pt'?'Alterações recentes':'Recente wijzigingen');
+  if(!D.log.length){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:8px 0">${lg()==='pt'?'Sem alterações':'Geen wijzigingen'}</div>`;return;}
+  const now=new Date();
+  el.innerHTML=D.log.slice(0,15).map(l=>{
+    const dt=new Date(l.created_at);
+    const diff=Math.floor((now-dt)/60000);
+    const ts=diff<60?`${diff}min`:diff<1440?`${Math.floor(diff/60)}u`:`${Math.floor(diff/1440)}d`;
+    const who=uname(l.user_id)||'Systeem';
+    const wc=ucol(l.user_id);
+    return `<div class="clog-item"><div class="clog-who" style="color:${wc}">${who}</div><div class="clog-txt">${l.description}</div><div class="clog-time">${ts} ${lg()==='pt'?'atrás':'geleden'}</div></div>`;
+  }).join('');
 }
 
 function togDay(bid,cid){const b=document.getElementById(bid),c=document.getElementById(cid);if(!b)return;b.classList.toggle('open');if(c)c.classList.toggle('open',b.classList.contains('open'));}
@@ -2901,21 +2934,26 @@ function renderShopList(prefix,wk){
 }
 
 let _shopTranslating=false;
+let _shopTranslated=new Set();
 async function autoTranslateMissing(items){
   if(_shopTranslating)return;
-  const missing=items.filter(i=>i.name&&!i.name_pt);
+  const missing=items.filter(i=>i.name&&!i.name_pt&&!_shopTranslated.has(i.id));
   if(!missing.length)return;
   _shopTranslating=true;
+  let anySuccess=false;
   for(const item of missing){
-    await autoTranslateShopItem(item.id,item.name);
+    _shopTranslated.add(item.id);
+    const ok=await autoTranslateShopItem(item.id,item.name);
+    if(ok)anySuccess=true;
   }
   _shopTranslating=false;
-  // Reload to show translations
-  await loadAll();
-  const mShop=document.getElementById('mt-shop');
-  if(mShop&&mShop.style.display!=='none')renderShopping('m');
-  const wShop=document.getElementById('wmt-shop');
-  if(wShop&&wShop.style.display!=='none')renderShopping('w');
+  if(anySuccess){
+    await loadAll();
+    const mShop=document.getElementById('mt-shop');
+    if(mShop&&mShop.style.display!=='none')renderShopping('m');
+    const wShop=document.getElementById('wmt-shop');
+    if(wShop&&wShop.style.display!=='none')renderShopping('w');
+  }
 }
 
 function renderShopItem(item){
@@ -3007,13 +3045,14 @@ async function addShopInline(recipeId,wk){
 
 async function autoTranslateShopItem(id,text){
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
         system:'Vertaal naar Europees Portugees. Alleen de vertaling, geen uitleg.',
         messages:[{role:'user',content:text}]})});
     const d=await res.json();const tx=d.content?.[0]?.text?.trim();
-    if(tx)await sb.from('shopping_items').update({name_pt:tx}).eq('id',id);
+    if(tx){await sb.from('shopping_items').update({name_pt:tx}).eq('id',id);return true;}
   }catch(e){}
+  return false;
 }
 
 async function togShopItem(id,currentChecked){
@@ -3628,7 +3667,7 @@ async function translateAllTasks(){
   let done=0;
   for(const t of toTr){
     try{
-      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+      const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
         body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
           system:'Vertaal naar Europees Portugees. Alleen de vertaling, geen uitleg, geen aanhalingstekens.',
           messages:[{role:'user',content:t.nl}]})});
@@ -3654,7 +3693,7 @@ async function autoTr(fId,tId){
   if(!fEl||!tEl||!fEl.value.trim()||tEl.value.trim())return;
   tEl.placeholder=lg()==='pt'?'Traduzindo...':'Vertalen...';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
         system:'Vertaal naar Europees Portugees. Alleen de vertaling, geen uitleg.',
         messages:[{role:'user',content:fEl.value.trim()}]})});
