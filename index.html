@@ -1547,7 +1547,7 @@ function renderDayBody(di,wk,isMgr){
 
   // 6. Persoonlijke taken niet gekoppeld aan een ingeplande locatie
   if(isMgr){
-    const schedLids=new Set(sched.map(s=>s.location_id));
+    const schedLids=new Set(schedDay.map(s=>s.location_id));
     const orphanPers=D.persTasks.filter(t=>t.day_index===di&&(!t.location_id||!schedLids.has(t.location_id)));
     if(orphanPers.length){
       const uid2=`pers-${di}`;
