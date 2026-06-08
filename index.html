@@ -1700,7 +1700,7 @@ function renderWorker(){
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
         const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
         const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-        if(!sd.length&&!ex.length&&!rc.length)return;
+        if(!sd.length&&!ex.length&&!rc.length&&!D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di).length)return;
         let dt=0,dd=0;
         sd.forEach(sr=>{
           const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
@@ -2028,9 +2028,12 @@ async function denySwap(swapId){
 function renderFamilyOverview(wk){
   const el=document.getElementById('m-family');if(!el)return;
   if(!isMgr())return;
+  // Show all users who have personal tasks, plus all children
   const kids=D.users.filter(u=>u.role==='child');
-  if(!kids.length){el.innerHTML='';return;}
-  let html=`<div class="fam-card"><div class="fam-hdr" onclick="togEl('fam-body','fam-chev')" style="background:var(--steam)"><span style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;flex:1">👨‍👩‍👧‍👦 Gezin</span><span class="chev" id="fam-chev">&#9662;</span></div><div class="fam-body" id="fam-body">`;
+  const mgrsWithTasks=D.users.filter(u=>(u.role==='admin'||u.role==='parent')&&D.persTasks.some(t=>t.user_id===u.id));
+  const allMembers=[...mgrsWithTasks,...kids];
+  if(!allMembers.length){el.innerHTML='';return;}
+  let html=`<div class="fam-card"><div class="fam-hdr" onclick="togEl('fam-body','fam-chev')" style="background:var(--steam)"><span style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;flex:1">👨‍👩‍👧‍👦 ${lg()==='pt'?'Família':'Gezin'}</span><span class="chev" id="fam-chev">&#9662;</span></div><div class="fam-body" id="fam-body">`;
   
   // Show pending swap requests at top
   const pendingSwaps=D.swaps.filter(s=>s.status==='pending'&&s.week_key===wk);
@@ -2048,7 +2051,7 @@ function renderFamilyOverview(wk){
     html+=`</div>`;
   }
 
-  kids.forEach(kid=>{
+  allMembers.forEach(kid=>{
     const tasks=D.persTasks.filter(t=>t.user_id===kid.id);
     const kidSwaps=D.swaps.filter(s=>s.requester_id===kid.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring&&s.task_id);
     const col=ucol(kid.id);
@@ -2101,13 +2104,13 @@ function renderMgrWeek(){
   if(!CU)return;
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
-    const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index)])].sort((a,b)=>a-b);
+    const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index),...D.persTasks.map(t=>t.day_index),...D.recipes.filter(r=>r.week_key===wk).map(r=>r.day_index)])].sort((a,b)=>a-b);
     let tot=0,done=0,html='';
     showDays.forEach(di=>{
       const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
       const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
       const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-      if(!sd.length&&!ex.length&&!rc.length)return;
+      if(!sd.length&&!ex.length&&!rc.length&&!D.persTasks.filter(t=>t.day_index===di).length)return;
       let dt=0,dd=0;
       sd.forEach(sr=>{
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
@@ -2155,13 +2158,13 @@ function refreshMgrWeek(){
   const wk=wkey(wOff);
   const openDays=saveOpenState('md');
   const openLocs=saveAllLocStates();
-  const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index)])].sort((a,b)=>a-b);
+  const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index),...D.persTasks.map(t=>t.day_index),...D.recipes.filter(r=>r.week_key===wk).map(r=>r.day_index)])].sort((a,b)=>a-b);
   let tot=0,done=0;
   showDays.forEach(di=>{
     const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
     const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
     const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-    if(!sd.length&&!ex.length&&!rc.length)return;
+    if(!sd.length&&!ex.length&&!rc.length&&!D.persTasks.filter(t=>t.day_index===di).length)return;
     let dt=0,dd=0;
     // Count daily tasks too
     D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
