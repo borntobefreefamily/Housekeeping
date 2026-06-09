@@ -1145,6 +1145,10 @@ function userPoints(uid){
   return D.pointLedger.filter(e=>e.user_id===uid&&!e.revoked).reduce((s,e)=>s+e.points,0);
 }
 function pointValueCents(){return D.settings?.point_value_cents||50;}
+function ptsBadge(pts,ck){
+  if(!pts||pts<=0)return '';
+  return ck?`<span style="font-size:10px;background:#fff8e1;color:#f57f17;padding:1px 5px;border-radius:8px;margin-left:4px;font-weight:600">⭐ ${pts}</span>`:`<span style="font-size:10px;background:#f3f0fa;color:#8e7cc3;padding:1px 5px;border-radius:8px;margin-left:4px;font-weight:500">🔸 ${pts}</span>`;
+}
 // Role helpers — admin+parent see manager screen, child+worker see worker screen
 function isMgr(u){const r=(u||CU)?.role;return r==='admin'||r==='parent';}
 function isWkr(u){const r=(u||CU)?.role;return r==='worker'||r==='child';}
@@ -1516,7 +1520,7 @@ function renderChildDay(di,wk){
     const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
     html+=`<div class="task-row${ck?' done-row':''}" style="padding:10px 0">`;
     html+=`<div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},false)">${ck?'&#10003;':''}</div>`;
-    html+=`<div style="flex:1"><span class="task-txt${ck?' done':''}" style="font-size:15px;font-weight:600">${tx(t)}</span>`;
+    html+=`<div style="flex:1"><span class="task-txt${ck?' done':''}" style="font-size:15px;font-weight:600">${tx(t)}</span>${ptsBadge(t.points,ck)}`;
     const rxBadges=renderReactionBadges(t.id,wk,di);
     if(rxBadges)html+=`<span style="margin-left:6px">${rxBadges}</span>`;
     if(t._swapped)html+=`<div style="font-size:11px;color:var(--caramel);margin-top:2px">📅 van ${dayArr()[t._fromDay]}</div>`;
@@ -1610,7 +1614,7 @@ function renderDayBody(di,wk,isMgr){
         const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
         const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-        lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
+        lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${byStr}</span>`;
         if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
         if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
         if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
@@ -1659,7 +1663,7 @@ function renderDayBody(di,wk,isMgr){
         const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
         const ownerBadge=owner?`<span style="font-size:10px;background:${ucol(owner.id)}20;color:${ucol(owner.id)};padding:1px 6px;border-radius:100px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
         const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${D.locs.find(l=>l.id===t.location_id)?.name||''}</span>`:'';
-        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${t.text_nl}${ownerBadge}${locBadge}${byStr}</span>`;
+        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${t.text_nl}${ptsBadge(t.points,ck)}${ownerBadge}${locBadge}${byStr}</span>`;
         if(!ck&&!skipped)pb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
         pb+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button></div>`;
       });
@@ -1691,7 +1695,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
       const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
       const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${byStr}</span>`;
+      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${byStr}</span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
       if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
       if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
@@ -1705,7 +1709,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       const now=new Date();
       const ck=isPeriodicChecked(pt);
       const skipped=!!D.skipped[pt.id+'_'+wk+'_'+di];
-      lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic(this,'${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}<span class="badge-interval">${intervalLabel(pt.interval_months??1)}</span></span>`;
+      lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic(this,'${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}${ptsBadge(pt.points,ck)}<span class="badge-interval">${intervalLabel(pt.interval_months??1)}</span></span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${tr('skip')}">&#8864;</button>`;
       if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${esc(pt.text_nl)}','${esc(pt.text_pt||'')}','${pt.interval_months??1}')">&#9998;</button>`;
       lb+='</div>';
@@ -1720,7 +1724,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       const owner=D.users.find(u=>u.id===t.user_id);
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
       const ownerBadge=owner?`<span style="font-size:10px;color:#fff;background:${ucol(t.user_id)};padding:1px 6px;border-radius:8px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
-      lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl||t.text_pt||''}${ownerBadge}</span></div>`;
+      lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl||t.text_pt||''}${ptsBadge(t.points,ck)}${ownerBadge}</span></div>`;
     });
   }
 
@@ -2191,7 +2195,7 @@ function renderFamilyOverview(wk){
         const byName=ck&&by?` ✓ ${uname(by)}`:'';
         const rxBadges=renderReactionBadges(t.id,wk,parseInt(di));
         const rxBtn=ck?renderReactionBtn(t.id,wk,parseInt(di),'personal'):'';
-        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
+        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}${ptsBadge(t.points,ck)}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
       });
       const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===parseInt(di)&&r.assigned_to===kid.id);
       recs.forEach(r=>{
