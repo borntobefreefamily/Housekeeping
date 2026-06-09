@@ -1206,9 +1206,7 @@ function ptsBadge(pts,ck){
 function isMgr(u){const r=(u||CU)?.role;return r==='admin'||r==='parent';}
 function isWkr(u){const r=(u||CU)?.role;return r==='worker'||r==='child';}
 function locName(lid){return D.locs.find(l=>l.id===lid)?.name||'';}
-function locColor(lid){return D.locs.find(l=>l.id===lid)?.color||'#888';}
 function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[];}
-function locCatsForLoc(lid){return locCats(lid);}
 
 function isPeriodicDue(task){
   const now=new Date();
@@ -1327,9 +1325,6 @@ function setupRT(){
     rtSubs.push(ch);
   });
 }
-
-function updWorkerView(){const a=document.getElementById('wmt-week');if(a&&a.style.display!=='none')renderWorker();}
-function updMgrView(){const a=document.getElementById('mt-week');if(a&&a.style.display!=='none')renderMgrWeek();}
 
 async function logChange(desc){try{await sb.from('change_log').insert({household_id:HID,user_id:CU?.id,description:desc,seen_by:[]});}catch(e){}}
 
@@ -1815,7 +1810,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   return `<div class="loc-block"><div class="loc-section-hdr" style="background:${loc.color};cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${loc.name}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${total}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
 }
 
-function esc(s){return (s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
 
 // ═══════════════ WORKER ═══════════════
 function renderWorker(){
@@ -2132,7 +2127,7 @@ async function submitSwapRequest(){
   const wk=wkey(wOff);
   const t=D.persTasks.find(x=>x.id===taskId);
   const existing=D.swaps.find(s=>s.task_id===taskId&&s.week_key===wk&&s.status==='pending');
-  if(existing){alert('Er staat al een verzoek open voor deze taak');return;}
+  if(existing){return;}
   await sb.from('swap_requests').insert({
     household_id:HID,requester_id:CU.id,task_id:taskId,original_day:fromDay,
     requested_day:toDay,week_key:wk,recurring:_swRecurring,reason:reason||null
@@ -2169,7 +2164,7 @@ async function approveSwap(swapId){
   await loadAll();
   toggleNotifPanel();
   renderFamilyOverview(wkey(wOff));renderMgrWeek();updNotifBadge();
-  alert(`✅ "${taskName}" verplaatst naar ${dayArr()[sw.requested_day]}`);
+  //alert(`✅ "${taskName}" verplaatst naar ${dayArr()[sw.requested_day]}`);
 }
 
 async function denySwap(swapId){
@@ -2187,7 +2182,7 @@ async function denySwap(swapId){
   await loadAll();
   toggleNotifPanel();
   updNotifBadge();
-  alert(`❌ Verplaatsing afgewezen voor ${child?.name}`);
+  //alert(`❌ Verplaatsing afgewezen voor ${child?.name}`);
 }
 function renderFamilyOverview(wk){
   const el=document.getElementById('m-family');if(!el)return;
@@ -2916,7 +2911,7 @@ async function addUnifiedTask(){
   if(!nl)return;
   const isDaily=newTaskType==='fixed'&&document.getElementById('nt-daily')?.checked;
   const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
-  if(!isDaily&&!selLocs.length){alert(tr('selectMinLoc'));return;}
+  if(!isDaily&&!selLocs.length)return;
   const cat=document.getElementById('nt-cat').value||'Algemeen';
   const pts=parseInt(document.getElementById('nt-points').value)||0;
 
@@ -2935,7 +2930,7 @@ async function addUnifiedTask(){
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
   } else {
     const daysSelected=[...document.querySelectorAll('#nt-days .cpill.on')].map(el=>parseInt(el.id.replace('ntd-','')));
-    if(!daysSelected.length){alert(tr('selectMinDay'));return;}
+    if(!daysSelected.length)return;
     const rep=document.getElementById('nt-rep').value;
     const sOff=parseInt(document.getElementById('nt-wk').value);
     const wks=[];
@@ -3078,11 +3073,11 @@ async function addRecipe(){
   const day=parseInt(document.getElementById('rc-day').value);
   const wk=document.getElementById('rc-wk').value;
   const assignedTo=document.getElementById('rc-who')?.value||null;
-  if(!name){alert('Vul een gerechtnaam in');return;}
-  if(isNaN(day)){alert('Kies een dag');return;}
-  if(!wk){alert('Kies een week');return;}
+  if(!name)return;
+  if(isNaN(day))return;
+  if(!wk)return;
   const{data,error}=await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null,assigned_to:assignedTo,created_by:CU.id}).select();
-  if(error){alert('Fout bij opslaan recept: '+error.message);console.error(error);return;}
+  if(error){console.error('Save error:',error);return;}
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
   await loadAll();renderRcList();renderMgrWeek();
@@ -3319,10 +3314,6 @@ function catOptions(selected){
 function getShopWeekKey(){
   // Use current week + offset, same logic as recipes
   return wkey(wOff);
-}
-
-function shopRecipesForWeek(wk){
-  return D.recipes.filter(r=>r.week_key===wk).sort((a,b)=>a.day_index-b.day_index);
 }
 
 function renderShopping(prefix){
@@ -3614,15 +3605,6 @@ function shopNeedsReminder(recipe){
   const cookDate=new Date(wkMon);cookDate.setDate(wkMon.getDate()+recipe.day_index);
   const diff=Math.floor((cookDate-now)/(1000*60*60*24));
   return diff>=0 && diff<=2;
-}
-
-function wlbl2(wk){
-  // Short week label from week_key
-  const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
-  const mon=new Date(wk+'T12:00:00');
-  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
-  if(mon.getMonth()===sun.getMonth())return `${mon.getDate()}–${sun.getDate()} ${ms[sun.getMonth()]}`;
-  return `${mon.getDate()} ${ms[mon.getMonth()]}–${sun.getDate()} ${ms[sun.getMonth()]}`;
 }
 
 async function autoTranslateShopItem(id,text){
@@ -3945,7 +3927,7 @@ async function saveUser(){
   const pin=document.getElementById('um-pin').value.trim();
   const role=document.getElementById('um-role').value;
   const lang=document.getElementById('um-lang').value;
-  if(!name){alert('Vul een naam in');return;}
+  if(!name)return;
   // Gather avatar
   const avEl=document.querySelector('#um-avatar-pick span[style*="var(--caramel)"]');
   const avatar=avEl?avEl.textContent:'';
@@ -4042,8 +4024,8 @@ async function addPersonalTask(){
   const locId=document.getElementById('pt-loc').value||null;
   const nl=document.getElementById('pt-nl').value.trim();
   const pt=document.getElementById('pt-pt').value.trim();
-  if(!nl){alert('Vul een omschrijving in');return;}
-  if(!userId){alert('Kies een gezinslid');return;}
+  if(!nl)return;
+  if(!userId)return;
   const pts=parseInt(document.getElementById('pt-points').value)||0;
   await sb.from('personal_tasks').insert({household_id:HID,user_id:userId,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
   const uName=D.users.find(x=>x.id===userId)?.name||'';
