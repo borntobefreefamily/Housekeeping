@@ -173,6 +173,36 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .recipe-item a{font-size:13px;color:var(--espresso);text-decoration:none;flex:1}
 .recipe-item span{font-size:13px;color:var(--muted);flex:1;font-style:italic}
 
+/* INGREDIENT FORM */
+.ingr-row{display:flex;gap:4px;margin-bottom:4px;align-items:center}
+.ingr-row input,.ingr-row select{border:1px solid var(--border);border-radius:var(--rs);padding:7px 6px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif}
+.ingr-row input:focus,.ingr-row select:focus{outline:none;border-color:var(--caramel)}
+.ingr-row .ingr-name{flex:2;min-width:0}
+.ingr-row .ingr-qty{flex:1;min-width:0;max-width:80px}
+.ingr-row .ingr-cat{flex:1.5;min-width:0}
+.ingr-row .ingr-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px;opacity:.4;min-width:24px}
+.ingr-row .ingr-del:hover{opacity:1}
+.ingr-check-item{display:flex;align-items:center;gap:8px;padding:6px 2px;border-bottom:1px solid rgba(0,0,0,.04)}
+.ingr-check-item:last-child{border-bottom:none}
+.ingr-check-item .cb{width:22px;height:22px;border-radius:5px;font-size:10px}
+.ingr-check-item .cb.on{background:var(--caramel);border-color:var(--caramel)}
+.ingr-check-name{font-size:13px;color:var(--text);flex:1}
+.ingr-check-qty{font-size:12px;color:var(--caramel);font-weight:500}
+.ingr-check-cat{font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px}
+
+/* MERGED SHOPPING LIST */
+.shop-merged{margin-top:1rem;border:1px solid #c8e6d0;border-radius:var(--rs);overflow:hidden}
+.shop-merged-hdr{display:flex;align-items:center;gap:8px;padding:.6rem .7rem;background:#f0f7f4;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.shop-merged-hdr .chev{font-size:12px;color:var(--muted);transition:transform .2s}
+.shop-merged-hdr .chev.open{transform:rotate(180deg)}
+.shop-merged-title{font-size:14px;font-weight:600;color:#1a6b5a;flex:1;font-family:'Fraunces',serif}
+.shop-merged-body{padding:.3rem .7rem .5rem;background:var(--white)}
+.shop-merged-cat{font-size:12px;font-weight:600;color:var(--espresso);padding:6px 0 2px;border-bottom:1px solid rgba(0,0,0,.06);margin-top:4px}
+.shop-merged-cat:first-child{margin-top:0}
+.shop-merged-item{display:flex;align-items:center;gap:6px;padding:4px 0 4px 8px;font-size:13px;color:var(--text)}
+.shop-merged-item-qty{font-size:12px;color:var(--caramel);font-weight:500;margin-left:auto;white-space:nowrap}
+.shop-merged-item-src{font-size:10px;color:var(--muted);white-space:nowrap}
+
 /* SHOPPING LIST */
 .shop-flat{border:1px solid var(--border);border-radius:var(--rs);background:var(--white);padding:.3rem 0;margin-bottom:.75rem}
 .shop-item{display:flex;align-items:center;gap:6px;padding:6px .7rem;border-bottom:1px solid rgba(0,0,0,.04)}
@@ -384,20 +414,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="scroll">
       <div class="sec-title" id="w-shop-title">Boodschappenlijst</div>
       <div id="w-shop-summary"></div>
-      <div class="form-card">
-        <label class="flbl" id="w-shop-lbl-nl">Artikel (NL)</label>
-        <input class="finput" type="text" id="w-shop-name" placeholder="bijv. Melk" onblur="autoTr('w-shop-name','w-shop-name-pt')">
-        <div class="fhint" id="w-shop-auto-hint">↳ Portugese vertaling automatisch</div>
-        <label class="flbl" id="w-shop-lbl-pt">Artigo (PT)</label>
-        <input class="finput" type="text" id="w-shop-name-pt" placeholder="">
-        <label class="flbl" id="w-shop-lbl-qty">Hoeveelheid</label>
-        <input class="finput" type="text" id="w-shop-qty" placeholder="bijv. 500g, 2 stuks">
-        <div style="margin-top:6px">
-          <label class="flbl" id="w-shop-lbl-recipe">Recept (optioneel)</label>
-          <select class="finput" id="w-shop-recipe"><option value="">— Algemeen —</option></select>
-        </div>
-        <button class="save-btn" onclick="addShopItem('w')" id="w-shop-add-btn">+ Toevoegen</button>
-      </div>
       <div id="w-shop-list"></div>
     </div>
   </div>
@@ -469,20 +485,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   <div id="mt-shop" class="scroll" style="display:none">
     <div class="sec-title" id="m-shop-title">Boodschappenlijst</div>
     <div id="m-shop-summary"></div>
-    <div class="form-card">
-      <label class="flbl" id="m-shop-lbl-nl">Artikel (NL)</label>
-      <input class="finput" type="text" id="m-shop-name" placeholder="bijv. Melk" onblur="autoTr('m-shop-name','m-shop-name-pt')">
-      <div class="fhint" id="m-shop-auto-hint">↳ Portugese vertaling automatisch</div>
-      <label class="flbl" id="m-shop-lbl-pt">Artigo (PT)</label>
-      <input class="finput" type="text" id="m-shop-name-pt" placeholder="">
-      <label class="flbl" id="m-shop-lbl-qty">Hoeveelheid</label>
-      <input class="finput" type="text" id="m-shop-qty" placeholder="bijv. 500g, 2 stuks">
-      <div style="margin-top:6px">
-        <label class="flbl" id="m-shop-lbl-recipe">Recept (optioneel)</label>
-        <select class="finput" id="m-shop-recipe"><option value="">— Algemeen —</option></select>
-      </div>
-      <button class="save-btn" onclick="addShopItem('m')" id="m-shop-add-btn">+ Toevoegen</button>
-    </div>
     <div id="m-shop-list"></div>
   </div>
 
@@ -786,6 +788,29 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 </div>
 
+<div class="modal-bg" id="ingr-modal">
+  <div class="modal">
+    <input type="hidden" id="ingr-recipe-id">
+    <div class="modal-title" id="ingr-modal-title">Ingrediënten</div>
+    <div id="ingr-phase-form">
+      <div id="ingr-rows"></div>
+      <button onclick="addIngrRow()" style="background:none;border:none;cursor:pointer;color:var(--caramel);font-size:13px;font-weight:600;padding:4px 0;margin-top:2px" id="ingr-more-btn">+ Meer</button>
+      <div style="display:flex;gap:8px;margin-top:.75rem">
+        <button class="save-btn" onclick="saveIngredients()" style="flex:1" id="ingr-save-btn">✓ Opslaan</button>
+        <button class="save-btn" onclick="closeIngrModal()" style="flex:1;background:var(--steam);color:var(--text)" id="ingr-skip-btn">Overslaan</button>
+      </div>
+    </div>
+    <div id="ingr-phase-check" style="display:none">
+      <p style="font-size:13px;color:var(--muted);margin:0 0 .5rem" id="ingr-check-hint">Selecteer wat je moet kopen:</p>
+      <div id="ingr-checklist"></div>
+      <div style="display:flex;gap:8px;margin-top:.75rem">
+        <button class="save-btn" onclick="addIngrToShop()" style="flex:1" id="ingr-add-shop-btn">Toevoegen aan boodschappenlijst</button>
+        <button class="save-btn" onclick="closeIngrModal()" style="flex:1;background:var(--steam);color:var(--text)" id="ingr-close-btn">Sluiten</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="notif-panel" id="notif-panel">
   <div class="notif-panel-hdr">
     <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">Meldingen</span>
@@ -889,12 +914,13 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
 
 const lg=()=>sessionLang;
+const SHOP_CATS=['groente_fruit','vlees_vis','zuivel','brood','conserven_droog','diepvries','kruiden','dranken','overig'];
 const dayArr=()=>lg()==='pt'?ALL_DAYS_PT:ALL_DAYS;
 const tx=o=>lg()==='pt'&&o.text_pt?o.text_pt:o.text_nl;
 
@@ -963,6 +989,16 @@ const I={
     shopBought:'gekocht',shopOf:'van',shopAll:'Alles gekocht! ✓',
     shopReminder:'🛒 Boodschappen!',shopReminderLong:'Boodschappen nodig over 2 dagen',
     shopOverig:'Overig',shopFilterFor:'Filter:',shopFilterClear:'Toon alles',shopSaved:'✓ Opgeslagen',
+    // Shopping categories
+    cat_groente_fruit:'Groente & Fruit',cat_vlees_vis:'Vlees & Vis',cat_zuivel:'Zuivel',
+    cat_brood:'Brood',cat_conserven_droog:'Conserven & Droog',cat_diepvries:'Diepvries',
+    cat_kruiden:'Kruiden & Specerijen',cat_dranken:'Dranken',cat_overig:'Overig',
+    // Recipe ingredients
+    ingrTitle:'Ingrediënten',ingrAdd:'Ingrediënten toevoegen?',ingrName:'Ingrediënt',
+    ingrQty:'Hoeveelheid',ingrCat:'Categorie',ingrMore:'+ Meer',ingrSave:'✓ Opslaan',
+    ingrSelect:'Selecteer wat je moet kopen:',ingrAddToList:'Toevoegen aan boodschappenlijst',
+    ingrNone:'Geen ingrediënten',ingrPersons:'personen',
+    shopMergedTitle:'🏪 Winkellijst',
     editRecipe:'Recept bewerken',
     // Jump
     jumpTitle:'Ga naar week',close:'Sluiten',
@@ -1040,6 +1076,16 @@ const I={
     shopBought:'comprados',shopOf:'de',shopAll:'Tudo comprado! ✓',
     shopReminder:'🛒 Compras!',shopReminderLong:'Compras necessárias em 2 dias',
     shopOverig:'Outros',shopFilterFor:'Filtro:',shopFilterClear:'Mostrar tudo',shopSaved:'✓ Guardado',
+    // Shopping categories
+    cat_groente_fruit:'Frutas e Legumes',cat_vlees_vis:'Carne e Peixe',cat_zuivel:'Laticínios',
+    cat_brood:'Pão e Padaria',cat_conserven_droog:'Conservas e Secos',cat_diepvries:'Congelados',
+    cat_kruiden:'Temperos e Especiarias',cat_dranken:'Bebidas',cat_overig:'Outros',
+    // Recipe ingredients
+    ingrTitle:'Ingredientes',ingrAdd:'Adicionar ingredientes?',ingrName:'Ingrediente',
+    ingrQty:'Quantidade',ingrCat:'Categoria',ingrMore:'+ Mais',ingrSave:'✓ Guardar',
+    ingrSelect:'Selecione o que precisa de comprar:',ingrAddToList:'Adicionar à lista de compras',
+    ingrNone:'Sem ingredientes',ingrPersons:'pessoas',
+    shopMergedTitle:'🏪 Lista de compras',
     editRecipe:'Editar receita',
     // Jump
     jumpTitle:'Ir para semana',close:'Fechar',
@@ -1117,7 +1163,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -1141,9 +1187,10 @@ async function loadAll(){
     safeQ(sb.from('notifications').select('*').eq('household_id',HID).order('created_at',{ascending:false}).limit(30)),
     safeQ(sb.from('swap_requests').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
     safeQ(sb.from('shopping_items').select('*').eq('household_id',HID).order('created_at')),
+    safeQ(sb.from('recipe_ingredients').select('*').eq('household_id',HID).order('sort_order')),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
-  D.shopping=si.data||[];
+  D.shopping=si.data||[];D.recipeIngr=ri.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
   D.workdays=hh.data?.[0]?.workdays||[0,1,3,4];
   D.settings=hh.data?.[0]?.settings||{};
@@ -1166,7 +1213,7 @@ function setupRT(){
   // Soft: preserves open state (frequent changes like checks)
   const softTbls=['task_checks','skipped_tasks','monthly_checks','task_reactions'];
   // Hard: full re-render (structural changes, new tabs may appear)
-  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items'];
+  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients'];
   softTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
@@ -1605,8 +1652,8 @@ function renderLocBlock(loc,wk,di,isMgr){
   let lb='';
 
   cats.forEach(cat=>{
-    const catLabel=cat||tr('general');
-    lb+=`<span class="slbl">${catLabel}</span>`;
+    const cLbl=cat||tr('general');
+    lb+=`<span class="slbl">${cLbl}</span>`;
     tasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
       const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
@@ -1782,7 +1829,7 @@ function renderWorkerRcList(){
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px">${cook.avatar||''} ${cook.name}</span>`:'';return `<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}${cookLbl}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}${cookLbl}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`;}).join('');
+    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px">${cook.avatar||''} ${cook.name}</span>`:'';const ingrCount=D.recipeIngr.filter(i=>i.recipe_id===r.id).length;const ingrBadge=ingrCount?`<span style="font-size:10px;color:#1a6b5a;background:#e8f5e9;padding:1px 5px;border-radius:8px;margin-left:4px">${ingrCount} ✓</span>`:'';return `<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}${cookLbl}${ingrBadge}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}${cookLbl}${ingrBadge}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openIngrFromList('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent" title="${tr('ingrTitle')}">&#128203;</button><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`;}).join('');
   });
   el.innerHTML=html;
 }
@@ -1793,10 +1840,12 @@ async function addRecipeWorker(){
   const day=parseInt(document.getElementById('w-rc-day').value);
   const wk=document.getElementById('w-rc-wk').value;
   if(!name)return;
-  await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null,assigned_to:CU?.role==='child'?CU.id:null,created_by:CU?.id});
+  const{data}=await sb.from('recipes').insert({household_id:HID,week_key:wk,day_index:day,name,url:url||null,assigned_to:CU?.role==='child'?CU.id:null,created_by:CU?.id}).select();
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('w-rc-name').value='';document.getElementById('w-rc-url').value='';
   await loadAll();renderWorkerRcList();
+  // Open ingredient form for the new recipe
+  if(data?.[0]?.id)openIngrForm(data[0].id,name);
 }
 
 // ═══════════════ MANAGER ═══════════════
@@ -2717,6 +2766,8 @@ async function addRecipe(){
   await logChange(`${tr('recipes')}: "${name}" ${dayArr()[day]}`);
   document.getElementById('rc-name').value='';document.getElementById('rc-url').value='';
   await loadAll();renderRcList();renderMgrWeek();
+  // Open ingredient form for the new recipe
+  if(data?.[0]?.id)openIngrForm(data[0].id,name);
 }
 
 async function delRecipe(id){await sb.from('recipes').delete().eq('id',id);await loadAll();renderRcList();renderMgrWeek();}
@@ -2778,6 +2829,148 @@ async function deleteRecipeEdit(){
 }
 function closeRecipeModal(){document.getElementById('recipe-modal').classList.remove('open');}
 
+// ═══════════════ RECIPE INGREDIENTS ═══════════════
+let _ingrRowCount=0;
+
+function openIngrForm(recipeId,recipeName){
+  document.getElementById('ingr-recipe-id').value=recipeId;
+  document.getElementById('ingr-modal-title').textContent=`${tr('ingrTitle')} — ${recipeName}`;
+  document.getElementById('ingr-more-btn').textContent=tr('ingrMore');
+  document.getElementById('ingr-save-btn').textContent=tr('ingrSave');
+  document.getElementById('ingr-skip-btn').textContent=tr('close');
+  // Show form phase, hide check phase
+  document.getElementById('ingr-phase-form').style.display='block';
+  document.getElementById('ingr-phase-check').style.display='none';
+  // Load existing ingredients or start with empty rows
+  const existing=D.recipeIngr.filter(i=>i.recipe_id===recipeId).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const rows=document.getElementById('ingr-rows');
+  rows.innerHTML='';
+  _ingrRowCount=0;
+  if(existing.length){
+    existing.forEach(ing=>addIngrRow(ing.name,ing.quantity,ing.category));
+  }
+  // Always add 3 empty rows minimum
+  while(_ingrRowCount<Math.max(3,existing.length+1))addIngrRow();
+  document.getElementById('ingr-modal').classList.add('open');
+}
+
+function addIngrRow(name,qty,cat){
+  const idx=_ingrRowCount++;
+  const rows=document.getElementById('ingr-rows');
+  const div=document.createElement('div');
+  div.className='ingr-row';
+  div.id='ingr-row-'+idx;
+  div.innerHTML=`<input class="ingr-name" id="ingr-n-${idx}" value="${esc(name||'')}" placeholder="${tr('ingrName')}"><input class="ingr-qty" id="ingr-q-${idx}" value="${esc(qty||'')}" placeholder="${tr('ingrQty')}"><select class="ingr-cat" id="ingr-c-${idx}">${catOptions(cat||'overig')}</select><button class="ingr-del" onclick="this.parentElement.remove()">✕</button>`;
+  rows.appendChild(div);
+}
+
+async function saveIngredients(){
+  const recipeId=document.getElementById('ingr-recipe-id').value;
+  if(!recipeId)return;
+  // Collect rows
+  const ingredients=[];
+  for(let i=0;i<_ingrRowCount;i++){
+    const nameEl=document.getElementById('ingr-n-'+i);
+    if(!nameEl)continue; // row was deleted
+    const name=nameEl.value.trim();
+    if(!name)continue;
+    const qty=document.getElementById('ingr-q-'+i)?.value?.trim()||null;
+    const cat=document.getElementById('ingr-c-'+i)?.value||'overig';
+    ingredients.push({household_id:HID,recipe_id:recipeId,name,quantity:qty,category:cat,sort_order:ingredients.length});
+  }
+  if(!ingredients.length){closeIngrModal();return;}
+  // Delete old ingredients for this recipe, then insert new
+  await sb.from('recipe_ingredients').delete().eq('recipe_id',recipeId);
+  await sb.from('recipe_ingredients').insert(ingredients);
+  await loadAll();
+  // Auto-translate ingredient names to PT in background
+  const saved=D.recipeIngr.filter(i=>i.recipe_id===recipeId);
+  saved.forEach(ing=>{
+    if(ing.name&&!ing.name_pt)autoTranslateIngredient(ing.id,ing.name);
+  });
+  showIngrChecklist(recipeId);
+}
+
+async function autoTranslateIngredient(id,text){
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','anthropic-version':'2023-06-01','x-api-key':''},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:100,messages:[{role:'user',content:`Translate this Dutch ingredient to Portuguese (just the translation, nothing else): "${text}"`}]})
+    });
+    const d=await resp.json();
+    const pt=d.content?.[0]?.text?.replace(/^["']|["']$/g,'').trim();
+    if(pt&&pt.length<200){
+      await sb.from('recipe_ingredients').update({name_pt:pt}).eq('id',id);
+    }
+  }catch(e){console.log('translate ingredient failed:',e);}
+}
+
+function showIngrChecklist(recipeId){
+  const ingredients=D.recipeIngr.filter(i=>i.recipe_id===recipeId).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  if(!ingredients.length){closeIngrModal();return;}
+  // Update labels
+  document.getElementById('ingr-check-hint').textContent=tr('ingrSelect');
+  document.getElementById('ingr-add-shop-btn').textContent=tr('ingrAddToList');
+  document.getElementById('ingr-close-btn').textContent=tr('close');
+  // Switch to check phase
+  document.getElementById('ingr-phase-form').style.display='none';
+  document.getElementById('ingr-phase-check').style.display='block';
+  // Render checklist — all checked by default (user unchecks what they don't need)
+  let html='';
+  ingredients.forEach(ing=>{
+    const displayName=(lg()==='pt'&&ing.name_pt)?ing.name_pt:ing.name;
+    html+=`<div class="ingr-check-item" id="ingr-ci-${ing.id}">`;
+    html+=`<button class="cb on" id="ingr-cb-${ing.id}" onclick="togIngrCheck('${ing.id}')">✓</button>`;
+    html+=`<span class="ingr-check-name">${esc(displayName)}</span>`;
+    if(ing.quantity)html+=`<span class="ingr-check-qty">${esc(ing.quantity)}</span>`;
+    html+=`<span class="ingr-check-cat">${catLabel(ing.category)}</span>`;
+    html+=`</div>`;
+  });
+  document.getElementById('ingr-checklist').innerHTML=html;
+}
+
+function togIngrCheck(id){
+  const btn=document.getElementById('ingr-cb-'+id);
+  if(!btn)return;
+  const isOn=btn.classList.contains('on');
+  btn.classList.toggle('on',!isOn);
+  btn.textContent=isOn?'':'✓';
+}
+
+async function addIngrToShop(){
+  const recipeId=document.getElementById('ingr-recipe-id').value;
+  const ingredients=D.recipeIngr.filter(i=>i.recipe_id===recipeId);
+  const recipe=D.recipes.find(r=>r.id===recipeId);
+  const wk=recipe?.week_key||getShopWeekKey();
+  const toAdd=[];
+  ingredients.forEach(ing=>{
+    const btn=document.getElementById('ingr-cb-'+ing.id);
+    if(btn&&btn.classList.contains('on')){
+      toAdd.push({
+        household_id:HID,recipe_id:recipeId,week_key:wk,
+        name:ing.name,name_pt:ing.name_pt||null,
+        quantity:ing.quantity,category:ing.category,
+        created_by:CU.id
+      });
+    }
+  });
+  if(toAdd.length){
+    await sb.from('shopping_items').insert(toAdd);
+    await loadAll();rerenderShop();
+  }
+  closeIngrModal();
+  if(isMgr()){renderRcList();renderMgrWeek();}
+  else{renderWorkerRcList();}
+}
+
+function closeIngrModal(){document.getElementById('ingr-modal').classList.remove('open');}
+
+function openIngrFromList(recipeId){
+  const r=D.recipes.find(x=>x.id===recipeId);
+  if(!r)return;
+  openIngrForm(recipeId,r.name);
+}
+
 function renderRcList(){
   const el=document.getElementById('rc-list');if(!el)return;
   if(!D.recipes.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noRecipes')}</div>`;return;}
@@ -2793,12 +2986,16 @@ function renderRcList(){
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
     html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?`<span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px;margin-left:4px">${cook.avatar||''} ${cook.name}</span>`:'';return `<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}${cookLbl}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`;}).join('');
+    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?`<span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px;margin-left:4px">${cook.avatar||''} ${cook.name}</span>`:'';const ingrCount=D.recipeIngr.filter(i=>i.recipe_id===r.id).length;const ingrBadge=ingrCount?`<span style="font-size:10px;color:#1a6b5a;background:#e8f5e9;padding:1px 5px;border-radius:8px;margin-left:4px">${ingrCount} ✓</span>`:'';return `<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}${cookLbl}${ingrBadge}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openIngrFromList('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px" title="${tr('ingrTitle')}">&#128203;</button><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`;}).join('');
   });
   el.innerHTML=html;
 }
 
 // ═══════════════ SHOPPING LIST ═══════════════
+function catLabel(cat){return tr('cat_'+(cat||'overig'))||cat||tr('cat_overig');}
+function catOptions(selected){
+  return SHOP_CATS.map(c=>`<option value="${c}"${c===selected?' selected':''}>${catLabel(c)}</option>`).join('');
+}
 function getShopWeekKey(){
   // Use current week + offset, same logic as recipes
   return wkey(wOff);
@@ -2811,41 +3008,8 @@ function shopRecipesForWeek(wk){
 function renderShopping(prefix){
   if(!CU)return;
   const wk=getShopWeekKey();
-  // Update labels
   const titleEl=document.getElementById(prefix+'-shop-title');
   if(titleEl)titleEl.textContent=tr('shopTitle');
-  const lblNl=document.getElementById(prefix+'-shop-lbl-nl');
-  if(lblNl)lblNl.textContent=tr('shopNl');
-  const lblPt=document.getElementById(prefix+'-shop-lbl-pt');
-  if(lblPt)lblPt.textContent=tr('shopPt');
-  const lblQty=document.getElementById(prefix+'-shop-lbl-qty');
-  if(lblQty)lblQty.textContent=tr('shopQtyLbl');
-  const autoHint=document.getElementById(prefix+'-shop-auto-hint');
-  if(autoHint)autoHint.textContent=tr('shopAutoHint');
-  const lblRec=document.getElementById(prefix+'-shop-lbl-recipe');
-  if(lblRec)lblRec.textContent=tr('shopRecipe');
-  const addBtn=document.getElementById(prefix+'-shop-add-btn');
-  if(addBtn)addBtn.textContent=tr('shopAdd');
-  const nameInp=document.getElementById(prefix+'-shop-name');
-  if(nameInp)nameInp.placeholder=tr('shopItem');
-  const qtyInp=document.getElementById(prefix+'-shop-qty');
-  if(qtyInp)qtyInp.placeholder=tr('shopQtyPlaceholder');
-
-  // Populate recipe dropdown for current week range (current + next 3)
-  const recSel=document.getElementById(prefix+'-shop-recipe');
-  if(recSel){
-    recSel.innerHTML=`<option value="">${tr('shopGeneral')}</option>`;
-    for(let i=0;i<4;i++){
-      const w=wkey(wOff+i);
-      const wRecs=D.recipes.filter(r=>r.week_key===w);
-      wRecs.sort((a,b)=>a.day_index-b.day_index);
-      wRecs.forEach(r=>{
-        const wLbl=i===0?'':` (${wlbl(wOff+i)})`;
-        recSel.innerHTML+=`<option value="${r.id}">${r.name} — ${dayArr()[r.day_index]}${wLbl}</option>`;
-      });
-    }
-  }
-
   renderShopList(prefix,wk);
 }
 
@@ -2930,10 +3094,69 @@ function renderShopList(prefix,wk){
   html+=`<button onclick="addShopFlat('${prefix}')" class="shop-add-btn">+</button>`;
   html+=`</div>`;
 
+  // Merged shopping list by category (collapsible)
+  html+=renderMergedShopList(allItems);
+
   el.innerHTML=html;
   renderShopSummary(prefix,allItems);
   // Auto-translate untranslated items in background
   autoTranslateMissing(allItems);
+}
+
+let _mergedOpen=false;
+function renderMergedShopList(allItems){
+  const unchecked=allItems.filter(i=>!i.checked);
+  if(!unchecked.length)return '';
+  // Merge by normalized name + category
+  const merged={};
+  unchecked.forEach(item=>{
+    const displayName=(lg()==='pt'&&item.name_pt)?item.name_pt:item.name;
+    const key=(displayName||'').toLowerCase().trim()+'|'+(item.category||'overig');
+    if(!merged[key]){
+      merged[key]={name:displayName,category:item.category||'overig',quantities:[],sources:[]};
+    }
+    if(item.quantity)merged[key].quantities.push(item.quantity);
+    const r=item.recipe_id?D.recipes.find(x=>x.id===item.recipe_id):null;
+    if(r&&!merged[key].sources.includes(r.name))merged[key].sources.push(r.name);
+  });
+  // Group by category in SHOP_CATS order
+  const byCat={};
+  Object.values(merged).forEach(m=>{
+    if(!byCat[m.category])byCat[m.category]=[];
+    byCat[m.category].push(m);
+  });
+  const catEmoji={groente_fruit:'🥬',vlees_vis:'🥩',zuivel:'🧀',brood:'🍞',conserven_droog:'🥫',diepvries:'🧊',kruiden:'🧂',dranken:'🥤',overig:'📦'};
+  let html=`<div class="shop-merged">`;
+  html+=`<div class="shop-merged-hdr" onclick="togMergedShop()">`;
+  html+=`<span class="shop-merged-title">${tr('shopMergedTitle')}</span>`;
+  html+=`<span class="chev${_mergedOpen?' open':''}" id="merged-chev">&#9662;</span>`;
+  html+=`</div>`;
+  html+=`<div class="shop-merged-body" id="merged-body" style="display:${_mergedOpen?'block':'none'}">`;
+  SHOP_CATS.forEach(cat=>{
+    const items=byCat[cat];
+    if(!items||!items.length)return;
+    items.sort((a,b)=>a.name.localeCompare(b.name));
+    html+=`<div class="shop-merged-cat">${catEmoji[cat]||''} ${catLabel(cat)}</div>`;
+    items.forEach(m=>{
+      const qtyStr=m.quantities.length?m.quantities.join(' + '):'';
+      const srcStr=m.sources.length?m.sources.join(', '):'';
+      html+=`<div class="shop-merged-item">`;
+      html+=`<span>• ${esc(m.name)}</span>`;
+      if(qtyStr)html+=`<span class="shop-merged-item-qty">${esc(qtyStr)}</span>`;
+      if(srcStr)html+=`<span class="shop-merged-item-src">(${esc(srcStr)})</span>`;
+      html+=`</div>`;
+    });
+  });
+  html+=`</div></div>`;
+  return html;
+}
+
+function togMergedShop(){
+  _mergedOpen=!_mergedOpen;
+  const body=document.getElementById('merged-body');
+  const chev=document.getElementById('merged-chev');
+  if(body)body.style.display=_mergedOpen?'block':'none';
+  if(chev)chev.classList.toggle('open',_mergedOpen);
 }
 
 function renderShopItem(item){
@@ -3080,27 +3303,6 @@ function wlbl2(wk){
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   if(mon.getMonth()===sun.getMonth())return `${mon.getDate()}–${sun.getDate()} ${ms[sun.getMonth()]}`;
   return `${mon.getDate()} ${ms[mon.getMonth()]}–${sun.getDate()} ${ms[sun.getMonth()]}`;
-}
-
-async function addShopItem(prefix){
-  const name=document.getElementById(prefix+'-shop-name').value.trim();
-  const namePt=document.getElementById(prefix+'-shop-name-pt')?.value?.trim()||null;
-  const qty=document.getElementById(prefix+'-shop-qty').value.trim();
-  const recipeId=document.getElementById(prefix+'-shop-recipe').value||null;
-  if(!name)return;
-  // Determine week_key: if recipe selected, use recipe's week_key; otherwise current week
-  let wk=getShopWeekKey();
-  if(recipeId){
-    const r=D.recipes.find(x=>x.id===recipeId);
-    if(r)wk=r.week_key;
-  }
-  const{data}=await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId,week_key:wk,name,name_pt:namePt,quantity:qty||null,created_by:CU.id}).select();
-  document.getElementById(prefix+'-shop-name').value='';
-  if(document.getElementById(prefix+'-shop-name-pt'))document.getElementById(prefix+'-shop-name-pt').value='';
-  document.getElementById(prefix+'-shop-qty').value='';
-  await loadAll();rerenderShop();
-  // Auto-translate if PT was empty
-  if(!namePt&&data?.[0]?.id)autoTranslateShopItem(data[0].id,name);
 }
 
 async function autoTranslateShopItem(id,text){
