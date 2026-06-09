@@ -173,6 +173,33 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .recipe-item a{font-size:13px;color:var(--espresso);text-decoration:none;flex:1}
 .recipe-item span{font-size:13px;color:var(--muted);flex:1;font-style:italic}
 
+/* POINTS & SAVINGS */
+.pts-balance{background:linear-gradient(135deg,#fff8e1,#fff3e0);border:1px solid #ffe082;border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1rem;text-align:center}
+.pts-balance-num{font-size:28px;font-weight:700;font-family:'Fraunces',serif;color:#f57f17}
+.pts-balance-eur{font-size:14px;color:#e65100;font-weight:500;margin-top:2px}
+.pts-section-hdr{font-size:14px;font-weight:700;font-family:'Fraunces',serif;color:var(--espresso);margin:1rem 0 .5rem;display:flex;align-items:center;gap:6px}
+.goal-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:.6rem .7rem;margin-bottom:6px;position:relative}
+.goal-card.completed{opacity:.6}
+.goal-name{font-size:14px;font-weight:600;color:var(--espresso)}
+.goal-price{font-size:12px;color:var(--caramel);font-weight:500}
+.goal-link{font-size:11px;color:var(--caramel);text-decoration:none}
+.goal-prog{height:8px;background:var(--steam);border-radius:4px;margin-top:6px;overflow:hidden}
+.goal-prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#fdd835,#f57f17);transition:width .3s}
+.goal-info{font-size:11px;color:var(--muted);margin-top:3px}
+.goal-actions{position:absolute;top:8px;right:8px;display:flex;gap:2px}
+.goal-actions button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 4px;opacity:.5}
+.goal-actions button:hover{opacity:1}
+.goal-drag{cursor:grab;padding:4px;font-size:14px;color:var(--muted);touch-action:none}
+.goal-add{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.goal-add input{border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;font-size:13px;background:var(--cream);font-family:'DM Sans',sans-serif;flex:1;min-width:0}
+.goal-add input:focus{outline:none;border-color:var(--caramel)}
+.pts-entry{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04);font-size:13px}
+.pts-entry:last-child{border-bottom:none}
+.pts-entry-date{font-size:11px;color:var(--muted);min-width:50px}
+.pts-entry-task{flex:1;color:var(--text)}
+.pts-entry-pts{font-weight:600;color:#f57f17}
+.pts-entry.revoked{opacity:.4;text-decoration:line-through}
+
 /* INGREDIENT FORM */
 .ingr-row{display:flex;gap:4px;margin-bottom:4px;align-items:center}
 .ingr-row input,.ingr-row select{border:1px solid var(--border);border-radius:var(--rs);padding:7px 6px;font-size:12px;background:var(--cream);font-family:'DM Sans',sans-serif}
@@ -381,6 +408,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <button class="tab" id="wt-log" onclick="wTab('log')"><span id="wt-log-lbl"></span><span class="notif-dot" id="log-dot"></span></button>
     <button class="tab" id="wt-recipe" onclick="wTab('recipe')"></button>
     <button class="tab" id="wt-shop" onclick="wTab('shop')">🛒</button>
+    <button class="tab" id="wt-points" onclick="wTab('points')" style="display:none">⭐</button>
   </div>
   <div id="wmt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div class="wk-nav">
@@ -415,6 +443,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="w-shop-title">Boodschappenlijst</div>
       <div id="w-shop-summary"></div>
       <div id="w-shop-list"></div>
+    </div>
+  </div>
+  <div id="wmt-points" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="scroll">
+      <div id="w-points-content"></div>
     </div>
   </div>
 </div>
@@ -496,7 +529,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
       <span class="chev" id="fixed-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="fixed-list-body">
+    <div class="day-body" id="fixed-list-body" style="display:none">
       <div id="fixed-list"></div>
     </div>
 
@@ -504,7 +537,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken per locatie</div>
       <span class="chev" id="periodic-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="periodic-list-body">
+    <div class="day-body" id="periodic-list-body" style="display:none">
       <div id="periodic-list"></div>
     </div>
 
@@ -512,7 +545,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken per locatie</div>
       <span class="chev" id="extra-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="extra-list-body">
+    <div class="day-body" id="extra-list-body" style="display:none">
       <div id="ex-list"></div>
     </div>
 
@@ -520,7 +553,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="pers-list-title" style="margin:0;border:none;padding:0">Vaste taken per gezinslid</div>
       <span class="chev" id="pers-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="pers-list-body">
+    <div class="day-body" id="pers-list-body" style="display:none">
       <div id="pers-list"></div>
     </div>
 
@@ -532,7 +565,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
       <span class="chev" id="taken-form-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="taken-form-body">
+    <div class="day-body" id="taken-form-body" style="display:none">
       <div class="form-card" style="margin-top:6px">
         <label class="flbl" id="nt-lbl-type">Type</label>
         <div class="type-pills">
@@ -601,7 +634,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="pers-form-title" style="margin:0;border:none;padding:0">Persoonlijke taak toevoegen</div>
       <span class="chev" id="pers-form-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="pers-form-body">
+    <div class="day-body" id="pers-form-body" style="display:none">
       <div class="form-card" style="margin-top:6px">
         <label class="flbl">Gezinslid</label>
         <select class="finput" id="pt-user"></select>
@@ -664,6 +697,16 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <button class="btn-sm" onclick="addLoc()">+</button>
       </div>
       <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    </div>
+    <div class="sec-title" id="inst-pts-title">⭐ Puntensysteem</div>
+    <div class="form-card">
+      <label class="flbl" id="inst-pts-val-lbl">Puntwaarde (€ per punt)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:14px;font-weight:600">€</span>
+        <input class="finput" type="number" id="inst-pts-val" min="0.01" max="100" step="0.01" value="0.50" style="width:100px">
+        <button class="save-btn" onclick="savePointValue()" style="padding:7px 14px" id="inst-pts-save">Opslaan</button>
+      </div>
+      <div id="pts-val-flash" class="flash" style="opacity:0"></div>
     </div>
     <div class="sec-title" id="inst-wk-title">Week beheren</div>
     <div class="form-card">
@@ -1344,6 +1387,7 @@ function updateManagerLabels(){
     'inst-gcat-title':tr('globalCats'),'inst-gcat-hint':tr('globalCatsHint'),
     'inst-loc-title':tr('locationsList'),'inst-wk-title':tr('weekManage'),
     'inst-clear-lbl':tr('clearChecks'),'inst-clear-sub':tr('clearSub'),'inst-clear-btn':tr('clearBtn'),
+    'inst-pts-title':`⭐ ${tr('pointsLabel')}`,'inst-pts-val-lbl':tr('pointsValue'),'inst-pts-save':tr('save'),
   };
   Object.entries(m).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
   // Rep options (include daily)
@@ -1438,8 +1482,8 @@ function closeJump(){document.getElementById('jump-modal').classList.remove('ope
 
 // WORKER TABS
 function wTab(n){
-  ['week','log','recipe','shop'].forEach(tab=>{
-    const el=document.getElementById('wmt-'+tab);if(el)el.style.display=tab===n?(tab==='week'||tab==='recipe'||tab==='shop'?'flex':'block'):'none';
+  ['week','log','recipe','shop','points'].forEach(tab=>{
+    const el=document.getElementById('wmt-'+tab);if(el)el.style.display=tab===n?(tab==='week'||tab==='recipe'||tab==='shop'||tab==='points'?'flex':'block'):'none';
     document.getElementById('wt-'+tab)?.classList.toggle('on',tab===n);
   });
   const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
@@ -1450,6 +1494,7 @@ function wTab(n){
   if(n==='log')renderLog();
   if(n==='recipe')renderWorkerRecipes();
   if(n==='shop')renderShopping('w');
+  if(n==='points')renderPointsTab();
   updWkLbls();
 }
 
@@ -1774,6 +1819,7 @@ function renderWorker(){
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
   const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
   const st=document.getElementById('wt-shop');if(st)st.textContent=tr('tabShopping');
+  const pt=document.getElementById('wt-points');if(pt)pt.style.display=CU?.role==='child'?'':'none';
   updWkLbls();
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
@@ -1910,7 +1956,7 @@ function mTab(n){
   if(n==='recipe'){renderRecSels();renderRcList();}
   if(n==='shop')renderShopping('m');
   if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();}
-  if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();}
+  if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
@@ -2203,6 +2249,21 @@ function renderFamilyOverview(wk){
         html+=`<div class="fam-task" style="color:var(--caramel)"><span>🍳</span>${linkHtml}</div>`;
       });
     });
+    // Points section for children
+    if(kid.role==='child'){
+      const kidPts=userPoints(kid.id);
+      const kidLedger=D.pointLedger.filter(e=>e.user_id===kid.id&&!e.revoked).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+      const ptsId='fam-pts-'+kid.id.slice(0,6);
+      if(kidLedger.length||kidPts>0){
+        html+=`<div style="margin-top:6px"><div style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 0" onclick="togEl('${ptsId}','${ptsId}-c')"><span style="font-size:12px;font-weight:600;color:#f57f17">⭐ ${kidPts} ${tr('pointsBalance')} (€${(kidPts*pointValueCents()/100).toFixed(2)})</span><span class="chev" id="${ptsId}-c" style="font-size:10px">&#9662;</span></div>`;
+        html+=`<div id="${ptsId}" style="display:none">`;
+        kidLedger.slice(0,20).forEach(e=>{
+          const d=new Date(e.created_at);const dateStr=`${d.getDate()}/${d.getMonth()+1}`;
+          html+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="color:var(--muted);min-width:40px">${dateStr}</span><span style="flex:1">${esc(e.task_name)}</span><span style="color:#f57f17;font-weight:600">⭐${e.points}</span><button onclick="revokePoint('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:10px;padding:2px 6px;opacity:.5" title="${tr('pointsRevoke')}">✕</button></div>`;
+        });
+        html+=`</div></div>`;
+      }
+    }
     html+=`</div></div>`;
   });
   html+=`</div></div>`;
@@ -2413,6 +2474,127 @@ function awardPoints(tid,wk,di){
   const taskName=task.text_nl||task.name||'taak';
   const taskType=D.tasks.includes(task)?'fixed':D.persTasks.includes(task)?'personal':D.extras.includes(task)?'extra':'monthly';
   sb.from('point_ledger').insert({household_id:HID,user_id:CU.id,task_id:tid,task_type:taskType,task_name:taskName,points:pts,week_key:wk,day_index:di}).then();
+}
+
+// ═══════════════ POINTS TAB (CHILD) ═══════════════
+function renderPointsTab(){
+  const el=document.getElementById('w-points-content');if(!el||!CU)return;
+  const pts=userPoints(CU.id);
+  const val=pts*pointValueCents()/100;
+  let html='';
+
+  // Balance header
+  html+=`<div class="pts-balance"><div class="pts-balance-num">⭐ ${pts} ${tr('pointsBalance')}</div><div class="pts-balance-eur">= €${val.toFixed(2)}</div></div>`;
+
+  // 🎯 Savings goals
+  html+=`<div class="pts-section-hdr">🎯 ${tr('pointsGoals')}</div>`;
+  const goals=D.savingsGoals.filter(g=>g.user_id===CU.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const activeGoals=goals.filter(g=>!g.completed);
+  const doneGoals=goals.filter(g=>g.completed);
+  let running=0;
+  activeGoals.forEach((g,idx)=>{
+    const price=g.price_cents/100;
+    const needed=Math.ceil(price/(pointValueCents()/100));
+    const ptsForGoal=Math.min(Math.max(pts-running,0),needed);
+    const pct=needed>0?Math.min(Math.round(ptsForGoal/needed*100),100):0;
+    const remaining=Math.max(needed-ptsForGoal,0);
+    html+=`<div class="goal-card" draggable="true" data-goal-id="${g.id}" data-idx="${idx}" ondragstart="goalDragStart(event)" ondragover="goalDragOver(event)" ondrop="goalDrop(event)">`;
+    html+=`<div style="display:flex;align-items:center;gap:6px">`;
+    html+=`<span class="goal-drag">☰</span>`;
+    html+=`<div style="flex:1"><span class="goal-name">${esc(g.name)}</span> <span class="goal-price">€${price.toFixed(2)}</span>`;
+    if(g.url)html+=` <a href="${g.url}" target="_blank" class="goal-link">↗</a>`;
+    html+=`</div>`;
+    html+=`<span class="goal-actions"><button onclick="delGoal('${g.id}')">✕</button></span>`;
+    html+=`</div>`;
+    html+=`<div class="goal-prog"><div class="goal-prog-fill" style="width:${pct}%"></div></div>`;
+    if(pct>=100){
+      html+=`<div class="goal-info">${tr('goalReached')}</div>`;
+    } else {
+      html+=`<div class="goal-info">${remaining} ${tr('pointsBalance')} ${tr('goalNeeded')} (€${(remaining*pointValueCents()/100).toFixed(2)})</div>`;
+    }
+    html+=`</div>`;
+    running+=needed;
+  });
+  // Add goal form
+  html+=`<div class="goal-add"><input id="goal-name" placeholder="${tr('goalName')}" style="flex:2"><input id="goal-price" placeholder="${tr('goalPrice')}" type="number" min="0" step="0.01" style="width:80px;flex:none"><input id="goal-link" placeholder="${tr('goalLink')}" style="flex:2"><button onclick="addGoal()" class="shop-add-btn">${tr('goalAdd')}</button></div>`;
+
+  // Completed goals
+  if(doneGoals.length){
+    html+=`<div style="margin-top:.75rem"><div class="collapse-hdr" onclick="togEl('done-goals-body','done-goals-chev')" style="padding:4px 0"><span style="font-size:12px;color:var(--muted)">✅ ${tr('goalCompleted')} (${doneGoals.length})</span><span class="chev" id="done-goals-chev">&#9662;</span></div>`;
+    html+=`<div id="done-goals-body" style="display:none">`;
+    doneGoals.forEach(g=>{
+      html+=`<div class="goal-card completed"><span class="goal-name">${esc(g.name)}</span> <span class="goal-price">€${(g.price_cents/100).toFixed(2)}</span></div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  // 🏆 Earned history
+  html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🏆 ${tr('pointsEarned')}</div>`;
+  const ledger=D.pointLedger.filter(e=>e.user_id===CU.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  if(!ledger.length){
+    html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('ingrNone')}</div>`;
+  } else {
+    ledger.forEach(e=>{
+      const d=new Date(e.created_at);
+      const dateStr=`${d.getDate()}/${d.getMonth()+1}`;
+      html+=`<div class="pts-entry${e.revoked?' revoked':''}">`;
+      html+=`<span class="pts-entry-date">${dateStr}</span>`;
+      html+=`<span class="pts-entry-task">${esc(e.task_name)}</span>`;
+      html+=`<span class="pts-entry-pts">${e.revoked?'—':'⭐'} ${e.points}</span>`;
+      html+=`</div>`;
+    });
+  }
+
+  el.innerHTML=html;
+}
+
+// Savings goal CRUD
+async function addGoal(){
+  const name=document.getElementById('goal-name')?.value?.trim();
+  const price=parseFloat(document.getElementById('goal-price')?.value)||0;
+  const link=document.getElementById('goal-link')?.value?.trim()||null;
+  if(!name||price<=0)return;
+  const maxSort=D.savingsGoals.filter(g=>g.user_id===CU.id).reduce((m,g)=>Math.max(m,g.sort_order||0),0);
+  await sb.from('savings_goals').insert({household_id:HID,user_id:CU.id,name,price_cents:Math.round(price*100),url:link,sort_order:maxSort+1});
+  await loadAll();renderPointsTab();
+}
+
+async function delGoal(id){
+  await sb.from('savings_goals').delete().eq('id',id);
+  await loadAll();renderPointsTab();
+}
+
+async function revokePoint(id){
+  await sb.from('point_ledger').update({revoked:true,revoked_by:CU?.id,revoked_at:new Date().toISOString()}).eq('id',id);
+  await loadAll();
+  if(isMgr())renderFamilyOverview(wkey(wOff));
+  // Also update child's points tab if open
+  const ptEl=document.getElementById('w-points-content');
+  if(ptEl&&ptEl.innerHTML)renderPointsTab();
+}
+
+// Drag-and-drop reorder for savings goals
+let _goalDragId=null;
+function goalDragStart(e){_goalDragId=e.target.closest('[data-goal-id]')?.dataset?.goalId;e.dataTransfer.effectAllowed='move';}
+function goalDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';}
+async function goalDrop(e){
+  e.preventDefault();
+  const targetEl=e.target.closest('[data-goal-id]');
+  if(!targetEl||!_goalDragId)return;
+  const targetId=targetEl.dataset.goalId;
+  if(targetId===_goalDragId)return;
+  // Reorder: put dragged before target
+  const goals=D.savingsGoals.filter(g=>g.user_id===CU.id&&!g.completed).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const ordered=goals.filter(g=>g.id!==_goalDragId);
+  const dragGoal=goals.find(g=>g.id===_goalDragId);
+  const targetIdx=ordered.findIndex(g=>g.id===targetId);
+  if(!dragGoal)return;
+  ordered.splice(targetIdx,0,dragGoal);
+  for(let i=0;i<ordered.length;i++){
+    if(ordered[i].sort_order!==i)await sb.from('savings_goals').update({sort_order:i}).eq('id',ordered[i].id);
+  }
+  await loadAll();renderPointsTab();
+  _goalDragId=null;
 }
 
 async function skipTask(tid,wk,di,mgr,type){
@@ -3993,6 +4175,16 @@ async function saveProfile(){
   doFlash('inst-flash');renderManager();
 }
 async function clearChecks(){if(!confirm(lg()==='pt'?'Limpar todas as marcações desta semana?':'Alle vinkjes voor deze week wissen?'))return;await sb.from('task_checks').delete().eq('household_id',HID).eq('week_key',wkey(wOff));await loadAll();renderMgrWeek();}
+
+async function savePointValue(){
+  const val=parseFloat(document.getElementById('inst-pts-val').value);
+  if(!val||val<=0)return;
+  const cents=Math.round(val*100);
+  const s={...D.settings,point_value_cents:cents};
+  await sb.from('households').update({settings:s}).eq('id',HID);
+  D.settings=s;
+  doFlash('pts-val-flash',tr('shopSaved'));
+}
 
 async function translateAllTasks(){
   const btn=document.getElementById('translate-btn');
