@@ -462,6 +462,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="hdr-r">
       <div class="lang-toggle"><button class="lang-btn" id="ml-nl" onclick="setSessionLang('nl')">🇳🇱</button><button class="lang-btn" id="ml-pt" onclick="setSessionLang('pt')">🇵🇹</button></div>
       <div class="weather-chip" id="m-weather">&#9728;</div>
+      <button class="btn-notif" id="m-pts-btn" onclick="toggleKidsPointsPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">⭐</button>
       <button class="btn-notif" id="m-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">🔔<span class="notif-badge" id="m-notif-badge" style="display:none">0</span></button>
       <button class="btn-out" onclick="logout()">&#8617;</button>
     </div>
@@ -529,7 +530,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
       <span class="chev" id="fixed-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="fixed-list-body" style="display:none">
+    <div class="day-body" id="fixed-list-body">
       <div id="fixed-list"></div>
     </div>
 
@@ -537,7 +538,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="periodic-sec-title" style="margin:0;border:none;padding:0">Periodieke taken per locatie</div>
       <span class="chev" id="periodic-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="periodic-list-body" style="display:none">
+    <div class="day-body" id="periodic-list-body">
       <div id="periodic-list"></div>
     </div>
 
@@ -545,7 +546,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="extra-sec-title" style="margin:0;border:none;padding:0">Extra taken per locatie</div>
       <span class="chev" id="extra-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="extra-list-body" style="display:none">
+    <div class="day-body" id="extra-list-body">
       <div id="ex-list"></div>
     </div>
 
@@ -553,7 +554,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="pers-list-title" style="margin:0;border:none;padding:0">Vaste taken per gezinslid</div>
       <span class="chev" id="pers-list-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="pers-list-body" style="display:none">
+    <div class="day-body" id="pers-list-body">
       <div id="pers-list"></div>
     </div>
 
@@ -565,7 +566,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
       <span class="chev" id="taken-form-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="taken-form-body" style="display:none">
+    <div class="day-body" id="taken-form-body">
       <div class="form-card" style="margin-top:6px">
         <label class="flbl" id="nt-lbl-type">Type</label>
         <div class="type-pills">
@@ -634,7 +635,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="pers-form-title" style="margin:0;border:none;padding:0">Persoonlijke taak toevoegen</div>
       <span class="chev" id="pers-form-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="pers-form-body" style="display:none">
+    <div class="day-body" id="pers-form-body">
       <div class="form-card" style="margin-top:6px">
         <label class="flbl">Gezinslid</label>
         <select class="finput" id="pt-user"></select>
@@ -871,6 +872,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 </div>
 <div class="notif-overlay" id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
+
+<div class="notif-panel" id="kids-pts-panel">
+  <div class="notif-panel-hdr">
+    <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">⭐ Spaardoelen</span>
+    <button onclick="toggleKidsPointsPanel()" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <div class="notif-panel-body" id="kids-pts-list"></div>
+</div>
+<div id="kids-pts-overlay" onclick="toggleKidsPointsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
 
 <div class="modal-bg" id="swap-modal">
   <div class="modal">
@@ -2490,7 +2500,7 @@ function renderPointsTab(){
   html+=`<div class="pts-section-hdr">🎯 ${tr('pointsGoals')}</div>`;
   const goals=D.savingsGoals.filter(g=>g.user_id===CU.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const activeGoals=goals.filter(g=>!g.completed);
-  const doneGoals=goals.filter(g=>g.completed);
+  const doneGoals=goals.filter(g=>g.completed).sort((a,b)=>new Date(b.completed_at||0)-new Date(a.completed_at||0));
   let running=0;
   activeGoals.forEach((g,idx)=>{
     const price=g.price_cents/100;
@@ -2498,17 +2508,20 @@ function renderPointsTab(){
     const ptsForGoal=Math.min(Math.max(pts-running,0),needed);
     const pct=needed>0?Math.min(Math.round(ptsForGoal/needed*100),100):0;
     const remaining=Math.max(needed-ptsForGoal,0);
+    const canBuy=pct>=100;
     html+=`<div class="goal-card" draggable="true" data-goal-id="${g.id}" data-idx="${idx}" ondragstart="goalDragStart(event)" ondragover="goalDragOver(event)" ondrop="goalDrop(event)">`;
     html+=`<div style="display:flex;align-items:center;gap:6px">`;
     html+=`<span class="goal-drag">☰</span>`;
     html+=`<div style="flex:1"><span class="goal-name">${esc(g.name)}</span> <span class="goal-price">€${price.toFixed(2)}</span>`;
     if(g.url)html+=` <a href="${g.url}" target="_blank" class="goal-link">↗</a>`;
     html+=`</div>`;
-    html+=`<span class="goal-actions"><button onclick="delGoal('${g.id}')">✕</button></span>`;
+    html+=`<span class="goal-actions">`;
+    if(canBuy)html+=`<button onclick="completeGoal('${g.id}')" style="opacity:1;color:#1a6b5a;font-weight:700;font-size:13px" title="${tr('goalReached')}">✓</button>`;
+    html+=`<button onclick="delGoal('${g.id}')">✕</button></span>`;
     html+=`</div>`;
     html+=`<div class="goal-prog"><div class="goal-prog-fill" style="width:${pct}%"></div></div>`;
-    if(pct>=100){
-      html+=`<div class="goal-info">${tr('goalReached')}</div>`;
+    if(canBuy){
+      html+=`<div class="goal-info" style="color:#1a6b5a;font-weight:600">${tr('goalReached')} — ${lg()==='pt'?'clique ✓ para comprar':'klik ✓ om te kopen'}</div>`;
     } else {
       html+=`<div class="goal-info">${remaining} ${tr('pointsBalance')} ${tr('goalNeeded')} (€${(remaining*pointValueCents()/100).toFixed(2)})</div>`;
     }
@@ -2520,10 +2533,12 @@ function renderPointsTab(){
 
   // Completed goals
   if(doneGoals.length){
-    html+=`<div style="margin-top:.75rem"><div class="collapse-hdr" onclick="togEl('done-goals-body','done-goals-chev')" style="padding:4px 0"><span style="font-size:12px;color:var(--muted)">✅ ${tr('goalCompleted')} (${doneGoals.length})</span><span class="chev" id="done-goals-chev">&#9662;</span></div>`;
-    html+=`<div id="done-goals-body" style="display:none">`;
+    html+=`<div style="margin-top:.75rem"><div class="collapse-hdr" onclick="togEl('done-goals-body','done-goals-chev')" style="padding:4px 0"><span style="font-size:12px;color:var(--muted)">🏆 ${tr('goalCompleted')} (${doneGoals.length})</span><span class="chev" id="done-goals-chev">&#9662;</span></div>`;
+    html+=`<div class="day-body" id="done-goals-body">`;
     doneGoals.forEach(g=>{
-      html+=`<div class="goal-card completed"><span class="goal-name">${esc(g.name)}</span> <span class="goal-price">€${(g.price_cents/100).toFixed(2)}</span></div>`;
+      const d=g.completed_at?new Date(g.completed_at):null;
+      const dateStr=d?`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`:'';
+      html+=`<div class="goal-card completed"><span class="goal-name">${esc(g.name)}</span> <span class="goal-price">€${(g.price_cents/100).toFixed(2)}</span>${dateStr?` <span style="font-size:10px;color:var(--muted)">${dateStr}</span>`:''}</div>`;
     });
     html+=`</div></div>`;
   }
@@ -2537,10 +2552,11 @@ function renderPointsTab(){
     ledger.forEach(e=>{
       const d=new Date(e.created_at);
       const dateStr=`${d.getDate()}/${d.getMonth()+1}`;
+      const isSpend=e.points<0;
       html+=`<div class="pts-entry${e.revoked?' revoked':''}">`;
       html+=`<span class="pts-entry-date">${dateStr}</span>`;
-      html+=`<span class="pts-entry-task">${esc(e.task_name)}</span>`;
-      html+=`<span class="pts-entry-pts">${e.revoked?'—':'⭐'} ${e.points}</span>`;
+      html+=`<span class="pts-entry-task">${isSpend?'🎯 ':''}${esc(e.task_name)}</span>`;
+      html+=`<span class="pts-entry-pts" style="${isSpend?'color:#e65100':''}">${e.revoked?'—':isSpend?'':'⭐'} ${e.points}</span>`;
       html+=`</div>`;
     });
   }
@@ -2564,13 +2580,72 @@ async function delGoal(id){
   await loadAll();renderPointsTab();
 }
 
+async function completeGoal(id){
+  const g=D.savingsGoals.find(x=>x.id===id);if(!g)return;
+  const price=g.price_cents/100;
+  const needed=Math.ceil(price/(pointValueCents()/100));
+  const pts=userPoints(CU.id);
+  if(pts<needed)return;
+  // Deduct points via negative ledger entry
+  await sb.from('point_ledger').insert({household_id:HID,user_id:CU.id,task_id:id,task_type:'goal',task_name:g.name,points:-needed,week_key:wkey(wOff),day_index:0});
+  // Mark goal completed
+  await sb.from('savings_goals').update({completed:true,completed_at:new Date().toISOString()}).eq('id',id);
+  await loadAll();renderPointsTab();
+}
+
 async function revokePoint(id){
   await sb.from('point_ledger').update({revoked:true,revoked_by:CU?.id,revoked_at:new Date().toISOString()}).eq('id',id);
   await loadAll();
   if(isMgr())renderFamilyOverview(wkey(wOff));
-  // Also update child's points tab if open
   const ptEl=document.getElementById('w-points-content');
   if(ptEl&&ptEl.innerHTML)renderPointsTab();
+  renderKidsPointsPanel();
+}
+
+function toggleKidsPointsPanel(){
+  const p=document.getElementById('kids-pts-panel');
+  const o=document.getElementById('kids-pts-overlay');
+  if(!p)return;
+  const opening=!p.classList.contains('open');
+  p.classList.toggle('open');
+  if(o)o.style.display=opening?'block':'none';
+  if(opening)renderKidsPointsPanel();
+}
+
+function renderKidsPointsPanel(){
+  const el=document.getElementById('kids-pts-list');if(!el)return;
+  const kids=D.users.filter(u=>u.role==='child');
+  if(!kids.length){el.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:13px">Geen kinderen</div>';return;}
+  let html='';
+  kids.forEach(kid=>{
+    const pts=userPoints(kid.id);
+    const val=pts*pointValueCents()/100;
+    const col=ucol(kid.id);
+    html+=`<div style="padding:.75rem;border-bottom:1px solid var(--border)">`;
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:28px;height:28px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff">${kid.avatar||kid.name[0]}</span><span style="font-weight:600;font-size:14px">${kid.name}</span><span style="margin-left:auto;font-size:14px;font-weight:700;color:#f57f17">⭐ ${pts} = €${val.toFixed(2)}</span></div>`;
+    // Active goals
+    const goals=D.savingsGoals.filter(g=>g.user_id===kid.id&&!g.completed).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const doneGoals=D.savingsGoals.filter(g=>g.user_id===kid.id&&g.completed);
+    let running=0;
+    if(goals.length){
+      goals.forEach(g=>{
+        const price=g.price_cents/100;
+        const needed=Math.ceil(price/(pointValueCents()/100));
+        const ptsForGoal=Math.min(Math.max(pts-running,0),needed);
+        const pct=needed>0?Math.min(Math.round(ptsForGoal/needed*100),100):0;
+        html+=`<div style="padding:4px 0"><div style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="flex:1">${esc(g.name)}</span><span style="color:var(--caramel);font-weight:500">€${price.toFixed(2)}</span>${g.url?` <a href="${g.url}" target="_blank" style="color:var(--caramel);text-decoration:none;font-size:11px">↗</a>`:''}</div>`;
+        html+=`<div class="goal-prog"><div class="goal-prog-fill" style="width:${pct}%"></div></div></div>`;
+        running+=needed;
+      });
+    } else {
+      html+=`<div style="font-size:12px;color:var(--muted)">Geen spaardoelen</div>`;
+    }
+    if(doneGoals.length){
+      html+=`<div style="font-size:11px;color:var(--muted);margin-top:4px">🏆 ${doneGoals.length} ${tr('goalCompleted').toLowerCase()}</div>`;
+    }
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
 }
 
 // Drag-and-drop reorder for savings goals
