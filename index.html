@@ -797,6 +797,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
     <label class="flbl">Notities (optioneel)</label>
     <textarea class="finput" id="bk-notes" rows="2" placeholder="Bijv. Komt rond 15:00"></textarea>
+    <div id="bk-status-wrap" style="display:none">
+      <label class="flbl">Status</label>
+      <select class="finput" id="bk-status">
+        <option value="upcoming">📋 Verwacht</option>
+        <option value="checked_in">🏠 Ingecheckt</option>
+        <option value="checked_out">👋 Uitgecheckt</option>
+        <option value="cancelled">❌ Geannuleerd</option>
+      </select>
+    </div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="save-btn" onclick="saveBooking()" style="flex:1">Opslaan</button>
       <button class="save-btn" onclick="closeBkModal()" style="flex:1;background:var(--muted)">Annuleren</button>
@@ -1950,7 +1959,7 @@ function renderWorker(){
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
     const isChild=CU?.role==='child';
-    const allDi=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
+    const allDi=[0,1,2,3,4,5,6];
     let tot=0,done=0,html='';
     // For children: check all 7 days for personal tasks
     const daysToCheck=isChild?[0,1,2,3,4,5,6]:allDi;
@@ -1976,7 +1985,6 @@ function renderWorker(){
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
         const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
         const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-        if(!sd.length&&!ex.length&&!rc.length&&!D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di).length)return;
         let dt=0,dd=0;
         sd.forEach(sr=>{
           const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
@@ -2408,13 +2416,12 @@ function renderMgrWeek(){
   if(!CU)return;
   ensureWeekSched(wOff).then(()=>{
     const wk=wkey(wOff);
-    const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index),...D.persTasks.filter(t=>t.user_id===CU.id).map(t=>t.day_index),...D.recipes.filter(r=>r.week_key===wk).map(r=>r.day_index)])].sort((a,b)=>a-b);
+    const showDays=[0,1,2,3,4,5,6];
     let tot=0,done=0,html='';
     showDays.forEach(di=>{
       const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
       const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
       const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-      if(!sd.length&&!ex.length&&!rc.length&&!D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di).length)return;
       let dt=0,dd=0;
       sd.forEach(sr=>{
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id);
@@ -2481,13 +2488,12 @@ function refreshMgrWeek(){
   const wk=wkey(wOff);
   const openDays=saveOpenState('md');
   const openLocs=saveAllLocStates();
-  const showDays=[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index),...D.extras.filter(e=>e.week_key===wk).map(e=>e.day_index),...D.persTasks.map(t=>t.day_index),...D.recipes.filter(r=>r.week_key===wk).map(r=>r.day_index)])].sort((a,b)=>a-b);
+  const showDays=[0,1,2,3,4,5,6];
   let tot=0,done=0;
   showDays.forEach(di=>{
     const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
     const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
     const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-    if(!sd.length&&!ex.length&&!rc.length&&!D.persTasks.filter(t=>t.day_index===di).length)return;
     let dt=0,dd=0;
     // Count daily tasks too
     D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
@@ -3845,7 +3851,6 @@ function renderBookings(){
       html+=`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">`;
       html+=`<span class="bk-status bk-${b.status}">${tr(BK_STATUS_LBL[b.status])}</span>`;
       html+=`<div style="display:flex;gap:4px">`;
-      if(nextStatus)html+=`<button onclick="updateBookingStatus('${b.id}','${nextStatus}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer" title="${tr(BK_STATUS_LBL[nextStatus])}">${nextStatus==='checked_in'?'✅':'🏁'}</button>`;
       html+=`<button onclick="openBookingForm('${b.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer">✏️</button>`;
       if(b.status==='upcoming'||b.status==='cancelled')html+=`<button onclick="deleteBooking('${b.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;cursor:pointer;color:#c62828">🗑</button>`;
       html+=`</div></div></div></div>`;
@@ -3872,6 +3877,8 @@ function openBookingForm(id){
   document.getElementById('bk-checkin').value=b?.check_in||'';
   document.getElementById('bk-checkout').value=b?.check_out||'';
   document.getElementById('bk-notes').value=b?.notes||'';
+  document.getElementById('bk-status-wrap').style.display=isEdit?'block':'none';
+  if(isEdit)document.getElementById('bk-status').value=b.status||'upcoming';
   updChildAges(ages);
   m.classList.add('open');
 }
@@ -3911,7 +3918,11 @@ async function saveBooking(){
     check_in:ci,check_out:co,notes:notes||null,
   };
   if(id){
+    const newStatus=document.getElementById('bk-status').value;
+    row.status=newStatus;
     await sb.from('bookings').update(row).eq('id',id);
+    const oldBk=D.bookings.find(b=>b.id===id);
+    if(oldBk&&oldBk.status!==newStatus)await logChange(`Boeking ${name||'?'}: ${tr(BK_STATUS_LBL[newStatus])}`);
   } else {
     row.created_by=CU?.id;
     row.status='upcoming';
@@ -4088,28 +4099,40 @@ function renderCleanTemplates(){
       html+=`<div style="text-align:center;padding:1rem;color:var(--muted);font-size:12px">${tr('ctEmpty')}</div>`;
       html+=`<button class="save-btn" onclick="populateDefaults('${loc.id}')" style="width:100%;margin-top:4px">${tr('ctDefaults')}</button>`;
     } else {
-      ROOM_TYPES.forEach(rt=>{
-        const rtTasks=templs.filter(t=>t.room_type===rt);
-        if(!rtTasks.length)return;
-        html+=`<div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--caramel);margin-bottom:4px">${ROOM_ICONS[rt]} ${tr(ROOM_LABELS[rt])}</div>`;
-        rtTasks.forEach(t=>{
-          html+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px">`;
-          html+=`<span style="flex:1">${esc(t.task_text_nl)}</span>`;
-          html+=`<span style="font-size:10px;color:var(--muted)">${esc(t.task_text_pt||'')}</span>`;
-          html+=`<button onclick="delCleanTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:10px;padding:2px 4px" title="${tr('ctRemove')}">✕</button>`;
+      // Split by phase: check-out first, then check-in
+      ['check_out','check_in'].forEach(phase=>{
+        const phaseTasks=templs.filter(t=>(t.phase||'check_out')===phase);
+        const phaseIcon=phase==='check_out'?'👋':'🎁';
+        const phaseLabel=phase==='check_out'?'Check-out':'Check-in';
+        html+=`<div style="margin-top:10px;margin-bottom:6px;font-size:13px;font-weight:700;color:var(--espresso)">${phaseIcon} ${phaseLabel}</div>`;
+        // Group by room_type
+        const rooms=[...new Set(phaseTasks.map(t=>t.room_type))];
+        if(!rooms.length){
+          html+=`<div style="font-size:11px;color:var(--muted);padding:4px 0;font-style:italic">Geen taken</div>`;
+        }
+        rooms.forEach(room=>{
+          const roomTasks=phaseTasks.filter(t=>t.room_type===room);
+          html+=`<div style="margin-top:6px"><div style="font-size:11px;font-weight:600;color:var(--caramel);margin-bottom:3px">${esc(room)}</div>`;
+          roomTasks.forEach(t=>{
+            html+=`<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:12px">`;
+            html+=`<span style="flex:1">${esc(t.task_text_nl)}</span>`;
+            html+=`<span style="font-size:10px;color:var(--muted)">${esc(t.task_text_pt||'')}</span>`;
+            html+=`<button onclick="delCleanTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:10px;padding:2px 4px" title="${tr('ctRemove')}">✕</button>`;
+            html+=`</div>`;
+          });
           html+=`</div>`;
         });
+        // Add task form per phase
+        html+=`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">`;
+        html+=`<input class="finput" id="ct-room-${loc.id}-${phase}" placeholder="Ruimte (bijv. Badkamer)" style="flex:0 0 100px;font-size:11px" list="ct-rooms-${loc.id}">`;
+        html+=`<input class="finput" id="ct-nl-${loc.id}-${phase}" placeholder="Taaknaam NL" style="flex:1;font-size:11px">`;
+        html+=`<input class="finput" id="ct-pt-${loc.id}-${phase}" placeholder="PT" style="flex:0 0 70px;font-size:11px">`;
+        html+=`<button class="save-btn" onclick="addCleanTask('${loc.id}','${phase}')" style="width:auto;padding:4px 10px;font-size:11px">${tr('ctAdd')}</button>`;
         html+=`</div>`;
       });
-      html+=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">`;
-      html+=`<div style="display:flex;gap:4px;flex-wrap:wrap">`;
-      html+=`<select class="finput" id="ct-rt-${loc.id}" style="flex:0 0 auto;width:auto;font-size:11px">`;
-      ROOM_TYPES.forEach(rt=>html+=`<option value="${rt}">${tr(ROOM_LABELS[rt])}</option>`);
-      html+=`</select>`;
-      html+=`<input class="finput" id="ct-nl-${loc.id}" placeholder="Taaknaam NL" style="flex:1;font-size:11px">`;
-      html+=`<input class="finput" id="ct-pt-${loc.id}" placeholder="PT" style="flex:0 0 80px;font-size:11px">`;
-      html+=`<button class="save-btn" onclick="addCleanTask('${loc.id}')" style="width:auto;padding:4px 10px;font-size:11px">${tr('ctAdd')}</button>`;
-      html+=`</div></div>`;
+      // Datalist with existing room names for autocomplete
+      const allRooms=[...new Set(templs.map(t=>t.room_type))];
+      html+=`<datalist id="ct-rooms-${loc.id}">${allRooms.map(r=>`<option value="${esc(r)}">`).join('')}</datalist>`;
     }
     html+=`</div></div>`;
   });
@@ -4118,18 +4141,22 @@ function renderCleanTemplates(){
 
 async function populateDefaults(locId){
   const rows=[];let sort=0;
-  ROOM_TYPES.forEach(rt=>{(DEFAULT_TASKS[rt]||[]).forEach(t=>{rows.push({household_id:HID,location_id:locId,room_type:rt,task_text_nl:t.nl,task_text_pt:t.pt,sort_order:sort++});});});
+  ROOM_TYPES.forEach(rt=>{
+    const phase=rt==='check_in'?'check_in':'check_out';
+    const roomName=tr(ROOM_LABELS[rt])||rt;
+    (DEFAULT_TASKS[rt]||[]).forEach(t=>{rows.push({household_id:HID,location_id:locId,room_type:roomName,phase,task_text_nl:t.nl,task_text_pt:t.pt,sort_order:sort++});});
+  });
   await sb.from('cleaning_templates').insert(rows);
   await loadAll();renderCleanTemplates();
 }
 
-async function addCleanTask(locId){
-  const rt=document.getElementById('ct-rt-'+locId).value;
-  const nl=document.getElementById('ct-nl-'+locId).value.trim();
-  const pt=document.getElementById('ct-pt-'+locId).value.trim();
-  if(!nl)return;
+async function addCleanTask(locId,phase){
+  const room=document.getElementById('ct-room-'+locId+'-'+phase)?.value.trim();
+  const nl=document.getElementById('ct-nl-'+locId+'-'+phase)?.value.trim();
+  const pt=document.getElementById('ct-pt-'+locId+'-'+phase)?.value.trim();
+  if(!nl||!room)return;
   const maxSort=Math.max(0,...D.cleanTempl.filter(t=>t.location_id===locId).map(t=>t.sort_order||0));
-  await sb.from('cleaning_templates').insert({household_id:HID,location_id:locId,room_type:rt,task_text_nl:nl,task_text_pt:pt||nl,sort_order:maxSort+1});
+  await sb.from('cleaning_templates').insert({household_id:HID,location_id:locId,room_type:room,phase,task_text_nl:nl,task_text_pt:pt||nl,sort_order:maxSort+1});
   await loadAll();renderCleanTemplates();
 }
 
@@ -4155,12 +4182,12 @@ async function generateBookingTasks(bk){
   const loc=D.locs.find(l=>l.id===bk.location_id);
   const locName=loc?.name||'';
   const rows=[];
-  templs.filter(t=>t.room_type!=='check_in').forEach(t=>{
+  templs.filter(t=>(t.phase||'check_out')==='check_out').forEach(t=>{
     rows.push({household_id:HID,location_id:bk.location_id,week_key:coDate.wk,day_index:coDate.di,
       text_nl:`🔑 ${t.task_text_nl}`,text_pt:`🔑 ${t.task_text_pt||t.task_text_nl}`,
       category:`Check-out ${locName}`,booking_id:bk.id});
   });
-  templs.filter(t=>t.room_type==='check_in').forEach(t=>{
+  templs.filter(t=>t.phase==='check_in').forEach(t=>{
     rows.push({household_id:HID,location_id:bk.location_id,week_key:ciDate.wk,day_index:ciDate.di,
       text_nl:`🔑 ${t.task_text_nl}`,text_pt:`🔑 ${t.task_text_pt||t.task_text_nl}`,
       category:`Check-in ${locName}`,booking_id:bk.id});
