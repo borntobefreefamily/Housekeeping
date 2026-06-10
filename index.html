@@ -2037,7 +2037,7 @@ function renderWorker(){
         tot+=dt;done+=dd;
         const hasMePersW=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di);
         const persStyleW=hasMePersW?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersW?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersW?' 📌':''}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       }
     });
     const pct=tot?Math.round(done/tot*100):0;
@@ -2474,7 +2474,7 @@ function renderMgrWeek(){
       tot+=dt;done+=dd;
       const hasMePers=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di);
       const persStyle=hasMePers?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePers?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
+      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePers?' 📌':''}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
     });
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
@@ -3852,6 +3852,21 @@ function rTab(n){
 const BK_STATUS=['upcoming','checked_in','checked_out','cancelled'];
 const BK_STATUS_LBL={upcoming:'bkUpcoming',checked_in:'bkCheckedIn',checked_out:'bkCheckedOut',cancelled:'bkCancelled'};
 const BK_STATUS_NEXT={upcoming:'checked_in',checked_in:'checked_out'};
+
+function bkDayLabel(wk,di){
+  const d=new Date(wk);d.setDate(d.getDate()+di);
+  const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let lbl='';
+  D.bookings.filter(b=>b.check_in===ds&&b.status!=='cancelled').forEach(b=>{
+    const loc=D.locs.find(l=>l.id===b.location_id);
+    lbl+=`<span style="font-size:10px;font-weight:600;color:#2e7d32;margin-left:6px">🏠 Check-in ${esc(loc?.name||'')}</span>`;
+  });
+  D.bookings.filter(b=>b.check_out===ds&&b.status!=='cancelled').forEach(b=>{
+    const loc=D.locs.find(l=>l.id===b.location_id);
+    lbl+=`<span style="font-size:10px;font-weight:600;color:#e65100;margin-left:6px">👋 Check-out ${esc(loc?.name||'')}</span>`;
+  });
+  return lbl;
+}
 
 function renderBookings(){
   const el=document.getElementById('bk-list');
