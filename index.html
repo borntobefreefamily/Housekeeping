@@ -806,6 +806,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <option value="cancelled">❌ Geannuleerd</option>
       </select>
     </div>
+    <div id="bk-regen-wrap" style="display:none;margin-top:8px">
+      <button class="save-btn" onclick="regenBookingTasks()" style="width:100%;background:var(--espresso);font-size:12px">🔄 Hergeneer schoonmaaktaken</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="save-btn" onclick="saveBooking()" style="flex:1">Opslaan</button>
       <button class="save-btn" onclick="closeBkModal()" style="flex:1;background:var(--muted)">Annuleren</button>
@@ -1781,8 +1784,8 @@ function renderDayBody(di,wk,isMgr){
     html+='</div>';
   }
 
-  // 4. Dagelijkse basis
-  if(dailyTasks.length){
+  // 4. Dagelijkse basis (alleen op dagen met ingeplande locaties)
+  if(dailyTasks.length && schedDay.length){
     const done=dailyTasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
     const uid=`daily-${di}`;
     let lb='';
@@ -2495,8 +2498,8 @@ function refreshMgrWeek(){
     const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
     const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
     let dt=0,dd=0;
-    // Count daily tasks too
-    D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+    // Count daily tasks only on days with scheduled locations
+    if(sd.length)D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
     sd.forEach(sr=>{
       const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
       dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
@@ -2544,9 +2547,8 @@ function refreshWorker(){
       const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
       const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
       const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
-      if(!sd.length&&!ex.length&&!rc.length)return;
       let dt=0,dd=0;
-      D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      if(sd.length)D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
       sd.forEach(sr=>{
         const tasks=D.tasks.filter(t=>t.location_id===sr.location_id&&!t.is_daily);
         dt+=tasks.length;tasks.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
@@ -3878,6 +3880,7 @@ function openBookingForm(id){
   document.getElementById('bk-checkout').value=b?.check_out||'';
   document.getElementById('bk-notes').value=b?.notes||'';
   document.getElementById('bk-status-wrap').style.display=isEdit?'block':'none';
+  document.getElementById('bk-regen-wrap').style.display=isEdit?'block':'none';
   if(isEdit)document.getElementById('bk-status').value=b.status||'upcoming';
   updChildAges(ages);
   m.classList.add('open');
@@ -4197,6 +4200,17 @@ async function generateBookingTasks(bk){
 
 async function deleteBookingTasks(bookingId){
   await sb.from('extra_tasks').delete().eq('booking_id',bookingId);
+}
+
+async function regenBookingTasks(){
+  const id=document.getElementById('bk-edit-id').value;
+  if(!id)return;
+  const bk=D.bookings.find(b=>b.id===id);if(!bk)return;
+  await deleteBookingTasks(id);
+  await generateBookingTasks(bk);
+  await loadAll();
+  closeBkModal();renderBookings();
+  if(curMode==='home')renderMgrWeek();
 }
 
 // ═══════════════ TASK EDIT MODAL ═══════════════
