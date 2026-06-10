@@ -666,8 +666,10 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
             <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
           </select>
         </div>
+        <div id="nt-points-wrap" style="display:none">
         <label class="flbl" id="nt-lbl-points">Punten</label>
         <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
+        </div>
         <button class="save-btn" onclick="addUnifiedTask()" id="nt-add-btn">+ Toevoegen</button>
         <div id="nt-flash" class="flash" style="opacity:0"></div>
       </div>
@@ -862,8 +864,10 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <label class="flbl" id="edit-lbl-day-e">Dag</label>
       <div class="pill-group" id="edit-extra-days"></div>
     </div>
+    <div id="edit-points-wrap">
     <label class="flbl" id="edit-lbl-points">Punten</label>
     <input class="finput" type="number" id="edit-points" min="0" max="100" value="0" style="width:80px">
+    </div>
     <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
       <button class="save-btn" onclick="saveEdit()" style="flex:1;min-width:100px" id="edit-save-btn">Opslaan</button>
       <button class="save-btn" onclick="closeModal()" style="flex:1;min-width:100px;background:var(--steam);color:var(--text)" id="edit-cancel-btn">Annuleren</button>
@@ -4346,6 +4350,7 @@ function openEdit(id,type,nl,pt,interval){
   else if(type==='periodic'){const t=D.periodic.find(x=>x.id===id);taskPts=t?.points||0;}
   else if(type==='extra'){const t=D.extras.find(x=>x.id===id);taskPts=t?.points||0;}
   document.getElementById('edit-points').value=taskPts;
+  document.getElementById('edit-points-wrap').style.display='none';
   document.getElementById('edit-save-btn').textContent=tr('save');
   document.getElementById('edit-cancel-btn').textContent=tr('cancel');
   const deleteBtn=document.getElementById('edit-delete-btn');
@@ -4686,6 +4691,7 @@ function openPersEdit(id){
   persWrap.innerHTML=h;
   persWrap.style.display='block';
   document.getElementById('edit-points').value=t.points||0;
+  document.getElementById('edit-points-wrap').style.display='block';
   // Hide fixed/periodic-specific wraps
   document.getElementById('edit-loc-wrap').style.display='none';
   document.getElementById('edit-interval-wrap').style.display='none';
