@@ -488,7 +488,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
   <div class="tabs" id="rental-tabs" style="display:none">
     <button class="tab on" id="t-bookings" onclick="rTab('bookings')"><span class="tab-ico">📅</span><span class="tab-lbl" id="tl-bookings">Boekingen</span></button>
-    <button class="tab" id="t-locinfo" onclick="rTab('locinfo')" style="opacity:.4;pointer-events:none"><span class="tab-ico">🏡</span><span class="tab-lbl">Info</span></button>
+    <button class="tab" id="t-locinfo" onclick="rTab('locinfo')"><span class="tab-ico">🏡</span><span class="tab-lbl" id="tl-locinfo">Info</span></button>
     <button class="tab" id="t-cleaning" onclick="rTab('cleaning')" style="opacity:.4;pointer-events:none"><span class="tab-ico">🧹</span><span class="tab-lbl">Schoonmaak</span></button>
   </div>
 
@@ -502,6 +502,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div style="font-size:2rem;margin-bottom:8px">📅</div>
       <div style="font-size:13px" id="bk-empty-txt">Nog geen boekingen. Voeg je eerste boeking toe!</div>
     </div>
+  </div>
+
+  <div id="mt-locinfo" class="scroll" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="sec-title" style="margin:0">🏡 Locatie-informatie</div>
+    </div>
+    <div id="li-list"></div>
   </div>
 
   <div id="mt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -1031,7 +1038,7 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
@@ -1147,6 +1154,14 @@ const I={
     bkUpcoming:'Verwacht',bkCheckedIn:'Ingecheckt',bkCheckedOut:'Uitgecheckt',bkCancelled:'Geannuleerd',
     bkNoBookings:'Nog geen boekingen',bkNights:'nachten',bkAdults:'volw.',bkChildren:'kind.',
     bkDelete:'Verwijderen',bkConfirmDelete:'Boeking verwijderen?',bkAge:'jr',
+    // Locatie-info
+    liTitle:'Locatie-informatie',liWelcome:'Welkomstbericht',liCheckInTime:'Check-in tijd',
+    liCheckOutTime:'Check-out tijd',liCheckInInstr:'Check-in instructies',
+    liCheckOutInstr:'Check-out instructies',liRules:'Huisregels',liParking:'Parkeerinfo',
+    liTips:'Lokale tips',liGeneral:'Algemene instructies',liSave:'Opslaan',liSaved:'Opgeslagen!',
+    liLocked:'🔒 Beschikbaar met beveiligd abonnement',
+    liWifi:'WiFi wachtwoord',liKeyCode:'Sleutelkluiscode',liAlarmCode:'Alarmcode',
+    liPreview:'Gastweergave',liNoInfo:'Nog geen informatie ingevuld.',
   },
   pt:{
     myWeek:'A minha semana',changes:'Alterações',recipes:'Receitas',
@@ -1251,6 +1266,14 @@ const I={
     bkUpcoming:'Esperado',bkCheckedIn:'Check-in feito',bkCheckedOut:'Check-out feito',bkCancelled:'Cancelado',
     bkNoBookings:'Sem reservas',bkNights:'noites',bkAdults:'adultos',bkChildren:'crian.',
     bkDelete:'Eliminar',bkConfirmDelete:'Eliminar reserva?',bkAge:'anos',
+    // Informação do local
+    liTitle:'Informação do local',liWelcome:'Mensagem de boas-vindas',liCheckInTime:'Hora de check-in',
+    liCheckOutTime:'Hora de check-out',liCheckInInstr:'Instruções de check-in',
+    liCheckOutInstr:'Instruções de check-out',liRules:'Regras da casa',liParking:'Estacionamento',
+    liTips:'Dicas locais',liGeneral:'Instruções gerais',liSave:'Guardar',liSaved:'Guardado!',
+    liLocked:'🔒 Disponível com subscrição segura',
+    liWifi:'Palavra-passe WiFi',liKeyCode:'Código do cofre da chave',liAlarmCode:'Código de alarme',
+    liPreview:'Vista do hóspede',liNoInfo:'Nenhuma informação preenchida.',
   }
 };
 const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
@@ -1321,7 +1344,7 @@ function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -1349,10 +1372,11 @@ async function loadAll(){
     safeQ(sb.from('point_ledger').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
     safeQ(sb.from('savings_goals').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('bookings').select('*').eq('household_id',HID).order('check_in')),
+    safeQ(sb.from('location_info').select('*').eq('household_id',HID)),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.shopping=si.data||[];D.recipeIngr=ri.data||[];
-  D.pointLedger=pl.data||[];D.savingsGoals=sg.data||[];D.bookings=bk.data||[];
+  D.pointLedger=pl.data||[];D.savingsGoals=sg.data||[];D.bookings=bk.data||[];D.locInfo=li.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
   D.workdays=hh.data?.[0]?.workdays||[0,1,3,4];
   D.settings=hh.data?.[0]?.settings||{};
@@ -1375,7 +1399,7 @@ function setupRT(){
   // Soft: preserves open state (frequent changes like checks)
   const softTbls=['task_checks','skipped_tasks','monthly_checks','task_reactions'];
   // Hard: full re-render (structural changes, new tabs may appear)
-  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings'];
+  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info'];
   softTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
@@ -2037,7 +2061,7 @@ function renderManager(){
 }
 
 function mTab(n){
-  ['week','plan','recipe','shop','taken','inst','bookings'].forEach(tab=>{
+  ['week','plan','recipe','shop','taken','inst','bookings','locinfo'].forEach(tab=>{
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?(tab==='week'?'flex':'block'):'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
@@ -3743,18 +3767,19 @@ function switchMode(mode){
   document.getElementById('mgr-tabs').style.display=mode==='home'?'flex':'none';
   document.getElementById('rental-tabs').style.display=mode==='rental'?'flex':'none';
   // Hide all content panels
-  ['week','plan','recipe','shop','taken','inst','bookings'].forEach(t=>{
+  ['week','plan','recipe','shop','taken','inst','bookings','locinfo'].forEach(t=>{
     const el=document.getElementById('mt-'+t);if(el)el.style.display='none';
   });
   if(mode==='home')mTab('week');
   else rTab('bookings');
 }
 function rTab(n){
-  ['bookings'].forEach(tab=>{
+  ['bookings','locinfo'].forEach(tab=>{
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?'block':'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
   if(n==='bookings')renderBookings();
+  if(n==='locinfo')renderLocInfo();
 }
 
 const BK_STATUS=['upcoming','checked_in','checked_out','cancelled'];
@@ -3897,6 +3922,119 @@ async function anonymizeOldBookings(){
     await sb.from('bookings').update({guest_name:null,notes:null}).eq('id',b.id);
   }
   if(old.length)await loadAll();
+}
+
+// ═══════════════ LOCATIE-INFO ═══════════════
+function renderLocInfo(){
+  const el=document.getElementById('li-list');if(!el)return;
+  let html='';
+  D.locs.forEach(loc=>{
+    const info=D.locInfo.find(i=>i.location_id===loc.id)||{};
+    const hasData=info.id;
+    html+=`<div class="form-card" style="margin-bottom:12px;border-left:3px solid ${loc.color||'var(--caramel)'}">`;
+    html+=`<div class="collapse-hdr" onclick="togEl('li-body-${loc.id}','li-chev-${loc.id}')" style="padding:2px 0;cursor:pointer">`;
+    html+=`<span style="font-weight:700;font-size:14px;color:${loc.color||'var(--espresso)'}">${esc(loc.name)}</span>`;
+    html+=`${hasData?'<span style="font-size:10px;color:var(--muted);margin-left:6px">✅ ingevuld</span>':'<span style="font-size:10px;color:var(--muted);margin-left:6px">leeg</span>'}`;
+    html+=`<span class="chev" id="li-chev-${loc.id}">&#9662;</span></div>`;
+    html+=`<div class="day-body" id="li-body-${loc.id}">`;
+    // Editable fields
+    const fields=[
+      {key:'welcome_text',label:tr('liWelcome'),type:'textarea',placeholder:'Welkom in '+loc.name+'! ...'},
+      {key:'check_in_time',label:tr('liCheckInTime'),type:'text',placeholder:'15:00'},
+      {key:'check_out_time',label:tr('liCheckOutTime'),type:'text',placeholder:'11:00'},
+      {key:'check_in_instructions',label:tr('liCheckInInstr'),type:'textarea',placeholder:'Bij aankomst...'},
+      {key:'check_out_instructions',label:tr('liCheckOutInstr'),type:'textarea',placeholder:'Bij vertrek...'},
+      {key:'house_rules',label:tr('liRules'),type:'textarea',placeholder:'Niet roken, rusttijden...'},
+      {key:'parking_info',label:tr('liParking'),type:'textarea',placeholder:'Parkeren kan bij...'},
+      {key:'local_tips',label:tr('liTips'),type:'textarea',placeholder:'Restaurants, stranden...'},
+      {key:'general_instructions',label:tr('liGeneral'),type:'textarea',placeholder:'Overige informatie...'},
+    ];
+    fields.forEach(f=>{
+      const val=info[f.key]||'';
+      html+=`<label class="flbl" style="margin-top:8px">${f.label}</label>`;
+      if(f.type==='textarea')html+=`<textarea class="finput" id="li-${loc.id}-${f.key}" rows="2" placeholder="${f.placeholder}">${esc(val)}</textarea>`;
+      else html+=`<input class="finput" type="text" id="li-${loc.id}-${f.key}" value="${esc(val)}" placeholder="${f.placeholder}">`;
+    });
+    // Locked sensitive fields
+    html+=`<div style="margin-top:12px;padding:10px;background:rgba(0,0,0,.03);border-radius:8px">`;
+    html+=`<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px">🔒 Beveiligde velden (Fase 5)</div>`;
+    ['liWifi','liKeyCode','liAlarmCode'].forEach(k=>{
+      html+=`<label class="flbl" style="margin-top:4px;opacity:.5">${tr(k)}</label>`;
+      html+=`<input class="finput" type="text" disabled placeholder="${tr('liLocked')}" style="opacity:.5;cursor:not-allowed">`;
+    });
+    html+=`</div>`;
+    // Buttons
+    html+=`<div style="display:flex;gap:8px;margin-top:10px">`;
+    html+=`<button class="save-btn" onclick="saveLocInfo('${loc.id}')" style="flex:1">${tr('liSave')}</button>`;
+    html+=`<button class="save-btn" onclick="previewLocInfo('${loc.id}')" style="flex:1;background:var(--espresso)">${tr('liPreview')}</button>`;
+    html+=`</div>`;
+    html+=`<div id="li-flash-${loc.id}" class="flash" style="opacity:0"></div>`;
+    html+=`</div></div>`;
+  });
+  el.innerHTML=html;
+}
+
+async function saveLocInfo(locId){
+  const fields=['welcome_text','check_in_time','check_out_time','check_in_instructions','check_out_instructions','house_rules','parking_info','local_tips','general_instructions'];
+  const row={household_id:HID,location_id:locId};
+  fields.forEach(f=>{
+    const el=document.getElementById('li-'+locId+'-'+f);
+    row[f]=el?el.value.trim()||null:null;
+  });
+  const existing=D.locInfo.find(i=>i.location_id===locId);
+  if(existing){
+    await sb.from('location_info').update(row).eq('id',existing.id);
+  } else {
+    await sb.from('location_info').insert(row);
+  }
+  doFlash('li-flash-'+locId,tr('liSaved'));
+  await loadAll();
+}
+
+function previewLocInfo(locId){
+  const info=D.locInfo.find(i=>i.location_id===locId)||{};
+  const loc=D.locs.find(l=>l.id===locId);
+  // Read current form values (even if not saved yet)
+  const fields=['welcome_text','check_in_time','check_out_time','check_in_instructions','check_out_instructions','house_rules','parking_info','local_tips','general_instructions'];
+  const vals={};
+  fields.forEach(f=>{
+    const el=document.getElementById('li-'+locId+'-'+f);
+    vals[f]=el?el.value.trim():'';
+  });
+  const hasAny=Object.values(vals).some(v=>v);
+  let html=`<div style="max-height:70vh;overflow-y:auto;padding:4px">`;
+  html+=`<div style="text-align:center;margin-bottom:16px"><div style="font-size:24px;font-weight:800;font-family:Fraunces,serif;color:var(--espresso)">${esc(loc?.name||'')}</div></div>`;
+  if(!hasAny){
+    html+=`<div style="text-align:center;color:var(--muted);padding:2rem">${tr('liNoInfo')}</div>`;
+  } else {
+    if(vals.welcome_text)html+=`<div style="font-size:14px;color:var(--espresso);margin-bottom:16px;line-height:1.5;text-align:center;font-style:italic">${esc(vals.welcome_text)}</div>`;
+    if(vals.check_in_time||vals.check_out_time){
+      html+=`<div style="display:flex;gap:12px;margin-bottom:12px">`;
+      if(vals.check_in_time)html+=`<div style="flex:1;background:var(--cream);padding:10px;border-radius:10px;text-align:center"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600">Check-in</div><div style="font-size:18px;font-weight:700;color:var(--espresso)">${esc(vals.check_in_time)}</div></div>`;
+      if(vals.check_out_time)html+=`<div style="flex:1;background:var(--cream);padding:10px;border-radius:10px;text-align:center"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600">Check-out</div><div style="font-size:18px;font-weight:700;color:var(--espresso)">${esc(vals.check_out_time)}</div></div>`;
+      html+=`</div>`;
+    }
+    const sections=[
+      {val:vals.check_in_instructions,icon:'🚪',label:tr('liCheckInInstr')},
+      {val:vals.check_out_instructions,icon:'👋',label:tr('liCheckOutInstr')},
+      {val:vals.house_rules,icon:'📋',label:tr('liRules')},
+      {val:vals.parking_info,icon:'🅿️',label:tr('liParking')},
+      {val:vals.local_tips,icon:'📍',label:tr('liTips')},
+      {val:vals.general_instructions,icon:'ℹ️',label:tr('liGeneral')},
+    ];
+    sections.forEach(s=>{
+      if(!s.val)return;
+      html+=`<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:700;color:var(--caramel);margin-bottom:4px">${s.icon} ${s.label}</div>`;
+      html+=`<div style="font-size:13px;color:var(--espresso);line-height:1.5;white-space:pre-wrap">${esc(s.val)}</div></div>`;
+    });
+  }
+  html+=`</div>`;
+  // Show in a simple modal
+  const m=document.createElement('div');
+  m.className='modal-bg open';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div class="modal" style="max-width:400px">${html}<button class="save-btn" onclick="this.closest('.modal-bg').remove()" style="margin-top:12px">Sluiten</button></div>`;
+  document.body.appendChild(m);
 }
 
 // ═══════════════ TASK EDIT MODAL ═══════════════
