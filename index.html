@@ -61,7 +61,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 
 /* TABS */
 .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--white);flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}.tabs::-webkit-scrollbar{display:none}
-.tab{flex:1;white-space:nowrap;padding:11px 4px;font-size:11px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;min-width:0;position:relative;-webkit-tap-highlight-color:transparent}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;white-space:nowrap;padding:6px 2px 5px;font-size:11px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;min-width:0;position:relative;-webkit-tap-highlight-color:transparent}
+.tab-ico{font-size:16px;line-height:1}.tab-lbl{font-size:9px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tab.on{color:var(--caramel);border-bottom-color:var(--caramel)}
 .notif-dot{position:absolute;top:6px;right:2px;width:7px;height:7px;background:var(--caramel);border-radius:50%;display:none}
 .notif-badge{position:absolute;top:-2px;right:-4px;background:#c45c5c;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
@@ -404,11 +405,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
   </div>
   <div class="tabs">
-    <button class="tab on" id="wt-week" onclick="wTab('week')"></button>
-    <button class="tab" id="wt-log" onclick="wTab('log')"><span id="wt-log-lbl"></span><span class="notif-dot" id="log-dot"></span></button>
-    <button class="tab" id="wt-recipe" onclick="wTab('recipe')"></button>
-    <button class="tab" id="wt-shop" onclick="wTab('shop')">🛒</button>
-    <button class="tab" id="wt-points" onclick="wTab('points')" style="display:none">⭐</button>
+    <button class="tab on" id="wt-week" onclick="wTab('week')"><span class="tab-ico">📆</span><span class="tab-lbl" id="wtl-week">Mijn week</span></button>
+    <button class="tab" id="wt-log" onclick="wTab('log')"><span class="tab-ico">📝</span><span class="tab-lbl" id="wt-log-lbl">Wijzigingen</span><span class="notif-dot" id="log-dot"></span></button>
+    <button class="tab" id="wt-recipe" onclick="wTab('recipe')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="wtl-recipe">Recepten</span></button>
+    <button class="tab" id="wt-shop" onclick="wTab('shop')"><span class="tab-ico">🛒</span><span class="tab-lbl" id="wtl-shop">Winkel</span></button>
+    <button class="tab" id="wt-points" onclick="wTab('points')" style="display:none"><span class="tab-ico">⭐</span><span class="tab-lbl">Punten</span></button>
   </div>
   <div id="wmt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div class="wk-nav">
@@ -468,12 +469,12 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
   </div>
   <div class="tabs" id="mgr-tabs">
-    <button class="tab on" id="t-week" onclick="mTab('week')">Week</button>
-    <button class="tab" id="t-plan" onclick="mTab('plan')">Planning</button>
-    <button class="tab" id="t-recipe" onclick="mTab('recipe')">Recepten</button>
-    <button class="tab" id="t-shop" onclick="mTab('shop')">🛒</button>
-    <button class="tab" id="t-taken" onclick="mTab('taken')">Taken</button>
-    <button class="tab" id="t-inst" onclick="mTab('inst')">Instellingen</button>
+    <button class="tab on" id="t-week" onclick="mTab('week')"><span class="tab-ico">📆</span><span class="tab-lbl" id="tl-week">Week</span></button>
+    <button class="tab" id="t-plan" onclick="mTab('plan')"><span class="tab-ico">📌</span><span class="tab-lbl" id="tl-plan">Planning</span></button>
+    <button class="tab" id="t-recipe" onclick="mTab('recipe')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="tl-recipe">Recepten</span></button>
+    <button class="tab" id="t-shop" onclick="mTab('shop')"><span class="tab-ico">🛒</span><span class="tab-lbl" id="tl-shop">Winkel</span></button>
+    <button class="tab" id="t-taken" onclick="mTab('taken')"><span class="tab-ico">✅</span><span class="tab-lbl" id="tl-taken">Taken</span></button>
+    <button class="tab" id="t-inst" onclick="mTab('inst')"><span class="tab-ico">⚙️</span><span class="tab-lbl" id="tl-inst">Instellingen</span></button>
   </div>
 
   <div id="mt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -1040,7 +1041,7 @@ const I={
     // Recipes
     addRecipeTitle:'Recept toevoegen',plannedRecipes:'Geplande recepten',noRecipes:'Geen recepten gepland.',
     // Shopping
-    tabShopping:'🛒',shopTitle:'Boodschappenlijst',shopItem:'Artikel',shopQty:'Hoev.',
+    tabShopping:'Winkel',shopTitle:'Boodschappenlijst',shopItem:'Artikel',shopQty:'Hoev.',
     shopNl:'Artikel (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Hoeveelheid',shopQtyPlaceholder:'bijv. 500g, 2 stuks',
     shopAutoHint:'↳ Portugese vertaling automatisch',
     shopRecipe:'Recept (optioneel)',shopGeneral:'— Algemeen —',shopAdd:'+ Toevoegen',
@@ -1135,7 +1136,7 @@ const I={
     // Recipes
     addRecipeTitle:'Adicionar receita',plannedRecipes:'Receitas planeadas',noRecipes:'Sem receitas planeadas.',
     // Shopping
-    tabShopping:'🛒',shopTitle:'Lista de compras',shopItem:'Artigo',shopQty:'Qtd.',
+    tabShopping:'Compras',shopTitle:'Lista de compras',shopItem:'Artigo',shopQty:'Qtd.',
     shopNl:'Artigo (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Quantidade',shopQtyPlaceholder:'ex. 500g, 2 unidades',
     shopAutoHint:'↳ Tradução portuguesa automática',
     shopRecipe:'Receita (opcional)',shopGeneral:'— Geral —',shopAdd:'+ Adicionar',
@@ -1368,9 +1369,9 @@ function setSessionLang(l){
 
 function updateManagerLabels(){
   const m={
-    't-week':tr('tabWeek'),'t-plan':tr('tabPlan'),'t-recipe':tr('tabRecipes'),
-    't-shop':tr('tabShopping'),
-    't-taken':tr('tabTasks'),'t-inst':tr('tabSettings'),
+    'tl-week':tr('tabWeek'),'tl-plan':tr('tabPlan'),'tl-recipe':tr('tabRecipes'),
+    'tl-shop':tr('tabShopping'),
+    'tl-taken':tr('tabTasks'),'tl-inst':tr('tabSettings'),
     'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
     'grp-overzicht-lbl':tr('grpOverview'),'grp-toevoegen-lbl':tr('grpAdd'),
@@ -1491,10 +1492,10 @@ function wTab(n){
     const el=document.getElementById('wmt-'+tab);if(el)el.style.display=tab===n?(tab==='week'||tab==='recipe'||tab==='shop'||tab==='points'?'flex':'block'):'none';
     document.getElementById('wt-'+tab)?.classList.toggle('on',tab===n);
   });
-  const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
+  const wt=document.getElementById('wtl-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
-  const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
-  const st=document.getElementById('wt-shop');if(st)st.textContent=tr('tabShopping');
+  const rt=document.getElementById('wtl-recipe');if(rt)rt.textContent=tr('recipes');
+  const st=document.getElementById('wtl-shop');if(st)st.textContent=tr('tabShopping');
   const ltt=document.getElementById('log-title');if(ltt)ltt.textContent=tr('recentChanges');
   if(n==='log')renderLog();
   if(n==='recipe')renderWorkerRecipes();
@@ -1820,10 +1821,10 @@ function renderWorker(){
   document.getElementById('w-av').textContent=CU.avatar||CU.name[0];
   document.getElementById('w-name').textContent=CU.name;
   document.getElementById('w-sub').textContent=tr(CU.role);
-  const wt=document.getElementById('wt-week');if(wt)wt.textContent=tr('myWeek');
+  const wt=document.getElementById('wtl-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
-  const rt=document.getElementById('wt-recipe');if(rt)rt.textContent=tr('recipes');
-  const st=document.getElementById('wt-shop');if(st)st.textContent=tr('tabShopping');
+  const rt=document.getElementById('wtl-recipe');if(rt)rt.textContent=tr('recipes');
+  const st=document.getElementById('wtl-shop');if(st)st.textContent=tr('tabShopping');
   const pt=document.getElementById('wt-points');if(pt)pt.style.display=CU?.role==='child'?'':'none';
   updWkLbls();
   ensureWeekSched(wOff).then(()=>{
