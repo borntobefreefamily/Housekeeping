@@ -3827,9 +3827,9 @@ function openBookingForm(id){
   document.getElementById('bk-checkout').value=b?.check_out||'';
   document.getElementById('bk-notes').value=b?.notes||'';
   updChildAges(ages);
-  m.classList.add('show');
+  m.classList.add('open');
 }
-function closeBkModal(){document.getElementById('bk-modal').classList.remove('show');}
+function closeBkModal(){document.getElementById('bk-modal').classList.remove('open');}
 
 function updChildAges(preset){
   const n=parseInt(document.getElementById('bk-children').value)||0;
