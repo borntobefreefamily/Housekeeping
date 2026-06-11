@@ -539,6 +539,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 
   <div id="mt-plan" class="scroll" style="display:none">
+    <div class="wk-nav" style="margin:-1rem -1rem 1rem -1rem;border-radius:0">
+      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
+      <div class="wk-lbl" id="p-wk-lbl"></div>
+      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
+    </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
     <div id="plan-grid"></div>
   </div>
@@ -1451,6 +1456,7 @@ function setupRT(){
   });
   hardTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
+      if(Date.now()<_rtSkipUntil)return;
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
         await loadAll();
@@ -1576,9 +1582,10 @@ async function chkPin(){
 function logout(){CU=null;wOff=0;pin='';updDots();document.getElementById('pin-err').textContent='';setSessionLang('nl');showScr('pin');}
 function showScr(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('s-'+n)?.classList.add('active');if(n==='worker')renderWorker();if(n==='manager')renderManager();}
 function chWeek(d){wOff+=d;updWkLbls();if(isWkr())renderWorker();else renderMgrWeek();}
+function chWeekPlan(d){wOff+=d;updWkLbls();renderPlan();renderMgrWeek();}
 function updWkLbls(){
   const l=wlbl(wOff);
-  ['w-wk-lbl','m-wk-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;});
+  ['w-wk-lbl','m-wk-lbl','p-wk-lbl'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=l;});
 }
 
 function getFocus(di){
@@ -3011,10 +3018,19 @@ function renderPlan(){
 }
 
 async function togPlan(lid,di,wk){
+  _rtSkipUntil=Date.now()+2000;
   const ex=D.sched.find(s=>s.location_id===lid&&s.week_key===wk&&s.day_index===di);
-  if(ex)await sb.from('week_schedule').delete().eq('id',ex.id);
-  else await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:wk,day_index:di});
-  await loadAll();renderPlan();renderMgrWeek();
+  console.log('[togPlan]',ex?'DELETE':'INSERT','lid=',lid,'di=',di,'wk=',wk,'ex.id=',ex?.id);
+  let res;
+  if(ex){
+    res=await sb.from('week_schedule').delete().eq('id',ex.id);
+  } else {
+    res=await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:wk,day_index:di});
+  }
+  console.log('[togPlan] result:',res.error?'ERROR '+JSON.stringify(res.error):'OK',res.status,res.statusText);
+  await loadAll();
+  console.log('[togPlan] after loadAll, sched entries for',wk+'/'+di+':',D.sched.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id));
+  renderPlan();renderMgrWeek();
 }
 
 // ═══════════════ UNIFIED TASK FORM ═══════════════
