@@ -197,6 +197,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .goal-actions button{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 4px;opacity:.5}
 .goal-actions button:hover{opacity:1}
 .goal-drag{cursor:grab;padding:4px;font-size:14px;color:var(--muted);touch-action:none}
+.task-drag{cursor:grab;padding:2px 4px;font-size:13px;color:var(--muted);touch-action:none;user-select:none}
+.cat-sub-hdr{font-size:12px;font-weight:700;color:var(--espresso);padding:8px 0 4px;margin-top:4px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+.task-row.drag-over{border-top:2px solid var(--caramel)}
 .goal-add{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .goal-add input{border:1px solid var(--border);border-radius:var(--rs);padding:7px 10px;font-size:13px;background:var(--cream);font-family:'DM Sans',sans-serif;flex:1;min-width:0}
 .goal-add input:focus{outline:none;border-color:var(--caramel)}
@@ -645,6 +648,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
           <label class="flbl" id="nt-lbl-interval">Interval</label>
           <select class="finput" id="nt-interval">
             <option value="0">Elke week</option>
+            <option value="-1">Om de week</option>
             <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
             <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
             <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
@@ -887,6 +891,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="modal-title" id="loc-modal-title">Locatie bewerken</div>
     <input type="hidden" id="loc-edit-id">
     <label class="flbl">Naam</label><input class="finput" type="text" id="loc-edit-name">
+    <label class="flbl" id="loc-lbl-pt">Naam (Portugees)</label><input class="finput" type="text" id="loc-edit-name-pt" placeholder="Vertaling voor Diana">
+    <label class="flbl" id="loc-lbl-en" style="display:none">Naam (Engels)</label><input class="finput" type="text" id="loc-edit-name-en" style="display:none" placeholder="English translation">
     <label class="flbl">Kleur</label>
     <input type="hidden" id="loc-edit-color" value="#C8722A">
     <div id="loc-color-swatches" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
@@ -1096,7 +1102,7 @@ const I={
     due:'Vervalt',
     interval1:'Elke maand',interval2:'Elke 2 maanden',interval3:'Elke 3 maanden',
     interval4:'Elke 4 maanden',interval6:'Elke 6 maanden',interval12:'Jaarlijks',
-    interval0:'Elke week',
+    interval0:'Elke week',intervalBi:'Om de week',
     grpOverview:'Overzicht',grpAdd:'Toevoegen',
     allRead:'Alles gelezen',
     persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
@@ -1127,7 +1133,7 @@ const I={
     editTask:'Taak bewerken',editPeriodic:'Periodieke taak bewerken',editExtra:'Extra taak bewerken',
     changeFor:'Wijzig voor:',onlyThisWeek:'Alleen deze week',allWeeks:'Alle weken',
     // Location edit
-    editLoc:'Locatie bewerken',catForLoc:'Categorieën voor deze locatie',catHint:'Selecteer welke categorieën van toepassing zijn',
+    editLoc:'Locatie bewerken',locNamePt:'Naam (Portugees)',locNameEn:'Naam (Engels)',catForLoc:'Categorieën voor deze locatie',catHint:'Selecteer welke categorieën van toepassing zijn',
     // Planning
     planHint:'Vink per dag aan welke locaties Diana schoonmaakt.',workday:'werkdag',
     // Recipes
@@ -1215,7 +1221,7 @@ const I={
     due:'Vence',
     interval1:'Mensal',interval2:'A cada 2 meses',interval3:'A cada 3 meses',
     interval4:'A cada 4 meses',interval6:'A cada 6 meses',interval12:'Anual',
-    interval0:'Semanal',
+    interval0:'Semanal',intervalBi:'Quinzenal',
     grpOverview:'Visão geral',grpAdd:'Adicionar',
     allRead:'Tudo lido',
     persTasks:'Tarefas fixas por membro',addPersTask:'Adicionar tarefa pessoal',
@@ -1245,7 +1251,7 @@ const I={
     editTask:'Editar tarefa',editPeriodic:'Editar tarefa periódica',editExtra:'Editar tarefa extra',
     changeFor:'Alterar para:',onlyThisWeek:'Apenas esta semana',allWeeks:'Todas as semanas',
     // Location edit
-    editLoc:'Editar local',catForLoc:'Categorias para este local',catHint:'Selecione quais categorias se aplicam',
+    editLoc:'Editar local',locNamePt:'Nome (Português)',locNameEn:'Nome (Inglês)',catForLoc:'Categorias para este local',catHint:'Selecione quais categorias se aplicam',
     // Planning
     planHint:'Marque por dia quais os locais que a Diana limpa.',workday:'dia de trabalho',
     // Recipes
@@ -1344,18 +1350,27 @@ function ptsBadge(pts,ck){
 // Role helpers — admin+parent see manager screen, child+worker see worker screen
 function isMgr(u){const r=(u||CU)?.role;return r==='admin'||r==='parent';}
 function isWkr(u){const r=(u||CU)?.role;return r==='worker'||r==='child';}
-function locName(lid){return D.locs.find(l=>l.id===lid)?.name||'';}
+function lnm(loc){if(!loc)return '';const l=lg();return(l==='pt'?loc.name_pt:l==='en'?loc.name_en:null)||loc.name||'';}
+function locName(lid){return lnm(D.locs.find(l=>l.id===lid));}
 function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[];}
 
 function isPeriodicDue(task){
   const now=new Date();
-  const isWeekly=(task.interval_months??1)===0;
-  if(isWeekly){
-    // Weekly: check if there's a check for the current ISO week
+  const im=task.interval_months??1;
+  const isWeekly=im===0;
+  const isBiweekly=im===-1;
+  if(isWeekly||isBiweekly){
     const wkNum=getISOWeek(now);
     const yr=now.getFullYear();
-    const ex=D.pChecks.find(c=>c.task_id===task.id&&c.year===yr&&c.month===(wkNum+100));
-    return !ex;
+    // Already done this week?
+    if(D.pChecks.find(c=>c.task_id===task.id&&c.year===yr&&c.month===(wkNum+100)))return false;
+    if(isBiweekly){
+      // Also check last week — if done last week, not due yet
+      let pw=wkNum-1,py=yr;
+      if(pw<1){py--;pw=getISOWeek(new Date(py,11,28));}
+      if(D.pChecks.find(c=>c.task_id===task.id&&c.year===py&&c.month===(pw+100)))return false;
+    }
+    return true;
   }
   if(!D.pChecks.length)return true;
   const checks=D.pChecks.filter(c=>c.task_id===task.id&&c.month<=12).sort((a,b)=>b.year*12+b.month-(a.year*12+a.month));
@@ -1375,12 +1390,13 @@ function getISOWeek(d){
 
 function isPeriodicChecked(pt){
   const now=new Date();const yr=now.getFullYear();
-  const isWeekly=(pt.interval_months??1)===0;
-  const mo=isWeekly?getISOWeek(now)+100:now.getMonth()+1;
+  const im=pt.interval_months??1;
+  const isWeekBased=im===0||im===-1;
+  const mo=isWeekBased?getISOWeek(now)+100:now.getMonth()+1;
   return !!D.pChecks.find(c=>c.task_id===pt.id&&c.year===yr&&c.month===mo);
 }
 
-function intervalLabel(n){return tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'maanden'}`;}
+function intervalLabel(n){return n===-1?tr('intervalBi'):tr('interval'+n)||`${n} ${lg()==='pt'?'meses':'maanden'}`;}
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
@@ -1547,7 +1563,7 @@ function updateManagerLabels(){
   const sw=document.getElementById('nt-wk');
   if(sw){if(sw.options[0])sw.options[0].text=tr('thisWeek');if(sw.options[1])sw.options[1].text=tr('nextWeek');if(sw.options[2])sw.options[2].text=tr('in2weeks');}
   const iv=document.getElementById('nt-interval');
-  if(iv){[0,1,2,3,4,6,12].forEach((v,i)=>{if(iv.options[i])iv.options[i].text=tr('interval'+v);});}
+  if(iv){[0,-1,1,2,3,4,6,12].forEach((v,i)=>{if(iv.options[i])iv.options[i].text=v===-1?tr('intervalBi'):tr('interval'+v);});}
 }
 
 async function init(){
@@ -1711,14 +1727,14 @@ function renderChildDay(di,wk){
   // Render tasks
   allTasks.forEach(t=>{
     const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
-    const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
+    const locNm=t.location_id?locName(t.location_id):'';
     html+=`<div class="task-row${ck?' done-row':''}" style="padding:10px 0">`;
     html+=`<div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},false)">${ck?'&#10003;':''}</div>`;
     html+=`<div style="flex:1"><span class="task-txt${ck?' done':''}" style="font-size:15px;font-weight:600">${tx(t)}</span>${ptsBadge(t.points,ck)}`;
     const rxBadges=renderReactionBadges(t.id,wk,di);
     if(rxBadges)html+=`<span style="margin-left:6px">${rxBadges}</span>`;
     if(t._swapped)html+=`<div style="font-size:11px;color:var(--caramel);margin-top:2px">📅 van ${dayArr()[t._fromDay]}</div>`;
-    else if(locName)html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${locName}</div>`;
+    else if(locNm)html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${locNm}</div>`;
     html+=`</div>`;
     if(!ck)html+=`<button onclick="event.stopPropagation();openSwapModal('${t.id}',${t._swapped?t._fromDay:di})" style="background:none;border:none;cursor:pointer;font-size:20px;padding:8px;color:var(--muted);-webkit-tap-highlight-color:transparent;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center" title="Verplaatsen">🔄</button>`;
     html+=`</div>`;
@@ -1894,7 +1910,7 @@ function renderDayBody(di,wk,isMgr){
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
         const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
         const ownerBadge=owner?`<span style="font-size:10px;background:${ucol(owner.id)}20;color:${ucol(owner.id)};padding:1px 6px;border-radius:100px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
-        const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${D.locs.find(l=>l.id===t.location_id)?.name||''}</span>`:'';
+        const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${locName(t.location_id)}</span>`:'';
         pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${t.text_nl}${ptsBadge(t.points,ck)}${ownerBadge}${locBadge}${byStr}</span>`;
         if(!ck&&!skipped)pb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
         pb+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button></div>`;
@@ -1989,7 +2005,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   }
   // Add note input
   lb+=`<div style="display:flex;gap:4px;margin-top:6px"><input type="text" class="finput" style="flex:1;font-size:12px;padding:6px 8px" placeholder="Notitie toevoegen..." id="ln-${uid}" onkeydown="if(event.key==='Enter')addLocNote('${loc.id}','${wk}',${di},'ln-${uid}')"><button onclick="addLocNote('${loc.id}','${wk}',${di},'ln-${uid}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">+</button></div>`;
-  return `<div class="loc-block"><div class="loc-section-hdr" style="background:${loc.color};cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${loc.name}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${total}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
+  return `<div class="loc-block"><div class="loc-section-hdr" style="background:${loc.color};cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lnm(loc)}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${total}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
 }
 
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
@@ -2430,12 +2446,12 @@ function renderFamilyOverview(wk){
       html+=`<div class="fam-day-lbl">${dayArr()[di]}${hasSwapped?' <span style="font-size:9px;color:var(--caramel)">🔄 geruild</span>':''}</div>`;
       dayMap[di].forEach(t=>{
         const ck=!!D.checks[t.id+'_'+wk+'_'+parseInt(di)]?.on;
-        const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
+        const locNm=t.location_id?locName(t.location_id):'';
         const by=D.checks[t.id+'_'+wk+'_'+parseInt(di)]?.by;
         const byName=ck&&by?` ✓ ${uname(by)}`:'';
         const rxBadges=renderReactionBadges(t.id,wk,parseInt(di));
         const rxBtn=ck?renderReactionBtn(t.id,wk,parseInt(di),'personal'):'';
-        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}${ptsBadge(t.points,ck)}</span>${locName?`<span class="fam-loc-badge">${locName}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
+        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}${ptsBadge(t.points,ck)}</span>${locNm?`<span class="fam-loc-badge">${locNm}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
       });
       const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===parseInt(di)&&r.assigned_to===kid.id);
       recs.forEach(r=>{
@@ -2870,8 +2886,9 @@ async function skipTask(tid,wk,di,mgr,type){
 async function togPeriodic(el,tid,mgr){
   const now=new Date();const yr=now.getFullYear();
   const task=D.periodic.find(p=>p.id===tid);
-  const isWeekly=task&&(task.interval_months??1)===0;
-  const mo=isWeekly?getISOWeek(now)+100:now.getMonth()+1;
+  const im=task?(task.interval_months??1):1;
+  const isWeekBased=im===0||im===-1;
+  const mo=isWeekBased?getISOWeek(now)+100:now.getMonth()+1;
   _rtSkipUntil=Date.now()+2000;
   const cb=el.closest('.cb')||el;
   const row=cb.closest('.task-row');
@@ -2961,8 +2978,8 @@ async function addLocNote(locId,wk,di,inputId){
   const inp=document.getElementById(inputId);if(!inp)return;
   const text=inp.value.trim();if(!text)return;
   await sb.from('location_notes').insert({household_id:HID,location_id:locId,week_key:wk,day_index:di,note:text,created_by:CU.id});
-  const locName=D.locs.find(l=>l.id===locId)?.name||'';
-  await logChange(`Notitie bij ${locName}: "${text}"`);
+  const locNm=D.locs.find(l=>l.id===locId)?.name||'';
+  await logChange(`Notitie bij ${locNm}: "${text}"`);
   inp.value='';
   await loadAll();if(isMgr())refreshMgrWeek();else refreshWorker();
 }
@@ -3010,7 +3027,7 @@ function renderPlan(){
     html+=`<div style="margin-bottom:14px"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--espresso);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">${dayArr()[di]}${isWd?`<span style="font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:100px;background:var(--caramel);color:#fff">${tr('workday')}</span>`:''}</div>`;
     D.locs.forEach(loc=>{
       const on=sched.includes(loc.id);
-      html+=`<div onclick="togPlan('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:8px 11px;margin-bottom:4px;border-radius:var(--rs);border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'12':'var(--white)'};cursor:pointer;transition:all .15s"><div class="loc-dot" style="background:${loc.color}"></div><span style="font-size:13px;flex:1">${loc.name}</span>${on?`<span style="color:${loc.color};font-weight:700;font-size:14px">&#10003;</span>`:''}</div>`;
+      html+=`<div onclick="togPlan('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:8px 11px;margin-bottom:4px;border-radius:var(--rs);border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'12':'var(--white)'};cursor:pointer;transition:all .15s"><div class="loc-dot" style="background:${loc.color}"></div><span style="font-size:13px;flex:1">${lnm(loc)}</span>${on?`<span style="color:${loc.color};font-weight:700;font-size:14px">&#10003;</span>`:''}</div>`;
     });
     html+='</div>';
   }
@@ -3069,7 +3086,7 @@ function togNtDaily(){
 function renderTaskForm(){
   updateManagerLabels();
   const lc=document.getElementById('nt-locs');
-  if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${l.name}</div>`).join('');
+  if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${lnm(l)}</div>`).join('');
   const dc=document.getElementById('nt-days');
   if(dc)dc.innerHTML=dayArr().map((d,i)=>`<div class="cpill" id="ntd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
   // Reset daily checkbox
@@ -3159,30 +3176,74 @@ function renderFixedList(){
   let html='';
 
   // Daily tasks section
-  const dailyTasks=D.tasks.filter(t=>t.is_daily);
+  const dailyTasks=D.tasks.filter(t=>t.is_daily).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   if(dailyTasks.length){
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#fe7f2d"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-section-count">${dailyTasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
     dailyTasks.forEach(t=>{
-      html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+      html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="daily" data-cat="daily" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
     });
     html+=`</div></div>`;
   }
 
-  // Per-location tasks
+  // Per-location tasks grouped by category
   D.locs.forEach(loc=>{
-    const tasks=D.tasks.filter(t=>t.location_id===loc.id&&!t.is_daily);
+    const tasks=D.tasks.filter(t=>t.location_id===loc.id&&!t.is_daily).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     if(!tasks.length)return;
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${lnm(loc)}</span><span class="loc-section-count">${tasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
     const cats=[...new Set(tasks.map(t=>t.category||tr('general')))];
     cats.forEach(cat=>{
-      html+=`<span class="slbl">${cat}</span>`;
-      tasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
-        html+=`<div class="task-row" style="margin-bottom:2px"><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+      const catTasks=tasks.filter(t=>(t.category||tr('general'))===cat);
+      html+=`<div class="cat-sub-hdr">${cat}</div>`;
+      catTasks.forEach(t=>{
+        html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="${loc.id}" data-cat="${esc(cat)}" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" ondragleave="ftDragLeave(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
       });
     });
     html+=`</div></div>`;
   });
   el.innerHTML=html||`<div class="empty">${tr('noFixed')}</div>`;
+}
+
+// Drag-and-drop reorder for fixed tasks within same category
+let _ftDragId=null,_ftDragLoc=null,_ftDragCat=null;
+function ftDragStart(e){
+  const row=e.target.closest('[data-task-id]');if(!row)return;
+  _ftDragId=row.dataset.taskId;_ftDragLoc=row.dataset.loc;_ftDragCat=row.dataset.cat;
+  e.dataTransfer.effectAllowed='move';
+}
+function ftDragOver(e){
+  const row=e.target.closest('[data-task-id]');
+  if(!row||!_ftDragId)return;
+  if(row.dataset.loc!==_ftDragLoc||row.dataset.cat!==_ftDragCat)return;
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  row.classList.add('drag-over');
+}
+function ftDragLeave(e){
+  const row=e.target.closest('[data-task-id]');
+  if(row)row.classList.remove('drag-over');
+}
+async function ftDrop(e){
+  e.preventDefault();
+  const targetEl=e.target.closest('[data-task-id]');
+  if(!targetEl||!_ftDragId)return;
+  targetEl.classList.remove('drag-over');
+  const targetId=targetEl.dataset.taskId;
+  if(targetId===_ftDragId||targetEl.dataset.loc!==_ftDragLoc||targetEl.dataset.cat!==_ftDragCat){_ftDragId=null;return;}
+  // Get tasks in same loc+cat, sorted by current sort_order
+  const isDaily=_ftDragLoc==='daily';
+  const catTasks=D.tasks.filter(t=>{
+    if(isDaily)return t.is_daily;
+    return t.location_id===_ftDragLoc&&!t.is_daily&&(t.category||tr('general'))===_ftDragCat;
+  }).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const ordered=catTasks.filter(t=>t.id!==_ftDragId);
+  const dragTask=catTasks.find(t=>t.id===_ftDragId);
+  const targetIdx=ordered.findIndex(t=>t.id===targetId);
+  if(!dragTask){_ftDragId=null;return;}
+  ordered.splice(targetIdx,0,dragTask);
+  for(let i=0;i<ordered.length;i++){
+    if(ordered[i].sort_order!==i)await sb.from('fixed_tasks').update({sort_order:i}).eq('id',ordered[i].id);
+  }
+  await loadAll();renderFixedList();
+  _ftDragId=null;
 }
 
 function renderPeriodicList(){
@@ -3198,7 +3259,7 @@ function renderPeriodicList(){
   let html='';
   D.locs.forEach(loc=>{
     const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${lnm(loc)}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
     tasks.forEach(t=>{
       html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span></div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
     });
@@ -3221,7 +3282,7 @@ function renderExList(){
   let html='';
   D.locs.forEach(loc=>{
     const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${loc.name}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
+    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${lnm(loc)}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
     const gr={};tasks.forEach(e=>{if(!gr[e.text_nl])gr[e.text_nl]=[];gr[e.text_nl].push(e);});
     Object.entries(gr).forEach(([txt,ts])=>{
       const wks=ts.map(x=>x.week_key).sort();
@@ -3905,7 +3966,7 @@ function renderBookings(){
     const bks=byLoc[loc.id];
     if(!bks||!bks.length)return;
     html+=`<div style="margin-bottom:16px">`;
-    html+=`<div style="font-size:13px;font-weight:700;color:${loc.color||'var(--espresso)'};margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="font-size:16px">📍</span>${esc(loc.name)}<span style="font-size:11px;font-weight:400;color:var(--muted)">(${bks.length})</span></div>`;
+    html+=`<div style="font-size:13px;font-weight:700;color:${loc.color||'var(--espresso)'};margin-bottom:8px;display:flex;align-items:center;gap:6px"><span style="font-size:16px">📍</span>${esc(lnm(loc))}<span style="font-size:11px;font-weight:400;color:var(--muted)">(${bks.length})</span></div>`;
     bks.forEach(b=>{
       const ci=new Date(b.check_in),co=new Date(b.check_out);
       const nights=Math.round((co-ci)/(1000*60*60*24));
@@ -3944,7 +4005,7 @@ function openBookingForm(id){
   document.getElementById('bk-edit-id').value=id||'';
   // Location dropdown
   const locSel=document.getElementById('bk-loc');
-  locSel.innerHTML=D.locs.map(l=>`<option value="${l.id}"${b&&b.location_id===l.id?' selected':''}>${esc(l.name)}</option>`).join('');
+  locSel.innerHTML=D.locs.map(l=>`<option value="${l.id}"${b&&b.location_id===l.id?' selected':''}>${esc(lnm(l))}</option>`).join('');
   document.getElementById('bk-name').value=b?.guest_name||'';
   document.getElementById('bk-adults').value=b?.adults||2;
   const ages=b?.children_ages||[];
@@ -4043,13 +4104,13 @@ function renderLocInfo(){
     const hasData=info.id;
     html+=`<div class="form-card" style="margin-bottom:12px;border-left:3px solid ${loc.color||'var(--caramel)'}">`;
     html+=`<div class="collapse-hdr" onclick="togEl('li-body-${loc.id}','li-chev-${loc.id}')" style="padding:2px 0;cursor:pointer">`;
-    html+=`<span style="font-weight:700;font-size:14px;color:${loc.color||'var(--espresso)'}">${esc(loc.name)}</span>`;
+    html+=`<span style="font-weight:700;font-size:14px;color:${loc.color||'var(--espresso)'}">${esc(lnm(loc))}</span>`;
     html+=`${hasData?'<span style="font-size:10px;color:var(--muted);margin-left:6px">✅ ingevuld</span>':'<span style="font-size:10px;color:var(--muted);margin-left:6px">leeg</span>'}`;
     html+=`<span class="chev" id="li-chev-${loc.id}">&#9662;</span></div>`;
     html+=`<div class="day-body" id="li-body-${loc.id}">`;
     // Editable fields
     const fields=[
-      {key:'welcome_text',label:tr('liWelcome'),type:'textarea',placeholder:'Welkom in '+loc.name+'! ...'},
+      {key:'welcome_text',label:tr('liWelcome'),type:'textarea',placeholder:'Welkom in '+lnm(loc)+'! ...'},
       {key:'check_in_time',label:tr('liCheckInTime'),type:'text',placeholder:'15:00'},
       {key:'check_out_time',label:tr('liCheckOutTime'),type:'text',placeholder:'11:00'},
       {key:'check_in_instructions',label:tr('liCheckInInstr'),type:'textarea',placeholder:'Bij aankomst...'},
@@ -4167,7 +4228,7 @@ function renderCleanTemplates(){
     const templs=D.cleanTempl.filter(t=>t.location_id===loc.id);
     html+=`<div class="form-card" style="margin-bottom:12px;border-left:3px solid ${loc.color||'var(--caramel)'}">`;
     html+=`<div class="collapse-hdr" onclick="togEl('ct-body-${loc.id}','ct-chev-${loc.id}')" style="padding:2px 0;cursor:pointer">`;
-    html+=`<span style="font-weight:700;font-size:14px;color:${loc.color||'var(--espresso)'}">${esc(loc.name)}</span>`;
+    html+=`<span style="font-weight:700;font-size:14px;color:${loc.color||'var(--espresso)'}">${esc(lnm(loc))}</span>`;
     html+=`<span style="font-size:10px;color:var(--muted);margin-left:6px">${templs.length} taken</span>`;
     html+=`<span class="chev" id="ct-chev-${loc.id}">&#9662;</span></div>`;
     html+=`<div class="day-body" id="ct-body-${loc.id}">`;
@@ -4314,7 +4375,7 @@ function openEdit(id,type,nl,pt,interval){
       const matchLids=new Set(matchingTasks.map(t=>t.location_id).filter(Boolean));
       const curLid=task?.location_id;
       // Multi-select pills — highlight all matching locations
-      document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${matchLids.has(l.id)?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${l.name}</div>`).join('');
+      document.getElementById('edit-loc-pills').innerHTML=D.locs.map(l=>`<div class="cpill${matchLids.has(l.id)?' on':''}" id="elp-${l.id}" onclick="editLocClick(this,'${l.id}')">${lnm(l)}</div>`).join('');
       const dailyCb=document.getElementById('edit-daily');
       if(dailyCb){
         dailyCb.checked=isDaily;
@@ -4341,7 +4402,7 @@ function openEdit(id,type,nl,pt,interval){
       if(interval){const sel=document.getElementById('edit-interval');if(sel)sel.value=interval;}
       const task=D.periodic.find(p=>p.id===id);
       const curLids=(task?.location_ids)||[];
-      document.getElementById('edit-locs').innerHTML=D.locs.map(l=>`<div class="cpill${curLids.includes(l.id)?' on':''}" id="eloc-${l.id}" onclick="this.classList.toggle('on')">${l.name}</div>`).join('');
+      document.getElementById('edit-locs').innerHTML=D.locs.map(l=>`<div class="cpill${curLids.includes(l.id)?' on':''}" id="eloc-${l.id}" onclick="this.classList.toggle('on')">${lnm(l)}</div>`).join('');
       updateEditCats('periodic',curLids[0],task?.category);
     }
   }
@@ -4501,7 +4562,7 @@ function renderUserList(){
   let html='';
   D.users.sort((a,b)=>{const ro={admin:0,parent:1,child:2,worker:3};return (ro[a.role]||9)-(ro[b.role]||9)||a.name.localeCompare(b.name);});
   D.users.forEach(u=>{
-    const locs=D.ulocs.filter(ul=>ul.user_id===u.id).map(ul=>{const loc=D.locs.find(l=>l.id===ul.location_id);return loc?loc.name:null;}).filter(Boolean);
+    const locs=D.ulocs.filter(ul=>ul.user_id===u.id).map(ul=>{const loc=D.locs.find(l=>l.id===ul.location_id);return loc?lnm(loc):null;}).filter(Boolean);
     const days=(u.default_days||[]).map(d=>dayArr()[d]).join(', ');
     html+=`<div class="task-row" style="padding:8px 0;align-items:flex-start;cursor:pointer;-webkit-tap-highlight-color:transparent" onclick="openUserEdit('${u.id}')">`;
     html+=`<span style="font-size:22px;margin-right:8px;line-height:1">${u.avatar||u.name[0]}</span>`;
@@ -4536,7 +4597,7 @@ function openUserEdit(uid){
   // Location pills
   const lp=document.getElementById('um-locs');
   const selLocs=D.ulocs.filter(ul=>ul.user_id===uid).map(ul=>ul.location_id);
-  lp.innerHTML=D.locs.map(loc=>`<button class="pill${selLocs.includes(loc.id)?' on':''}" data-lid="${loc.id}" onclick="togLocPill(this)" style="font-size:12px;padding:6px 10px;border-radius:16px;border:1.5px solid ${loc.color||'var(--border)'};background:${selLocs.includes(loc.id)?(loc.color||'var(--caramel)'):'var(--white)'};color:${selLocs.includes(loc.id)?'#fff':'var(--text)'};cursor:pointer;-webkit-tap-highlight-color:transparent">${loc.name}</button>`).join('');
+  lp.innerHTML=D.locs.map(loc=>`<button class="pill${selLocs.includes(loc.id)?' on':''}" data-lid="${loc.id}" onclick="togLocPill(this)" style="font-size:12px;padding:6px 10px;border-radius:16px;border:1.5px solid ${loc.color||'var(--border)'};background:${selLocs.includes(loc.id)?(loc.color||'var(--caramel)'):'var(--white)'};color:${selLocs.includes(loc.id)?'#fff':'var(--text)'};cursor:pointer;-webkit-tap-highlight-color:transparent">${lnm(loc)}</button>`).join('');
   // Delete button only for existing non-self users
   const dw=document.getElementById('um-del-wrap');
   dw.style.display=(u&&u.id!==CU.id)?'block':'none';
@@ -4628,7 +4689,7 @@ function renderPersForm(){
   const dsel=document.getElementById('pt-day');
   if(dsel)dsel.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const lsel=document.getElementById('pt-loc');
-  if(lsel)lsel.innerHTML=`<option value="">— geen —</option>`+D.locs.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  if(lsel)lsel.innerHTML=`<option value="">— geen —</option>`+D.locs.map(l=>`<option value="${l.id}">${lnm(l)}</option>`).join('');
 }
 
 function renderPersList(){
@@ -4644,8 +4705,8 @@ function renderPersList(){
     Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
       html+=`<span class="slbl">${dayArr()[di]}</span>`;
       byDay[di].forEach(t=>{
-        const locName=t.location_id?D.locs.find(l=>l.id===t.location_id)?.name:'';
-        html+=`<div class="task-row"><span class="task-txt">${t.text_nl||t.text_pt||''}${locName?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locName}</span>`:''}</span>`;
+        const locNm=t.location_id?locName(t.location_id):'';
+        html+=`<div class="task-row"><span class="task-txt">${t.text_nl||t.text_pt||''}${locNm?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locNm}</span>`:''}</span>`;
         html+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button>`;
         html+=`<button onclick="delPersTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px">&#10005;</button>`;
         html+=`</div>`;
@@ -4702,7 +4763,7 @@ function openPersEdit(id){
   let h='<label class="flbl">Dag</label><select class="finput" id="edit-pers-day">';
   dayArr().forEach((d,i)=>{h+=`<option value="${i}"${i===t.day_index?' selected':''}>${d}</option>`;});
   h+='</select><label class="flbl">Locatie</label><select class="finput" id="edit-pers-loc"><option value="">— geen —</option>';
-  D.locs.forEach(l=>{h+=`<option value="${l.id}"${l.id===t.location_id?' selected':''}>${l.name}</option>`;});
+  D.locs.forEach(l=>{h+=`<option value="${l.id}"${l.id===t.location_id?' selected':''}>${lnm(l)}</option>`;});
   h+='</select>';
   persWrap.innerHTML=h;
   persWrap.style.display='block';
@@ -4767,7 +4828,8 @@ function renderLocList(){
     const catHtml=cats.length
       ? cats.map(c=>`<span style="display:inline-block;background:${l.color}20;color:${l.color};border:1px solid ${l.color}40;border-radius:100px;font-size:10px;padding:1px 7px;margin:2px 2px 0 0">${c}</span>`).join('')
       : `<span style="font-size:10px;color:var(--muted);font-style:italic">${tr('general')}</span>`;
-    return `<div class="loc-edit-row"><div class="loc-dot" style="background:${l.color}"></div><div style="flex:1"><span class="task-txt">${l.name}</span><div style="margin-top:3px">${catHtml}</div></div><button class="btn-edit" onclick="openLocEdit('${l.id}')">&#9998;</button><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`;
+    const ptLabel=l.name_pt?`<span style="font-size:11px;color:var(--muted);margin-left:6px">🇵🇹 ${l.name_pt}</span>`:'';
+    return `<div class="loc-edit-row"><div class="loc-dot" style="background:${l.color}"></div><div style="flex:1"><span class="task-txt">${lnm(l)}</span>${ptLabel}<div style="margin-top:3px">${catHtml}</div></div><button class="btn-edit" onclick="openLocEdit('${l.id}')">&#9998;</button><button onclick="delLoc('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted)">&#10005;</button></div>`;
   }).join('');
   // Init new-loc swatches
   const curNewCol=document.getElementById('new-loc-col')?.value||'#C8722A';
@@ -4807,8 +4869,11 @@ function openLocEdit(id){
   const loc=D.locs.find(l=>l.id===id);if(!loc)return;
   document.getElementById('loc-edit-id').value=id;
   document.getElementById('loc-edit-name').value=loc.name;
+  document.getElementById('loc-edit-name-pt').value=loc.name_pt||'';
+  document.getElementById('loc-edit-name-en').value=loc.name_en||'';
   document.getElementById('loc-edit-color').value=loc.color||'#C8722A';
   document.getElementById('loc-modal-title').textContent=tr('editLoc');
+  document.getElementById('loc-lbl-pt').textContent=tr('locNamePt');
   document.getElementById('loc-cat-title').textContent=tr('catForLoc');
   document.getElementById('loc-cat-hint').textContent=tr('catHint');
   document.getElementById('loc-save-btn').textContent=tr('save');
@@ -4834,10 +4899,12 @@ function openLocEdit(id){
 async function saveLocEdit(){
   const id=document.getElementById('loc-edit-id').value;
   const name=document.getElementById('loc-edit-name').value.trim();
+  const name_pt=document.getElementById('loc-edit-name-pt').value.trim()||null;
+  const name_en=document.getElementById('loc-edit-name-en').value.trim()||null;
   const color=document.getElementById('loc-edit-color').value;
   if(!name)return;
   const selCats=[...document.querySelectorAll('#loc-cat-pills .cpill.on')].map(el=>el.getAttribute('data-cat')||el.textContent.trim());
-  const{error}=await sb.from('locations').update({name,color,categories:selCats}).eq('id',id);
+  const{error}=await sb.from('locations').update({name,name_pt,name_en,color,categories:selCats}).eq('id',id);
   if(error){alert('Fout bij opslaan: '+error.message);return;}
   await loadAll();renderLocList();renderMgrWeek();closeLocModal();
 }
