@@ -1851,13 +1851,14 @@ function renderDayBody(di,wk,isMgr){
 
   // 4. Dagelijkse basis (alleen op dagen met ingeplande locaties)
   if(dailyTasks.length && schedDay.length){
-    const done=dailyTasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
+    const sortedDaily=dailyTasks.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const done=sortedDaily.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
     const uid=`daily-${di}`;
     let lb='';
-    const dCats=[...new Set(dailyTasks.map(t=>t.category||tr('general')))];
+    const dCats=[...new Set(sortedDaily.map(t=>t.category||tr('general')))];
     dCats.forEach(cat=>{
-      lb+=`<span class="slbl">${cat}</span>`;
-      dailyTasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
+      lb+=`<div class="cat-sub-hdr">${cat}</div>`;
+      sortedDaily.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
         const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
         const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
@@ -1888,7 +1889,7 @@ function renderDayBody(di,wk,isMgr){
       lb+=`</div>`;
     }
     lb+=`<div style="display:flex;gap:4px;margin-top:6px"><input type="text" class="finput" style="flex:1;font-size:12px;padding:6px 8px" placeholder="Notitie toevoegen..." id="ln-${uid}" onkeydown="if(event.key==='Enter')addLocNote('${DAILY_ID}','${wk}',${di},'ln-${uid}')"><button onclick="addLocNote('${DAILY_ID}','${wk}',${di},'ln-${uid}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">+</button></div>`;
-    html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#fe7f2d;cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${dailyTasks.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
+    html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#fe7f2d;cursor:pointer" onclick="togEl('lb-${uid}','lc-${uid}')"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${done}/${sortedDaily.length}</span><span class="chev" id="lc-${uid}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid}">${lb}</div></div>`;
   }
 
   // 5. Locaties (mainLocs, dan Buiten)
@@ -1923,7 +1924,7 @@ function renderDayBody(di,wk,isMgr){
 }
 
 function renderLocBlock(loc,wk,di,isMgr){
-  const tasks=D.tasks.filter(t=>t.location_id===loc.id);
+  const tasks=D.tasks.filter(t=>t.location_id===loc.id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const duePeriodicTasks=D.periodic.filter(pt=>(pt.location_id===loc.id||(pt.location_ids&&pt.location_ids.includes(loc.id)))&&isPeriodicDue(pt));
   const total=tasks.length+duePeriodicTasks.length;
   const done=tasks.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length
@@ -1936,8 +1937,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   let lb='';
 
   cats.forEach(cat=>{
-    const cLbl=cat||tr('general');
-    lb+=`<span class="slbl">${cLbl}</span>`;
+    lb+=`<div class="cat-sub-hdr">${cat}</div>`;
     tasks.filter(t=>(t.category||tr('general'))===cat).forEach(t=>{
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
       const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
@@ -1952,7 +1952,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   });
 
   if(duePeriodicTasks.length){
-    lb+=`<span class="slbl">${tr('periodicLabel')}</span>`;
+    lb+=`<div class="cat-sub-hdr">${tr('periodicLabel')}</div>`;
     duePeriodicTasks.forEach(pt=>{
       const now=new Date();
       const ck=isPeriodicChecked(pt);
@@ -1967,7 +1967,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   // Personal tasks at this location (shown in manager view with child badge)
   const persAtLoc=D.persTasks.filter(t=>t.user_id===CU.id&&t.location_id===loc.id&&t.day_index===di);
   if(persAtLoc.length&&isMgr){
-    lb+=`<span class="slbl">Persoonlijke taken</span>`;
+    lb+=`<div class="cat-sub-hdr">Persoonlijke taken</div>`;
     persAtLoc.forEach(t=>{
       const owner=D.users.find(u=>u.id===t.user_id);
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
@@ -3175,12 +3175,17 @@ function renderFixedList(){
   if(!D.tasks.length){el.innerHTML=`<div class="empty">${tr('noFixed')}</div>`;return;}
   let html='';
 
-  // Daily tasks section
+  // Daily tasks section — grouped by category
   const dailyTasks=D.tasks.filter(t=>t.is_daily).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   if(dailyTasks.length){
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#fe7f2d"><span class="loc-section-name">${lg()==='pt'?'Base diária':'Dagelijkse basis'}</span><span class="loc-section-count">${dailyTasks.length} ${tr('tasks')}</span></div><div class="loc-section-body">`;
-    dailyTasks.forEach(t=>{
-      html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="daily" data-cat="daily" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+    const dCats=[...new Set(dailyTasks.map(t=>t.category||tr('general')))];
+    dCats.forEach(cat=>{
+      const catTasks=dailyTasks.filter(t=>(t.category||tr('general'))===cat);
+      html+=`<div class="cat-sub-hdr">${cat}</div>`;
+      catTasks.forEach(t=>{
+        html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="daily" data-cat="${esc(cat)}" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" ondragleave="ftDragLeave(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+      });
     });
     html+=`</div></div>`;
   }
@@ -3231,7 +3236,7 @@ async function ftDrop(e){
   // Get tasks in same loc+cat, sorted by current sort_order
   const isDaily=_ftDragLoc==='daily';
   const catTasks=D.tasks.filter(t=>{
-    if(isDaily)return t.is_daily;
+    if(isDaily)return t.is_daily&&(t.category||tr('general'))===_ftDragCat;
     return t.location_id===_ftDragLoc&&!t.is_daily&&(t.category||tr('general'))===_ftDragCat;
   }).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
   const ordered=catTasks.filter(t=>t.id!==_ftDragId);
