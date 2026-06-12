@@ -370,6 +370,26 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .spinner{width:28px;height:28px;border:2px solid rgba(255,255,255,.12);border-top-color:var(--caramel);border-radius:50%;animation:spin .7s linear infinite}
 .loading-txt{font-size:12px;color:rgba(253,246,237,.3);letter-spacing:.1em;text-transform:uppercase}
 @keyframes spin{to{transform:rotate(360deg)}}
+.guest-wrap{min-height:100vh;background:var(--cream);padding:0;overflow-y:auto}
+.guest-hdr{background:var(--espresso);color:var(--cream);padding:2rem 1.5rem;text-align:center}
+.guest-hdr h1{font-family:'Fraunces',serif;font-size:24px;font-weight:800;margin:0 0 4px}
+.guest-hdr .guest-loc{font-size:14px;opacity:.8;font-weight:300}
+.guest-hdr .guest-dates{font-size:13px;opacity:.7;margin-top:8px}
+.guest-body{padding:1rem 1.2rem 3rem;max-width:480px;margin:0 auto}
+.guest-section{background:var(--white);border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.guest-section-title{font-size:12px;font-weight:700;color:var(--caramel);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.guest-section-body{font-size:13px;color:var(--espresso);line-height:1.6;white-space:pre-wrap}
+.guest-times{display:flex;gap:10px;margin-bottom:12px}
+.guest-time-card{flex:1;background:var(--espresso);color:var(--cream);border-radius:12px;padding:12px;text-align:center}
+.guest-time-lbl{font-size:10px;text-transform:uppercase;opacity:.7;font-weight:600}
+.guest-time-val{font-size:22px;font-weight:800;font-family:'Fraunces',serif;margin-top:2px}
+.guest-q{margin-bottom:12px}
+.guest-q label{font-size:13px;font-weight:600;color:var(--espresso);display:block;margin-bottom:4px}
+.guest-q input,.guest-q textarea,.guest-q select{width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit}
+.guest-lang{position:absolute;top:12px;right:12px;display:flex;gap:4px}
+.guest-lang button{background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--cream)}
+.guest-lang button.active{background:rgba(255,255,255,.3)}
+.guest-invalid{min-height:100vh;background:var(--espresso);display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--cream);padding:2rem;text-align:center}
 </style>
 </head>
 <body>
@@ -377,6 +397,32 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 <div class="loading-wrap" id="loading"><div class="spinner"></div><div class="loading-txt">Laden...</div></div>
 
 <!-- PIN -->
+<!-- GUEST PORTAL -->
+<div class="screen" id="s-guest">
+  <div class="guest-wrap">
+    <div class="guest-hdr" style="position:relative">
+      <div class="guest-lang">
+        <button onclick="setGuestLang('nl')">🇳🇱</button>
+        <button onclick="setGuestLang('pt')">🇵🇹</button>
+        <button onclick="setGuestLang('en')">🇬🇧</button>
+      </div>
+      <h1 id="g-welcome"></h1>
+      <div class="guest-loc" id="g-loc-name"></div>
+      <div class="guest-dates" id="g-dates"></div>
+    </div>
+    <div class="guest-body" id="g-body"></div>
+  </div>
+</div>
+
+<!-- GUEST LINK EXPIRED -->
+<div class="screen" id="s-guest-invalid">
+  <div class="guest-invalid">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-family:Fraunces,serif;font-size:22px;font-weight:700;margin-bottom:8px" id="g-inv-title">Link niet meer geldig</div>
+    <div style="font-size:14px;opacity:.7" id="g-inv-sub">Deze gastlink is verlopen of niet geldig.</div>
+  </div>
+</div>
+
 <div class="screen" id="s-pin">
   <div class="pin-wrap">
     <div class="pin-badge">Huisplanner</div>
@@ -820,6 +866,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="bk-regen-wrap" style="display:none;margin-top:8px">
       <button class="save-btn" onclick="regenBookingTasks()" style="width:100%;background:var(--espresso);font-size:12px">🔄 Hergeneer schoonmaaktaken</button>
     </div>
+    <div id="bk-link-wrap" style="display:none;margin-top:8px">
+      <button class="save-btn" id="bk-copy-link" onclick="copyGuestLink(document.getElementById('bk-edit-id').value)" style="width:100%;background:#2e7d32;font-size:12px">📋 Gastlink kopiëren</button>
+    </div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="save-btn" onclick="saveBooking()" style="flex:1">Opslaan</button>
       <button class="save-btn" onclick="closeBkModal()" style="flex:1;background:var(--muted)">Annuleren</button>
@@ -1072,10 +1121,11 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
+let _guestBooking=null,_guestLoc=null,_guestInfo=null,_guestLang='en';
 
 const lg=()=>sessionLang;
 const SHOP_CATS=['groente_fruit','vlees_vis','zuivel','brood','conserven_droog','diepvries','kruiden','dranken','overig'];
@@ -1196,6 +1246,13 @@ const I={
     liLocked:'🔒 Beschikbaar met beveiligd abonnement',
     liWifi:'WiFi wachtwoord',liKeyCode:'Sleutelkluiscode',liAlarmCode:'Alarmcode',
     liPreview:'Gastweergave',liNoInfo:'Nog geen informatie ingevuld.',
+    gWelcome:'Welkom',gCheckIn:'Check-in',gCheckOut:'Check-out',gNights:'nachten',
+    gQuestions:'Vragen voor uw verblijf',gSave:'Opslaan',gSaved:'Antwoorden opgeslagen',
+    gNoInfo:'De gastinformatie wordt binnenkort beschikbaar.',
+    gInvTitle:'Link niet meer geldig',gInvSub:'Deze gastlink is verlopen of niet geldig.',
+    gCopyLink:'Gastlink kopiëren',gCopied:'Link gekopieerd!',gNoToken:'Nog geen gastlink (sla eerst op)',
+    gQuestionsTitle:'Gastvragen',gAddQuestion:'Vraag toevoegen',gQType:'Type',
+    gQText:'text',gQYesNo:'ja/nee',gQTime:'tijdstip',gAnswers:'Antwoorden gast',
     // Schoonmaak
     ctTitle:'Schoonmaaktemplates',ctDefaults:'Standaard invullen',ctSave:'Opslaan',ctSaved:'Opgeslagen!',
     ctAdd:'+ Taak',ctRemove:'Verwijder',ctEmpty:'Nog geen template. Klik "Standaard invullen" om te beginnen.',
@@ -1314,6 +1371,13 @@ const I={
     liLocked:'🔒 Disponível com subscrição segura',
     liWifi:'Palavra-passe WiFi',liKeyCode:'Código do cofre da chave',liAlarmCode:'Código de alarme',
     liPreview:'Vista do hóspede',liNoInfo:'Nenhuma informação preenchida.',
+    gWelcome:'Bem-vindo',gCheckIn:'Check-in',gCheckOut:'Check-out',gNights:'noites',
+    gQuestions:'Perguntas para a sua estadia',gSave:'Guardar',gSaved:'Respostas guardadas',
+    gNoInfo:'A informação do hóspede será disponibilizada em breve.',
+    gInvTitle:'Link expirado',gInvSub:'Este link de hóspede expirou ou não é válido.',
+    gCopyLink:'Copiar link',gCopied:'Link copiado!',gNoToken:'Sem link (guarde primeiro)',
+    gQuestionsTitle:'Perguntas para hóspedes',gAddQuestion:'Adicionar pergunta',gQType:'Tipo',
+    gQText:'texto',gQYesNo:'sim/não',gQTime:'hora',gAnswers:'Respostas do hóspede',
     // Limpeza
     ctTitle:'Modelos de limpeza',ctDefaults:'Preencher padrão',ctSave:'Guardar',ctSaved:'Guardado!',
     ctAdd:'+ Tarefa',ctRemove:'Remover',ctEmpty:'Sem modelo. Clique em "Preencher padrão" para começar.',
@@ -1400,7 +1464,7 @@ function intervalLabel(n){return n===-1?tr('intervalBi'):tr('interval'+n)||`${n}
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li,ct]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li,ct,gq,ga]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -1430,10 +1494,12 @@ async function loadAll(){
     safeQ(sb.from('bookings').select('*').eq('household_id',HID).order('check_in')),
     safeQ(sb.from('location_info').select('*').eq('household_id',HID)),
     safeQ(sb.from('cleaning_templates').select('*').eq('household_id',HID).order('sort_order')),
+    safeQ(sb.from('guest_questions').select('*').eq('household_id',HID).order('sort_order')),
+    safeQ(sb.from('guest_answers').select('*').eq('household_id',HID)),
   ]);
   D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.shopping=si.data||[];D.recipeIngr=ri.data||[];
-  D.pointLedger=pl.data||[];D.savingsGoals=sg.data||[];D.bookings=bk.data||[];D.locInfo=li.data||[];D.cleanTempl=ct.data||[];
+  D.pointLedger=pl.data||[];D.savingsGoals=sg.data||[];D.bookings=bk.data||[];D.locInfo=li.data||[];D.cleanTempl=ct.data||[];D.gQuestions=gq.data||[];D.gAnswers=ga.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
   D.workdays=hh.data?.[0]?.workdays||[0,1,3,4];
   D.settings=hh.data?.[0]?.settings||{};
@@ -1456,7 +1522,7 @@ function setupRT(){
   // Soft: preserves open state (frequent changes like checks)
   const softTbls=['task_checks','skipped_tasks','monthly_checks','task_reactions'];
   // Hard: full re-render (structural changes, new tabs may appear)
-  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info','cleaning_templates'];
+  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info','cleaning_templates','guest_questions','guest_answers'];
   softTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
@@ -1568,6 +1634,15 @@ function updateManagerLabels(){
 
 async function init(){
   document.getElementById('loading').style.display='flex';
+  // Check for guest token in URL
+  const guestToken=new URLSearchParams(window.location.search).get('guest');
+  if(guestToken){
+    const ok=await loadGuestData(guestToken);
+    document.getElementById('loading').style.display='none';
+    if(ok)showScr('guest');
+    else showScr('guest-invalid');
+    return;
+  }
   await loadAll();setupRT();loadWeather();
   document.getElementById('loading').style.display='none';
   showScr('pin');
@@ -1596,7 +1671,7 @@ async function chkPin(){
 }
 
 function logout(){CU=null;wOff=0;pin='';updDots();document.getElementById('pin-err').textContent='';setSessionLang('nl');showScr('pin');}
-function showScr(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('s-'+n)?.classList.add('active');if(n==='worker')renderWorker();if(n==='manager')renderManager();}
+function showScr(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('s-'+n)?.classList.add('active');if(n==='worker')renderWorker();if(n==='manager')renderManager();if(n==='guest')renderGuestView();}
 function chWeek(d){wOff+=d;updWkLbls();if(isWkr())renderWorker();else renderMgrWeek();}
 function chWeekPlan(d){wOff+=d;updWkLbls();renderPlan();renderMgrWeek();}
 function updWkLbls(){
@@ -1793,13 +1868,13 @@ function renderDayBody(di,wk,isMgr){
   // Tomorrow: check-ins
   const tmrwCi=D.bookings.filter(b=>b.check_in===nextStr&&b.status!=='cancelled');
   todayCi.forEach(b=>{const loc=D.locs.find(l=>l.id===b.location_id);
-    html+=`<div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#2e7d32">🏠 Check-in vandaag</span> — ${esc(b.guest_name||'Gast')} in <strong>${esc(loc?.name||'?')}</strong> (${b.adults||2} ${tr('bkAdults')}${(b.children_ages||[]).length?' + '+(b.children_ages||[]).length+' '+tr('bkChildren'):''})</div>`;
+    html+=`<div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#2e7d32">🏠 Check-in vandaag</span> — ${esc(b.guest_name||'Gast')} in <strong>${esc(lnm(loc))}</strong> (${b.adults||2} ${tr('bkAdults')}${(b.children_ages||[]).length?' + '+(b.children_ages||[]).length+' '+tr('bkChildren'):''})</div>`;
   });
   todayCo.forEach(b=>{const loc=D.locs.find(l=>l.id===b.location_id);
-    html+=`<div style="background:#fff3e0;border-left:4px solid #e65100;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#e65100">👋 Check-out vandaag</span> — ${esc(b.guest_name||'Gast')} uit <strong>${esc(loc?.name||'?')}</strong></div>`;
+    html+=`<div style="background:#fff3e0;border-left:4px solid #e65100;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#e65100">👋 Check-out vandaag</span> — ${esc(b.guest_name||'Gast')} uit <strong>${esc(lnm(loc))}</strong></div>`;
   });
   tmrwCi.forEach(b=>{const loc=D.locs.find(l=>l.id===b.location_id);
-    html+=`<div style="background:#e3f2fd;border-left:4px solid #1565c0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#1565c0">📢 Morgen: gasten komen</span> — ${esc(b.guest_name||'Gast')} in <strong>${esc(loc?.name||'?')}</strong></div>`;
+    html+=`<div style="background:#e3f2fd;border-left:4px solid #1565c0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#1565c0">📢 Morgen: gasten komen</span> — ${esc(b.guest_name||'Gast')} in <strong>${esc(lnm(loc))}</strong></div>`;
   });
 
   // 2. Extra taken (verhuur-taken visueel onderscheiden)
@@ -3002,7 +3077,7 @@ async function searchNotes(){
     const dlbl=`${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}`;
     const dayName=dayArr()[n.day_index]||'';
     const resolved=n.resolved?`<span style="font-size:10px;color:var(--muted);background:var(--done-bg);padding:1px 5px;border-radius:6px">✓ opgelost</span>`:`<span style="font-size:10px;color:#c45c5c;background:#ffeaea;padding:1px 5px;border-radius:6px">open</span>`;
-    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${n.note}</strong>${resolved}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${loc?.name||'?'} · ${dayName} · ${dlbl} · ${who?.name||'?'}</div></div>`;
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${n.note}</strong>${resolved}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${lnm(loc)} · ${dayName} · ${dlbl} · ${who?.name||'?'}</div></div>`;
   }).join('');
 }
 
@@ -3945,11 +4020,11 @@ function bkDayLabel(wk,di){
   let lbl='';
   D.bookings.filter(b=>b.check_in===ds&&b.status!=='cancelled').forEach(b=>{
     const loc=D.locs.find(l=>l.id===b.location_id);
-    lbl+=`<span style="font-size:10px;font-weight:600;color:#2e7d32;margin-left:6px">🏠 Check-in ${esc(loc?.name||'')}</span>`;
+    lbl+=`<span style="font-size:10px;font-weight:600;color:#2e7d32;margin-left:6px">🏠 Check-in ${esc(lnm(loc))}</span>`;
   });
   D.bookings.filter(b=>b.check_out===ds&&b.status!=='cancelled').forEach(b=>{
     const loc=D.locs.find(l=>l.id===b.location_id);
-    lbl+=`<span style="font-size:10px;font-weight:600;color:#e65100;margin-left:6px">👋 Check-out ${esc(loc?.name||'')}</span>`;
+    lbl+=`<span style="font-size:10px;font-weight:600;color:#e65100;margin-left:6px">👋 Check-out ${esc(lnm(loc))}</span>`;
   });
   return lbl;
 }
@@ -3984,10 +4059,11 @@ function renderBookings(){
       const nextStatus=BK_STATUS_NEXT[b.status];
       html+=`<div class="bk-card">`;
       html+=`<div style="display:flex;justify-content:space-between;align-items:flex-start">`;
-      html+=`<div><div style="font-size:15px;font-weight:700;color:var(--espresso)">${b.guest_name?esc(b.guest_name):'<span style="color:var(--muted);font-style:italic">Geanonimiseerd</span>'}</div>`;
+      html+=`<div><div style="font-size:15px;font-weight:700;color:var(--espresso)">${b.guest_name?esc(b.guest_name):'<span style="color:var(--muted);font-style:italic">Geanonimiseerd</span>'}${renderGuestAnswersBadge(b.id)}</div>`;
       html+=`<div style="font-size:12px;color:var(--muted);margin-top:2px">📅 ${ciStr} → ${coStr} · ${nights} ${tr('bkNights')}</div>`;
       html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">${guestInfo.join(' · ')}</div>`;
       if(b.notes)html+=`<div style="font-size:11px;color:var(--espresso);margin-top:4px;font-style:italic">📝 ${esc(b.notes)}</div>`;
+      html+=renderGuestAnswersDetail(b.id);
       html+=`</div>`;
       html+=`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">`;
       html+=`<span class="bk-status bk-${b.status}">${tr(BK_STATUS_LBL[b.status])}</span>`;
@@ -4002,10 +4078,16 @@ function renderBookings(){
   el.innerHTML=html;
 }
 
-function openBookingForm(id){
+async function openBookingForm(id){
   const m=document.getElementById('bk-modal');
   const isEdit=!!id;
-  const b=isEdit?D.bookings.find(x=>x.id===id):null;
+  let b=isEdit?D.bookings.find(x=>x.id===id):null;
+  // Auto-generate guest_token for existing bookings
+  if(isEdit&&b&&!b.guest_token){
+    const token=crypto.randomUUID();
+    await sb.from('bookings').update({guest_token:token}).eq('id',id);
+    b.guest_token=token;
+  }
   document.getElementById('bk-modal-title').textContent=isEdit?tr('editBooking'):tr('addBooking');
   document.getElementById('bk-edit-id').value=id||'';
   // Location dropdown
@@ -4020,6 +4102,8 @@ function openBookingForm(id){
   document.getElementById('bk-notes').value=b?.notes||'';
   document.getElementById('bk-status-wrap').style.display=isEdit?'block':'none';
   document.getElementById('bk-regen-wrap').style.display=isEdit?'block':'none';
+  document.getElementById('bk-link-wrap').style.display=isEdit?'block':'none';
+  document.getElementById('bk-copy-link').textContent=tr('gCopyLink');
   if(isEdit)document.getElementById('bk-status').value=b.status||'upcoming';
   updChildAges(ages);
   m.classList.add('open');
@@ -4068,6 +4152,7 @@ async function saveBooking(){
   } else {
     row.created_by=CU?.id;
     row.status='upcoming';
+    row.guest_token=crypto.randomUUID();
     const {data}=await sb.from('bookings').insert(row).select();
     if(data?.[0])await generateBookingTasks(data[0]);
     await logChange(`Boeking toegevoegd: ${name||'?'} @ ${D.locs.find(l=>l.id===loc)?.name||'?'}`);
@@ -4139,6 +4224,14 @@ function renderLocInfo(){
       html+=`<input class="finput" type="text" disabled placeholder="${tr('liLocked')}" style="opacity:.5;cursor:not-allowed">`;
     });
     html+=`</div>`;
+    // Guest questions
+    html+=`<div style="margin-top:12px"><div style="font-size:12px;font-weight:700;color:var(--caramel);margin-bottom:6px">📝 ${tr('gQuestionsTitle')}</div>`;
+    html+=`<div id="gq-list-${loc.id}"></div>`;
+    html+=`<div style="display:flex;gap:6px;margin-top:6px;align-items:center">`;
+    html+=`<input class="finput" type="text" id="gq-inp-${loc.id}" placeholder="${tr('gAddQuestion')}" style="flex:1;font-size:12px;margin:0">`;
+    html+=`<select class="finput" id="gq-type-${loc.id}" style="width:auto;font-size:11px;padding:6px;margin:0"><option value="text">${tr('gQText')}</option><option value="yes_no">${tr('gQYesNo')}</option><option value="time">${tr('gQTime')}</option></select>`;
+    html+=`<button class="btn-sm" onclick="addGuestQuestion('${loc.id}')">+</button>`;
+    html+=`</div></div>`;
     // Buttons
     html+=`<div style="display:flex;gap:8px;margin-top:10px">`;
     html+=`<button class="save-btn" onclick="saveLocInfo('${loc.id}')" style="flex:1">${tr('liSave')}</button>`;
@@ -4148,6 +4241,7 @@ function renderLocInfo(){
     html+=`</div></div>`;
   });
   el.innerHTML=html;
+  D.locs.forEach(loc=>renderGuestQuestions(loc.id));
 }
 
 async function saveLocInfo(locId){
@@ -4179,7 +4273,7 @@ function previewLocInfo(locId){
   });
   const hasAny=Object.values(vals).some(v=>v);
   let html=`<div style="max-height:70vh;overflow-y:auto;padding:4px">`;
-  html+=`<div style="text-align:center;margin-bottom:16px"><div style="font-size:24px;font-weight:800;font-family:Fraunces,serif;color:var(--espresso)">${esc(loc?.name||'')}</div></div>`;
+  html+=`<div style="text-align:center;margin-bottom:16px"><div style="font-size:24px;font-weight:800;font-family:Fraunces,serif;color:var(--espresso)">${esc(lnm(loc))}</div></div>`;
   if(!hasAny){
     html+=`<div style="text-align:center;color:var(--muted);padding:2rem">${tr('liNoInfo')}</div>`;
   } else {
@@ -4350,6 +4444,194 @@ async function regenBookingTasks(){
   await loadAll();
   closeBkModal();renderBookings();
   if(curMode==='home')renderMgrWeek();
+}
+
+// ═══════════════ GASTPORTAAL ═══════════════
+const _gTr={
+  nl:{welcome:'Welkom',checkin:'Check-in',checkout:'Check-out',nights:'nachten',questions:'Vragen voor uw verblijf',save:'Opslaan',saved:'✓ Antwoorden opgeslagen',noInfo:'De gastinformatie wordt binnenkort beschikbaar.',yes:'Ja',no:'Nee',invTitle:'Link niet meer geldig',invSub:'Deze gastlink is verlopen of niet geldig.',ciInstr:'Instructies bij aankomst',coInstr:'Instructies bij vertrek',rules:'Huisregels',parking:'Parkeren',tips:'Tips & aanbevelingen',general:'Algemene informatie'},
+  pt:{welcome:'Bem-vindo',checkin:'Check-in',checkout:'Check-out',nights:'noites',questions:'Perguntas para a sua estadia',save:'Guardar',saved:'✓ Respostas guardadas',noInfo:'A informação será disponibilizada em breve.',yes:'Sim',no:'Não',invTitle:'Link expirado',invSub:'Este link expirou ou não é válido.',ciInstr:'Instruções de chegada',coInstr:'Instruções de saída',rules:'Regras da casa',parking:'Estacionamento',tips:'Dicas & recomendações',general:'Informação geral'},
+  en:{welcome:'Welcome',checkin:'Check-in',checkout:'Check-out',nights:'nights',questions:'Questions for your stay',save:'Save',saved:'✓ Answers saved',noInfo:'Guest information will be available soon.',yes:'Yes',no:'No',invTitle:'Link expired',invSub:'This guest link has expired or is not valid.',ciInstr:'Arrival instructions',coInstr:'Departure instructions',rules:'House rules',parking:'Parking',tips:'Tips & recommendations',general:'General information'}
+};
+function gTr(k){return (_gTr[_guestLang]||_gTr.en)[k]||k;}
+
+async function loadGuestData(token){
+  try{
+    const{data,error}=await sb.from('bookings').select('*').eq('guest_token',token).maybeSingle();
+    if(error||!data)return false;
+    _guestBooking=data;
+    // Check access window: 7 days before check-in to check-out
+    const now=new Date();now.setHours(0,0,0,0);
+    const ci=new Date(_guestBooking.check_in);ci.setHours(0,0,0,0);
+    const co=new Date(_guestBooking.check_out);co.setHours(23,59,59,999);
+    const earliest=new Date(ci);earliest.setDate(earliest.getDate()-7);
+    if(now<earliest||now>co)return false;
+    if(_guestBooking.status==='cancelled')return false;
+    // Load location + info + questions + answers
+    const hid=_guestBooking.household_id;
+    const lid=_guestBooking.location_id;
+    const [locR,liR,gqR,gaR]=await Promise.all([
+      safeQ(sb.from('locations').select('*').eq('id',lid).maybeSingle()),
+      safeQ(sb.from('location_info').select('*').eq('location_id',lid).maybeSingle()),
+      safeQ(sb.from('guest_questions').select('*').eq('household_id',hid).order('sort_order')),
+      safeQ(sb.from('guest_answers').select('*').eq('booking_id',_guestBooking.id)),
+    ]);
+    _guestLoc=locR.data||null;
+    _guestInfo=liR.data||{};
+    D.gQuestions=gqR.data||[];
+    D.gAnswers=gaR.data||[];
+    renderGuestView();
+    return true;
+  }catch(e){console.error('Guest load error:',e);return false;}
+}
+
+function setGuestLang(lang){
+  _guestLang=lang;
+  document.querySelectorAll('.guest-lang button').forEach(b=>b.classList.toggle('active',b.textContent.includes(lang==='nl'?'🇳🇱':lang==='pt'?'🇵🇹':'🇬🇧')));
+  document.getElementById('g-inv-title').textContent=gTr('invTitle');
+  document.getElementById('g-inv-sub').textContent=gTr('invSub');
+  renderGuestView();
+}
+
+function renderGuestView(){
+  if(!_guestBooking||!_guestLoc)return;
+  const bk=_guestBooking,loc=_guestLoc,info=_guestInfo||{};
+  const name=bk.guest_name||gTr('welcome');
+  // Header
+  const locNm=(_guestLang==='pt'?loc.name_pt:_guestLang==='en'?loc.name_en:null)||loc.name||'';
+  document.getElementById('g-welcome').textContent=`${gTr('welcome')}, ${name}!`;
+  document.getElementById('g-loc-name').textContent=locNm;
+  const ciD=new Date(bk.check_in),coD=new Date(bk.check_out);
+  const nights=Math.round((coD-ciD)/86400000);
+  const fmtD=d=>`${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+  document.getElementById('g-dates').textContent=`${fmtD(ciD)} → ${fmtD(coD)} · ${nights} ${gTr('nights')}`;
+  // Body
+  let html='';
+  // Check-in/out times
+  if(info.check_in_time||info.check_out_time){
+    html+=`<div class="guest-times">`;
+    if(info.check_in_time)html+=`<div class="guest-time-card"><div class="guest-time-lbl">${gTr('checkin')}</div><div class="guest-time-val">${esc(info.check_in_time)}</div></div>`;
+    if(info.check_out_time)html+=`<div class="guest-time-card"><div class="guest-time-lbl">${gTr('checkout')}</div><div class="guest-time-val">${esc(info.check_out_time)}</div></div>`;
+    html+=`</div>`;
+  }
+  // Welcome text
+  if(info.welcome_text)html+=`<div class="guest-section"><div class="guest-section-body" style="text-align:center;font-style:italic">${esc(info.welcome_text)}</div></div>`;
+  // Info sections
+  const sections=[
+    {val:info.check_in_instructions,icon:'🚪',label:gTr('ciInstr')},
+    {val:info.check_out_instructions,icon:'👋',label:gTr('coInstr')},
+    {val:info.house_rules,icon:'📋',label:gTr('rules')},
+    {val:info.parking_info,icon:'🅿️',label:gTr('parking')},
+    {val:info.local_tips,icon:'📍',label:gTr('tips')},
+    {val:info.general_instructions,icon:'ℹ️',label:gTr('general')},
+  ];
+  sections.forEach(s=>{
+    if(!s.val)return;
+    html+=`<div class="guest-section"><div class="guest-section-title">${s.icon} ${s.label}</div><div class="guest-section-body">${esc(s.val)}</div></div>`;
+  });
+  // No info at all?
+  if(!info.welcome_text&&!sections.some(s=>s.val)){
+    html+=`<div class="guest-section" style="text-align:center;color:var(--muted)">${gTr('noInfo')}</div>`;
+  }
+  // Guest questions
+  const locQs=D.gQuestions.filter(q=>!q.location_id||q.location_id===loc.id);
+  if(locQs.length){
+    html+=`<div class="guest-section"><div class="guest-section-title">📝 ${gTr('questions')}</div>`;
+    locQs.forEach(q=>{
+      const ans=D.gAnswers.find(a=>a.question_id===q.id);
+      html+=`<div class="guest-q">`;
+      html+=`<label>${esc(q.question_text)}</label>`;
+      if(q.question_type==='yes_no'){
+        html+=`<select data-qid="${q.id}"><option value="">—</option><option value="yes"${ans?.answer_text==='yes'?' selected':''}>${gTr('yes')}</option><option value="no"${ans?.answer_text==='no'?' selected':''}>${gTr('no')}</option></select>`;
+      } else if(q.question_type==='time'){
+        html+=`<input type="time" data-qid="${q.id}" value="${esc(ans?.answer_text||'')}">`;
+      } else {
+        html+=`<textarea rows="2" data-qid="${q.id}" placeholder="">${esc(ans?.answer_text||'')}</textarea>`;
+      }
+      html+=`</div>`;
+    });
+    html+=`<button class="save-btn" onclick="saveGuestAnswers()" style="width:100%;margin-top:4px">${gTr('save')}</button>`;
+    html+=`<div id="g-save-flash" style="text-align:center;font-size:12px;color:var(--caramel);margin-top:6px;opacity:0;transition:opacity .3s"></div>`;
+    html+=`</div>`;
+  }
+  document.getElementById('g-body').innerHTML=html;
+}
+
+async function saveGuestAnswers(){
+  if(!_guestBooking)return;
+  const els=document.querySelectorAll('#g-body [data-qid]');
+  for(const el of els){
+    const qid=el.dataset.qid;
+    const val=el.value.trim();
+    await sb.from('guest_answers').upsert({
+      household_id:_guestBooking.household_id,
+      booking_id:_guestBooking.id,
+      question_id:qid,
+      answer_text:val||null
+    },{onConflict:'booking_id,question_id'});
+  }
+  // Refresh answers
+  const{data}=await safeQ(sb.from('guest_answers').select('*').eq('booking_id',_guestBooking.id));
+  D.gAnswers=data||[];
+  const fl=document.getElementById('g-save-flash');
+  if(fl){fl.textContent=gTr('saved');fl.style.opacity='1';setTimeout(()=>fl.style.opacity='0',2500);}
+}
+
+// --- Gastlink kopiëren ---
+function copyGuestLink(bookingId){
+  const bk=D.bookings.find(b=>b.id===bookingId);
+  if(!bk?.guest_token){alert(tr('gNoToken'));return;}
+  const url=window.location.origin+window.location.pathname+'?guest='+bk.guest_token;
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn=document.getElementById('bk-copy-link');
+    if(btn){const old=btn.textContent;btn.textContent=tr('gCopied');setTimeout(()=>btn.textContent=old,2000);}
+  }).catch(()=>{prompt('Kopieer deze link:',url);});
+}
+
+// --- Gastvragen admin (per locatie in locinfo tab) ---
+function renderGuestQuestions(locId){
+  const el=document.getElementById('gq-list-'+locId);if(!el)return;
+  const qs=D.gQuestions.filter(q=>q.location_id===locId).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  if(!qs.length){el.innerHTML=`<div style="font-size:12px;color:var(--muted);padding:4px 0">Nog geen vragen.</div>`;return;}
+  el.innerHTML=qs.map(q=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;flex:1">${esc(q.question_text)} <span style="font-size:10px;color:var(--muted)">(${q.question_type})</span></span><button onclick="delGuestQuestion('${q.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px">✕</button></div>`).join('');
+}
+
+async function addGuestQuestion(locId){
+  const inp=document.getElementById('gq-inp-'+locId);
+  const sel=document.getElementById('gq-type-'+locId);
+  if(!inp||!sel)return;
+  const text=inp.value.trim();if(!text)return;
+  const type=sel.value||'text';
+  const maxSort=(D.gQuestions.filter(q=>q.location_id===locId).length);
+  await sb.from('guest_questions').insert({household_id:HID,location_id:locId,question_text:text,question_type:type,sort_order:maxSort});
+  inp.value='';
+  await loadAll();renderGuestQuestions(locId);
+}
+
+async function delGuestQuestion(id){
+  await sb.from('guest_questions').delete().eq('id',id);
+  await loadAll();
+  // Re-render all question lists
+  D.locs.forEach(loc=>{const el=document.getElementById('gq-list-'+loc.id);if(el)renderGuestQuestions(loc.id);});
+}
+
+// --- Gastantwoorden weergeven in boeking ---
+function renderGuestAnswersBadge(bookingId){
+  const answers=D.gAnswers.filter(a=>a.booking_id===bookingId&&a.answer_text);
+  if(!answers.length)return '';
+  return `<span style="font-size:10px;background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:8px;margin-left:4px">📝 ${answers.length}</span>`;
+}
+
+function renderGuestAnswersDetail(bookingId){
+  const answers=D.gAnswers.filter(a=>a.booking_id===bookingId&&a.answer_text);
+  if(!answers.length)return '';
+  let html=`<div style="margin-top:8px;padding:8px;background:#f0f8f0;border-radius:8px"><div style="font-size:11px;font-weight:700;color:#2e7d32;margin-bottom:4px">📝 ${tr('gAnswers')}</div>`;
+  answers.forEach(a=>{
+    const q=D.gQuestions.find(q2=>q2.id===a.question_id);
+    if(!q)return;
+    html+=`<div style="font-size:12px;margin-bottom:3px"><strong>${esc(q.question_text)}</strong> ${esc(a.answer_text)}</div>`;
+  });
+  html+=`</div>`;
+  return html;
 }
 
 // ═══════════════ TASK EDIT MODAL ═══════════════
