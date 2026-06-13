@@ -593,6 +593,16 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="wk-lbl" id="p-wk-lbl"></div>
       <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
     </div>
+    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
+      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
+      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
+    </div>
+    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
+      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
+        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
+      </select> extra weken
+    </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
     <div id="plan-grid"></div>
   </div>
@@ -1120,7 +1130,7 @@ const DAILY_ID='eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
-let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed';
+let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed',planScope='default';
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
@@ -1689,9 +1699,11 @@ function getFocus(di){
 async function ensureWeekSched(off){
   const wk=wkey(off);
   if(D.sched.filter(s=>s.week_key===wk).length)return;
-  const prev=D.sched.filter(s=>s.week_key===wkey(off-1));
-  if(!prev.length)return;
-  await sb.from('week_schedule').insert(prev.map(s=>({household_id:HID,location_id:s.location_id,week_key:wk,day_index:s.day_index})));
+  // Try default first, then fall back to previous week
+  let src=D.sched.filter(s=>s.week_key==='default');
+  if(!src.length)src=D.sched.filter(s=>s.week_key===wkey(off-1));
+  if(!src.length)return;
+  await sb.from('week_schedule').insert(src.map(s=>({household_id:HID,location_id:s.location_id,week_key:wk,day_index:s.day_index})));
   await loadAll();
 }
 
@@ -1869,12 +1881,26 @@ function renderDayBody(di,wk,isMgr){
   const tmrwCi=D.bookings.filter(b=>b.check_in===nextStr&&b.status!=='cancelled');
   todayCi.forEach(b=>{const loc=D.locs.find(l=>l.id===b.location_id);
     html+=`<div style="background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#2e7d32">🏠 Check-in vandaag</span> — ${esc(b.guest_name||'Gast')} in <strong>${esc(lnm(loc))}</strong> (${b.adults||2} ${tr('bkAdults')}${(b.children_ages||[]).length?' + '+(b.children_ages||[]).length+' '+tr('bkChildren'):''})</div>`;
+    // Show guest answers if any
+    const ans=D.gAnswers.filter(a=>a.booking_id===b.id&&a.answer_text);
+    if(ans.length){
+      html+=`<div style="background:#f0f8f0;border-left:4px solid #66bb6a;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:11px">`;
+      ans.forEach(a=>{const q=D.gQuestions.find(q2=>q2.id===a.question_id);if(q)html+=`<div style="margin-bottom:2px"><strong>${esc(q.question_text)}</strong> ${esc(a.answer_text)}</div>`;});
+      html+=`</div>`;
+    }
   });
   todayCo.forEach(b=>{const loc=D.locs.find(l=>l.id===b.location_id);
     html+=`<div style="background:#fff3e0;border-left:4px solid #e65100;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#e65100">👋 Check-out vandaag</span> — ${esc(b.guest_name||'Gast')} uit <strong>${esc(lnm(loc))}</strong></div>`;
   });
   tmrwCi.forEach(b=>{const loc=D.locs.find(l=>l.id===b.location_id);
     html+=`<div style="background:#e3f2fd;border-left:4px solid #1565c0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px"><span style="font-weight:700;color:#1565c0">📢 Morgen: gasten komen</span> — ${esc(b.guest_name||'Gast')} in <strong>${esc(lnm(loc))}</strong></div>`;
+    // Show guest answers for tomorrow's check-in too
+    const ans=D.gAnswers.filter(a=>a.booking_id===b.id&&a.answer_text);
+    if(ans.length){
+      html+=`<div style="background:#e8f0fe;border-left:4px solid #5c90d2;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:11px">`;
+      ans.forEach(a=>{const q=D.gQuestions.find(q2=>q2.id===a.question_id);if(q)html+=`<div style="margin-bottom:2px"><strong>${esc(q.question_text)}</strong> ${esc(a.answer_text)}</div>`;});
+      html+=`</div>`;
+    }
   });
 
   // 2. Extra taken (verhuur-taken visueel onderscheiden)
@@ -2237,7 +2263,7 @@ function mTab(n){
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
   if(n==='week')renderMgrWeek();
-  if(n==='plan')renderPlan();
+  if(n==='plan')setPlanScope(planScope);
   if(n==='recipe'){renderRecSels();renderRcList();}
   if(n==='shop')renderShopping('m');
   if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();}
@@ -3092,9 +3118,38 @@ async function editFocus(di){
 }
 
 // ═══════════════ PLANNING ═══════════════
+function setPlanScope(s){
+  planScope=s;
+  ['ps-default','ps-week','ps-weeks'].forEach(id=>document.getElementById(id)?.classList.remove('on'));
+  document.getElementById('ps-'+s)?.classList.add('on');
+  document.getElementById('plan-weeks-wrap').style.display=s==='weeks'?'block':'none';
+  const hint=document.getElementById('plan-hint');
+  if(hint){
+    const hasDef=D.sched.some(x=>x.week_key==='default');
+    if(s==='default'&&!hasDef){
+      hint.innerHTML=(lg()==='pt'
+        ?'Ainda não tem um esquema padrão. <button class="save-btn" onclick="initDefaultFromWeek()" style="font-size:11px;padding:4px 10px;margin-left:6px">Copiar esta semana como padrão</button>'
+        :'Nog geen standaardverdeling. <button class="save-btn" onclick="initDefaultFromWeek()" style="font-size:11px;padding:4px 10px;margin-left:6px">Kopieer deze week als standaard</button>');
+    } else if(s==='default')hint.textContent=lg()==='pt'?'Alterações definem o esquema padrão para todas as semanas futuras.':'Wijzigingen worden de standaardverdeling voor alle toekomstige weken.';
+    else if(s==='week')hint.textContent=lg()==='pt'?'Alterações aplicam-se apenas a esta semana.':'Wijzigingen gelden alleen voor deze week.';
+    else hint.textContent=lg()==='pt'?'Alterações aplicam-se a esta semana e às próximas semanas selecionadas.':'Wijzigingen gelden voor deze week + het gekozen aantal extra weken.';
+  }
+  renderPlan();
+}
+
+async function initDefaultFromWeek(){
+  _rtSkipUntil=Date.now()+3000;
+  const wk=wkey(wOff);
+  const curr=D.sched.filter(s=>s.week_key===wk);
+  if(!curr.length)return;
+  await sb.from('week_schedule').insert(curr.map(s=>({household_id:HID,location_id:s.location_id,week_key:'default',day_index:s.day_index})));
+  await loadAll();setPlanScope('default');
+}
+
 function renderPlan(){
   const el=document.getElementById('plan-grid');if(!el)return;
-  const wk=wkey(wOff);
+  const isDefault=planScope==='default';
+  const wk=isDefault?'default':wkey(wOff);
   let html='';
   for(let di=0;di<7;di++){
     const sched=D.sched.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id);
@@ -3102,27 +3157,41 @@ function renderPlan(){
     html+=`<div style="margin-bottom:14px"><div style="font-family:'Fraunces',serif;font-size:13px;font-weight:700;color:var(--espresso);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">${dayArr()[di]}${isWd?`<span style="font-size:.58rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:100px;background:var(--caramel);color:#fff">${tr('workday')}</span>`:''}</div>`;
     D.locs.forEach(loc=>{
       const on=sched.includes(loc.id);
-      html+=`<div onclick="togPlan('${loc.id}',${di},'${wk}')" style="display:flex;align-items:center;gap:10px;padding:8px 11px;margin-bottom:4px;border-radius:var(--rs);border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'12':'var(--white)'};cursor:pointer;transition:all .15s"><div class="loc-dot" style="background:${loc.color}"></div><span style="font-size:13px;flex:1">${lnm(loc)}</span>${on?`<span style="color:${loc.color};font-weight:700;font-size:14px">&#10003;</span>`:''}</div>`;
+      html+=`<div onclick="togPlan('${loc.id}',${di})" style="display:flex;align-items:center;gap:10px;padding:8px 11px;margin-bottom:4px;border-radius:var(--rs);border:1.5px solid ${on?loc.color:'var(--border)'};background:${on?loc.color+'12':'var(--white)'};cursor:pointer;transition:all .15s"><div class="loc-dot" style="background:${loc.color}"></div><span style="font-size:13px;flex:1">${lnm(loc)}</span>${on?`<span style="color:${loc.color};font-weight:700;font-size:14px">&#10003;</span>`:''}</div>`;
     });
     html+='</div>';
   }
   el.innerHTML=html;
 }
 
-async function togPlan(lid,di,wk){
-  _rtSkipUntil=Date.now()+2000;
-  const ex=D.sched.find(s=>s.location_id===lid&&s.week_key===wk&&s.day_index===di);
-  console.log('[togPlan]',ex?'DELETE':'INSERT','lid=',lid,'di=',di,'wk=',wk,'ex.id=',ex?.id);
-  let res;
-  if(ex){
-    res=await sb.from('week_schedule').delete().eq('id',ex.id);
+async function togPlan(lid,di){
+  _rtSkipUntil=Date.now()+3000;
+  if(planScope==='default'){
+    // Update default + apply to current week
+    const defEx=D.sched.find(s=>s.location_id===lid&&s.week_key==='default'&&s.day_index===di);
+    if(defEx)await sb.from('week_schedule').delete().eq('id',defEx.id);
+    else await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:'default',day_index:di});
+    // Also update current week
+    const cwk=wkey(wOff);
+    const cwEx=D.sched.find(s=>s.location_id===lid&&s.week_key===cwk&&s.day_index===di);
+    if(defEx&&cwEx)await sb.from('week_schedule').delete().eq('id',cwEx.id);
+    else if(!defEx&&!cwEx)await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:cwk,day_index:di});
+  } else if(planScope==='weeks'){
+    const n=parseInt(document.getElementById('plan-weeks-n')?.value)||2;
+    for(let i=0;i<=n;i++){
+      const wk=wkey(wOff+i);
+      const ex=D.sched.find(s=>s.location_id===lid&&s.week_key===wk&&s.day_index===di);
+      if(ex)await sb.from('week_schedule').delete().eq('id',ex.id);
+      else await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:wk,day_index:di});
+    }
   } else {
-    res=await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:wk,day_index:di});
+    // Single week
+    const wk=wkey(wOff);
+    const ex=D.sched.find(s=>s.location_id===lid&&s.week_key===wk&&s.day_index===di);
+    if(ex)await sb.from('week_schedule').delete().eq('id',ex.id);
+    else await sb.from('week_schedule').insert({household_id:HID,location_id:lid,week_key:wk,day_index:di});
   }
-  console.log('[togPlan] result:',res.error?'ERROR '+JSON.stringify(res.error):'OK',res.status,res.statusText);
-  await loadAll();
-  console.log('[togPlan] after loadAll, sched entries for',wk+'/'+di+':',D.sched.filter(s=>s.week_key===wk&&s.day_index===di).map(s=>s.location_id));
-  renderPlan();renderMgrWeek();
+  await loadAll();renderPlan();renderMgrWeek();
 }
 
 // ═══════════════ UNIFIED TASK FORM ═══════════════
