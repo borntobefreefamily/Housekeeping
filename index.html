@@ -1499,7 +1499,10 @@ async function loadAll(){
     safeQ(sb.from('guest_questions').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('guest_answers').select('*').eq('household_id',HID)),
   ]);
-  D.users=u.data||[];D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
+  D.users=u.data||[];
+  // Dedup users by id (keep first with avatar, fallback first)
+  {const seen=new Map();D.users.forEach(u2=>{const ex=seen.get(u2.id);if(!ex||(u2.avatar&&!ex.avatar))seen.set(u2.id,u2);});D.users=[...seen.values()];}
+  D.locs=l.data||[];D.tasks=ft.data||[];D.sched=ws.data||[];D.extras=et.data||[];D.recipes=rc.data||[];
   D.shopping=si.data||[];D.recipeIngr=ri.data||[];
   D.pointLedger=pl.data||[];D.savingsGoals=sg.data||[];D.bookings=bk.data||[];D.locInfo=li.data||[];D.cleanTempl=ct.data||[];D.gQuestions=gq.data||[];D.gAnswers=ga.data||[];
   D.periodic=pt2.data||[];D.pChecks=pc.data||[];D.log=cl.data||[];
@@ -3209,14 +3212,13 @@ function setTaskType(type){
   const locs=document.getElementById('nt-locs');
   if(lbl)lbl.style.display=hideLoc?'none':'block';
   if(locs)locs.style.display=hideLoc?'none':'flex';
-  // Points: show if any children exist, or always for personal (conditional on person)
-  const hasKids=D.users.some(u=>u.role==='child');
+  // Points: only for personal type when a child is selected
   if(isPers){
     const selUser=document.getElementById('nt-person')?.value;
     const selU=D.users.find(u=>u.id===selUser);
     document.getElementById('nt-points-wrap').style.display=(selU?.role==='child')?'block':'none';
   } else {
-    document.getElementById('nt-points-wrap').style.display=hasKids?'block':'none';
+    document.getElementById('nt-points-wrap').style.display='none';
   }
 }
 
@@ -3244,9 +3246,9 @@ function renderTaskForm(){
   if(dailyCb)dailyCb.checked=false;
   const dailyLbl=document.getElementById('nt-daily-lbl');
   if(dailyLbl)dailyLbl.textContent=lg()==='pt'?'Tarefa diária (aparece todos os dias de trabalho)':'Dagelijkse taak (verschijnt elke werkdag)';
-  // Personal fields
+  // Personal fields — deduplicate by user ID
   const psel=document.getElementById('nt-person');
-  if(psel)psel.innerHTML=D.users.filter(u=>u.role!=='worker').map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');
+  if(psel){const seen=new Set();psel.innerHTML=D.users.filter(u=>{if(u.role==='worker'||seen.has(u.id))return false;seen.add(u.id);return true;}).map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');}
   const pdsel=document.getElementById('nt-day');
   if(pdsel)pdsel.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   const plsel=document.getElementById('nt-optloc');
