@@ -705,11 +705,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
           <label class="flbl" id="nt-lbl-interval">Interval</label>
           <select class="finput" id="nt-interval">
             <option value="0">Elke week</option>
-            <option value="-1">Om de week</option>
+            <option value="-1">2-wekelijks</option>
             <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
             <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
             <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
           </select>
+          <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
+          <input type="date" class="finput" id="nt-startdate">
         </div>
         <!-- Extra fields (for extra) -->
         <div id="nt-extra-wrap" style="display:none">
@@ -903,10 +905,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <label class="flbl">Interval</label>
       <select class="finput" id="edit-interval">
         <option value="0">Elke week</option>
+        <option value="-1">2-wekelijks</option>
         <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
         <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
         <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
       </select>
+      <label class="flbl" id="edit-lbl-startdate">Startdatum (optioneel)</label>
+      <input type="date" class="finput" id="edit-startdate">
       <label class="flbl">Locaties</label>
       <div class="pill-group" id="edit-locs"></div>
       <label class="flbl" id="edit-lbl-cat-p">Categorie</label>
@@ -1077,6 +1082,12 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="um-days" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
     <label class="flbl">Locaties</label>
     <div id="um-locs" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px"></div>
+    <div id="um-alldays-wrap" style="display:none;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="um-alldays">
+        <span id="um-alldays-lbl">Toon alle dagen (niet alleen werkdagen)</span>
+      </label>
+    </div>
     <div style="display:flex;gap:8px;margin-top:.75rem">
       <button class="save-btn" onclick="saveUser()" style="flex:1">Opslaan</button>
       <button class="save-btn" onclick="closeUserModal()" style="flex:1;background:var(--steam);color:var(--text)">Annuleren</button>
@@ -1091,7 +1102,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 <script>
 // Mobile viewport fix — Android Chrome adresbalk telt mee in 100vh
 (function(){
+  let _kbOpen=false;
   function setVh(){
+    if(_kbOpen)return;
     const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     document.documentElement.style.setProperty('--real-vh', vh + 'px');
   }
@@ -1102,6 +1115,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     window.addEventListener('resize', setVh);
     window.addEventListener('orientationchange', function(){ setTimeout(setVh, 100); });
   }
+  // Prevent app resize when keyboard opens (causes black screen flash)
+  document.addEventListener('focusin',function(e){if(e.target.matches('input,textarea,select'))_kbOpen=true;});
+  document.addEventListener('focusout',function(e){if(e.target.matches('input,textarea,select')){_kbOpen=false;setTimeout(setVh,300);}});
 })();
 
 const SU='https://imojddlvfkpbistifqav.supabase.co';
@@ -1150,7 +1166,7 @@ const I={
     due:'Vervalt',
     interval1:'Elke maand',interval2:'Elke 2 maanden',interval3:'Elke 3 maanden',
     interval4:'Elke 4 maanden',interval6:'Elke 6 maanden',interval12:'Jaarlijks',
-    interval0:'Elke week',intervalBi:'Om de week',
+    interval0:'Elke week',intervalBi:'2-wekelijks',
     grpOverview:'Overzicht',grpAdd:'Toevoegen',
     allRead:'Alles gelezen',
     persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
@@ -1162,7 +1178,7 @@ const I={
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
     location:'Locatie',locations:'Locaties',category:'Categorie',
-    interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',
+    interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',startDate:'Startdatum (optioneel)',
     repOnce:'Eenmalig',repDaily:'Dagelijks',repWeekly:'Wekelijks',repMonthly:'Maandelijks (elke 4 weken)',
     repInfinite:'Oneindig',repWeeks:'Aantal weken',repUntil:'Tot datum',
     numWeeks:'Aantal weken',untilDate:'Tot en met',
@@ -1228,7 +1244,7 @@ const I={
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
     location:'Locatie(s)',category:'Categorie',
-    interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',
+    interval:'Interval',days:'Dagen',repetition:'Herhaling',startWeek:'Startweek',startDate:'Startdatum (optioneel)',
     // Verhuur
     modeHome:'🏠 Huishouden',modeRental:'🔑 Verhuur',
     bookings:'Boekingen',addBooking:'+ Boeking',editBooking:'Boeking bewerken',
@@ -1290,7 +1306,7 @@ const I={
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
     location:'Local',locations:'Locais',category:'Categoria',
-    interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',
+    interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',startDate:'Data de início (opcional)',
     repOnce:'Uma vez',repDaily:'Diariamente',repWeekly:'Semanal',repMonthly:'Mensal (cada 4 semanas)',
     repInfinite:'Infinito',repWeeks:'Número de semanas',repUntil:'Até data',
     numWeeks:'Número de semanas',untilDate:'Até',
@@ -1355,7 +1371,7 @@ const I={
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
     location:'Local(ais)',category:'Categoria',
-    interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',
+    interval:'Intervalo',days:'Dias',repetition:'Repetição',startWeek:'Semana inicial',startDate:'Data de início (opcional)',
     // Aluguer
     modeHome:'🏠 Casa',modeRental:'🔑 Aluguer',
     bookings:'Reservas',addBooking:'+ Reserva',editBooking:'Editar reserva',
@@ -1422,6 +1438,11 @@ function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[
 
 function isPeriodicDue(task){
   const now=new Date();
+  // Start date: if set and in the future, task is not yet due
+  if(task.start_date){
+    const sd=new Date(task.start_date+'T00:00:00');
+    if(now<sd)return false;
+  }
   const im=task.interval_months??1;
   const isWeekly=im===0;
   const isBiweekly=im===-1;
@@ -1611,7 +1632,7 @@ function updateManagerLabels(){
     'nt-lbl-nl':tr('descNl'),'nt-lbl-pt':tr('descPt'),
     'nt-auto-hint':tr('autoHint'),'nt-lbl-loc':tr('location'),
     'nt-lbl-person':tr('person'),'nt-lbl-day':tr('day'),'nt-lbl-optloc':tr('optLocation'),
-    'nt-lbl-cat':tr('category'),'nt-lbl-interval':tr('interval'),
+    'nt-lbl-cat':tr('category'),'nt-lbl-interval':tr('interval'),'nt-lbl-startdate':tr('startDate'),'edit-lbl-startdate':tr('startDate'),
     'nt-lbl-days':tr('days'),'nt-lbl-rep':tr('repetition'),
     'nt-lbl-start':tr('startWeek'),'nt-lbl-nwks':tr('numWeeks'),
     'nt-lbl-until':tr('untilDate'),'nt-add-btn':tr('addTask'),
@@ -1975,7 +1996,7 @@ function renderDayBody(di,wk,isMgr){
       lb+=`<div style="font-size:12px;color:var(--muted);padding:.25rem 0;min-height:18px;font-style:italic">${dailyNote||'\u2014'}</div>`;
     } else {
       lb+=`<span class="slbl" style="margin-top:.5rem">${tr('notes')}</span>`;
-      lb+=`<textarea class="notes-area" placeholder="${tr('notesHint')}" onchange="saveNote('${DAILY_ID}','${wk}',${di},this.value)">${dailyNote}</textarea>`;
+      lb+=`<textarea class="notes-area" style="${dailyNote?'background:#e8f0fe;border-color:#90b4e8':''}" placeholder="${tr('notesHint')}" onchange="saveNote('${DAILY_ID}','${wk}',${di},this.value);this.style.background=this.value?'#e8f0fe':'';this.style.borderColor=this.value?'#90b4e8':''">${dailyNote}</textarea>`;
     }
     // Persistent notes for daily basis
     const dailyActiveNotes=D.lnotes.filter(n=>n.location_id===DAILY_ID&&!n.resolved);
@@ -2078,7 +2099,7 @@ function renderLocBlock(loc,wk,di,isMgr){
   if(isMgr){
     lb+=`<div style="font-size:12px;color:var(--muted);padding:.25rem 0;min-height:18px;font-style:italic">${note||'\u2014'}</div>`;
   } else {
-    lb+=`<textarea class="notes-area" placeholder="${tr('notesHint')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value)">${note}</textarea>`;
+    lb+=`<textarea class="notes-area" style="${note?'background:#e8f0fe;border-color:#90b4e8':''}" placeholder="${tr('notesHint')}" onchange="saveNote('${loc.id}','${wk}',${di},this.value);this.style.background=this.value?'#e8f0fe':'';this.style.borderColor=this.value?'#90b4e8':''">${note}</textarea>`;
     lb+=`<button class="save-btn" onclick="doFlash('fl-${uid}')">${tr('save')}</button><div id="fl-${uid}" class="flash" style="opacity:0">${tr('saved')}</div>`;
   }
   // Persistent location notes
@@ -2564,7 +2585,7 @@ function renderFamilyOverview(wk){
       const ptsId='fam-pts-'+kid.id.slice(0,6);
       if(kidLedger.length||kidPts>0){
         html+=`<div style="margin-top:6px"><div style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 0" onclick="togEl('${ptsId}','${ptsId}-c')"><span style="font-size:12px;font-weight:600;color:#f57f17">⭐ ${kidPts} ${tr('pointsBalance')} (€${(kidPts*pointValueCents()/100).toFixed(2)})</span><span class="chev" id="${ptsId}-c" style="font-size:10px">&#9662;</span></div>`;
-        html+=`<div id="${ptsId}" style="display:none">`;
+        html+=`<div id="${ptsId}" class="day-body">`;
         kidLedger.slice(0,20).forEach(e=>{
           const d=new Date(e.created_at);const dateStr=`${d.getDate()}/${d.getMonth()+1}`;
           html+=`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;border-bottom:1px solid rgba(0,0,0,.04)"><span style="color:var(--muted);min-width:40px">${dateStr}</span><span style="flex:1">${esc(e.task_name)}</span><span style="color:#f57f17;font-weight:600">⭐${e.points}</span><button onclick="revokePoint('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:10px;padding:2px 6px;opacity:.5" title="${tr('pointsRevoke')}">✕</button></div>`;
@@ -2688,7 +2709,8 @@ function refreshWorker(){
   const openDays=saveOpenState('wd');
   const openLocs=saveAllLocStates();
   const isChild=CU?.role==='child';
-  const allDi=isChild?[0,1,2,3,4,5,6]:[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
+  const showAll=isChild||CU?.show_all_days;
+  const allDi=showAll?[0,1,2,3,4,5,6]:[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
   const mySwaps=isChild?D.swaps.filter(s=>s.requester_id===CU.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring&&s.task_id):[];
   let tot=0,done=0;
   allDi.forEach(di=>{
@@ -3078,6 +3100,21 @@ async function addLocNote(locId,wk,di,inputId){
   await sb.from('location_notes').insert({household_id:HID,location_id:locId,week_key:wk,day_index:di,note:text,created_by:CU.id});
   const locNm=D.locs.find(l=>l.id===locId)?.name||'';
   await logChange(`Notitie bij ${locNm}: "${text}"`);
+  // Notify other users about the note
+  const notePreview=text.length>50?text.slice(0,50)+'…':text;
+  const targets=isMgr()?
+    D.users.filter(u=>u.role==='worker'&&D.ulocs.some(ul=>ul.user_id===u.id&&ul.location_id===locId)):
+    D.users.filter(u=>u.role==='admin'||u.role==='parent');
+  const who=CU?.name||'?';
+  if(targets.length){
+    await sb.from('notifications').insert(targets.map(u=>({
+      household_id:HID,user_id:u.id,type:'note_added',
+      title_nl:`📝 ${who} — notitie bij ${locNm}`,
+      title_pt:`📝 ${who} — nota em ${locNm}`,
+      title_en:`📝 ${who} — note at ${locNm}`,
+      body:{detail:notePreview,location_id:locId}
+    })));
+  }
   inp.value='';
   await loadAll();if(isMgr())refreshMgrWeek();else refreshWorker();
 }
@@ -3297,7 +3334,8 @@ async function addUnifiedTask(){
     await logChange(`${tr('typeFixed')}: "${nl}"`);
   } else if(newTaskType==='periodic'){
     const interval=parseInt(document.getElementById('nt-interval').value)??1;
-    await sb.from('monthly_tasks').insert({household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat,points:pts});
+    const startDate=document.getElementById('nt-startdate').value||null;
+    await sb.from('monthly_tasks').insert({household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat,points:pts,start_date:startDate});
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
   } else if(newTaskType==='personal'){
     const userId=document.getElementById('nt-person').value;
@@ -3328,7 +3366,7 @@ async function addUnifiedTask(){
 
   // Reset form
   document.getElementById('nt-nl').value='';document.getElementById('nt-pt').value='';
-  document.getElementById('nt-points').value='0';
+  document.getElementById('nt-points').value='0';document.getElementById('nt-startdate').value='';
   document.querySelectorAll('#nt-locs .cpill.on,#nt-days .cpill.on').forEach(el=>el.classList.remove('on'));
   const dailyCb=document.getElementById('nt-daily');if(dailyCb)dailyCb.checked=false;
   await loadAll();
@@ -3433,13 +3471,14 @@ function renderPeriodicList(){
     const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${lnm(loc)}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
     tasks.forEach(t=>{
-      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span></div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
+      const sdBadge=t.start_date?`<span class="mini-badge" style="background:#e3f2fd;color:#1565c0">📅 ${t.start_date}</span>`:'';
+      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span>${sdBadge}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
     });
     html+='</div></div>';
   });
   if(byLoc['none']){
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#8a7e74"><span class="loc-section-name">${tr('general')}</span></div><div class="loc-section-body">`;
-    byLoc['none'].forEach(t=>{html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span></div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
+    byLoc['none'].forEach(t=>{const sdB=t.start_date?`<span class="mini-badge" style="background:#e3f2fd;color:#1565c0">📅 ${t.start_date}</span>`:'';html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span>${sdB}</div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
     html+='</div></div>';
   }
   el.innerHTML=html;
@@ -4783,6 +4822,8 @@ function openEdit(id,type,nl,pt,interval){
       const curLids=(task?.location_ids)||[];
       document.getElementById('edit-locs').innerHTML=D.locs.map(l=>`<div class="cpill${curLids.includes(l.id)?' on':''}" id="eloc-${l.id}" onclick="this.classList.toggle('on')">${lnm(l)}</div>`).join('');
       updateEditCats('periodic',curLids[0],task?.category);
+      const sdEl=document.getElementById('edit-startdate');
+      if(sdEl)sdEl.value=task?.start_date||'';
     }
   }
   // Extra: category + date + day
@@ -4881,10 +4922,11 @@ async function saveEdit(){
       if(orig)await sb.from('extra_tasks').update({text_nl:nl,text_pt:pt||nl,category:cat}).eq('text_nl',orig.text_nl).eq('household_id',HID);
     }
   } else if(type==='periodic'){
-    const interval=parseInt(document.getElementById('edit-interval').value)||1;
+    const interval=parseInt(document.getElementById('edit-interval').value)??1;
     const cat=document.getElementById('edit-cat-p')?.value||'Algemeen';
     const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
-    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat,points:parseInt(document.getElementById('edit-points').value)||0}).eq('id',id);
+    const startDate=document.getElementById('edit-startdate').value||null;
+    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat,points:parseInt(document.getElementById('edit-points').value)||0,start_date:startDate}).eq('id',id);
   } else {
     // Fixed — multi-location sync based on text_nl matching
     const isDaily=document.getElementById('edit-daily')?.checked||false;
@@ -4977,6 +5019,14 @@ function openUserEdit(uid){
   const lp=document.getElementById('um-locs');
   const selLocs=D.ulocs.filter(ul=>ul.user_id===uid).map(ul=>ul.location_id);
   lp.innerHTML=D.locs.map(loc=>`<button class="pill${selLocs.includes(loc.id)?' on':''}" data-lid="${loc.id}" onclick="togLocPill(this)" style="font-size:12px;padding:6px 10px;border-radius:16px;border:1.5px solid ${loc.color||'var(--border)'};background:${selLocs.includes(loc.id)?(loc.color||'var(--caramel)'):'var(--white)'};color:${selLocs.includes(loc.id)?'#fff':'var(--text)'};cursor:pointer;-webkit-tap-highlight-color:transparent">${lnm(loc)}</button>`).join('');
+  // Show all days toggle (for worker/child)
+  const adw=document.getElementById('um-alldays-wrap');
+  const role=u?.role||'child';
+  adw.style.display=(role==='worker'||role==='child')?'block':'none';
+  document.getElementById('um-alldays').checked=!!u?.show_all_days;
+  document.getElementById('um-alldays-lbl').textContent=lg()==='pt'?'Mostrar todos os dias (não só dias de trabalho)':'Toon alle dagen (niet alleen werkdagen)';
+  // Listen for role change to toggle visibility
+  document.getElementById('um-role').onchange=function(){adw.style.display=(this.value==='worker'||this.value==='child')?'block':'none';};
   // Delete button only for existing non-self users
   const dw=document.getElementById('um-del-wrap');
   dw.style.display=(u&&u.id!==CU.id)?'block':'none';
@@ -5021,7 +5071,7 @@ async function saveUser(){
 
   if(uid){
     // Update existing user
-    const upd={name,role,language:lang,avatar,default_days:days};
+    const upd={name,role,language:lang,avatar,default_days:days,show_all_days:document.getElementById('um-alldays').checked};
     if(pin&&/^\d{4}$/.test(pin))upd.pin=pin;
     await sb.from('users').update(upd).eq('id',uid);
     // Sync user_locations: delete old, insert new
@@ -5034,7 +5084,7 @@ async function saveUser(){
   } else {
     // Create new user
     if(!pin||!/^\d{4}$/.test(pin)){alert('PIN moet 4 cijfers zijn');return;}
-    const{data,error}=await sb.from('users').insert({household_id:HID,name,pin,role,language:lang,avatar,default_days:days}).select();
+    const{data,error}=await sb.from('users').insert({household_id:HID,name,pin,role,language:lang,avatar,default_days:days,show_all_days:document.getElementById('um-alldays').checked}).select();
     if(error){alert('Fout: '+error.message);return;}
     const newId=data[0].id;
     if(locIds.length){
