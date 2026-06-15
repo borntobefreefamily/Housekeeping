@@ -1438,10 +1438,23 @@ function locCats(lid){const l=D.locs.find(x=>x.id===lid);return l?.categories||[
 
 function isPeriodicDue(task){
   const now=new Date();
-  // Start date: if set and in the future, task is not yet due
+  // Start date check
   if(task.start_date){
     const sd=new Date(task.start_date+'T00:00:00');
-    if(now<sd)return false;
+    const im=task.interval_months??1;
+    if(im===0||im===-1){
+      // Weekly/biweekly: due if start_date falls within or before current week (Sunday end)
+      const endOfWeek=new Date(now);
+      const dayOfWeek=endOfWeek.getDay();// 0=Sun
+      const daysToSunday=dayOfWeek===0?0:7-dayOfWeek;
+      endOfWeek.setDate(endOfWeek.getDate()+daysToSunday);
+      endOfWeek.setHours(23,59,59);
+      if(sd>endOfWeek)return false;
+    } else {
+      // Monthly: due if start_date is in or before current month
+      const endOfMonth=new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59);
+      if(sd>endOfMonth)return false;
+    }
   }
   const im=task.interval_months??1;
   const isWeekly=im===0;
@@ -2284,7 +2297,14 @@ function mTab(n){
   if(n==='plan')setPlanScope(planScope);
   if(n==='recipe'){renderRecSels();renderRcList();}
   if(n==='shop')renderShopping('m');
-  if(n==='taken'){renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();}
+  if(n==='taken'){
+    // Collapse all sections on entry
+    ['fixed-list-body','periodic-list-body','extra-list-body','pers-list-body','taken-form-body'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.classList.remove('open');
+      const chev=document.getElementById(id.replace('-body','-chev'));if(chev)chev.classList.remove('open');
+    });
+    renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();
+  }
   if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
