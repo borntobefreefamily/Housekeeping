@@ -3335,7 +3335,11 @@ async function addUnifiedTask(){
   } else if(newTaskType==='periodic'){
     const interval=parseInt(document.getElementById('nt-interval').value)??1;
     const startDate=document.getElementById('nt-startdate').value||null;
-    await sb.from('monthly_tasks').insert({household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat,points:pts,start_date:startDate});
+    const row={household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat,points:pts};
+    if(startDate)row.start_date=startDate;
+    let res=await sb.from('monthly_tasks').insert(row);
+    if(res.error&&startDate){delete row.start_date;res=await sb.from('monthly_tasks').insert(row);}
+    if(res.error){doFlash('nt-flash','❌ '+res.error.message);return;}
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
   } else if(newTaskType==='personal'){
     const userId=document.getElementById('nt-person').value;
@@ -4926,7 +4930,10 @@ async function saveEdit(){
     const cat=document.getElementById('edit-cat-p')?.value||'Algemeen';
     const selLocs=[...document.querySelectorAll('#edit-locs .cpill.on')].map(el=>el.id.replace('eloc-',''));
     const startDate=document.getElementById('edit-startdate').value||null;
-    await sb.from('monthly_tasks').update({text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat,points:parseInt(document.getElementById('edit-points').value)||0,start_date:startDate}).eq('id',id);
+    const upd={text_nl:nl,text_pt:pt||nl,interval_months:interval,location_ids:selLocs,location_id:selLocs[0]||null,category:cat,points:parseInt(document.getElementById('edit-points').value)||0};
+    if(startDate!==null)upd.start_date=startDate;
+    let res=await sb.from('monthly_tasks').update(upd).eq('id',id);
+    if(res.error&&'start_date' in upd){delete upd.start_date;res=await sb.from('monthly_tasks').update(upd).eq('id',id);}
   } else {
     // Fixed — multi-location sync based on text_nl matching
     const isDaily=document.getElementById('edit-daily')?.checked||false;
@@ -5071,9 +5078,12 @@ async function saveUser(){
 
   if(uid){
     // Update existing user
-    const upd={name,role,language:lang,avatar,default_days:days,show_all_days:document.getElementById('um-alldays').checked};
+    const upd={name,role,language:lang,avatar,default_days:days};
+    const allDays=document.getElementById('um-alldays').checked;
+    if(role==='worker'||role==='child')upd.show_all_days=allDays;
     if(pin&&/^\d{4}$/.test(pin))upd.pin=pin;
-    await sb.from('users').update(upd).eq('id',uid);
+    let ures=await sb.from('users').update(upd).eq('id',uid);
+    if(ures.error&&upd.show_all_days!==undefined){delete upd.show_all_days;await sb.from('users').update(upd).eq('id',uid);}
     // Sync user_locations: delete old, insert new
     await sb.from('user_locations').delete().eq('user_id',uid);
     if(locIds.length){
@@ -5084,7 +5094,10 @@ async function saveUser(){
   } else {
     // Create new user
     if(!pin||!/^\d{4}$/.test(pin)){alert('PIN moet 4 cijfers zijn');return;}
-    const{data,error}=await sb.from('users').insert({household_id:HID,name,pin,role,language:lang,avatar,default_days:days,show_all_days:document.getElementById('um-alldays').checked}).select();
+    const newRow={household_id:HID,name,pin,role,language:lang,avatar,default_days:days};
+    if(role==='worker'||role==='child')newRow.show_all_days=document.getElementById('um-alldays').checked;
+    let{data,error}=await sb.from('users').insert(newRow).select();
+    if(error&&newRow.show_all_days!==undefined){delete newRow.show_all_days;({data,error}=await sb.from('users').insert(newRow).select());}
     if(error){alert('Fout: '+error.message);return;}
     const newId=data[0].id;
     if(locIds.length){
