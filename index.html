@@ -314,9 +314,14 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 /* TAKEN TAB - locatie headers */
 .loc-section{margin-bottom:1rem}
 .loc-section-hdr{display:flex;align-items:center;gap:10px;padding:.6rem .9rem;border-radius:var(--rs) var(--rs) 0 0;margin-bottom:0}
+.loc-section .loc-section-hdr{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:var(--rs)}
+.loc-section .loc-section-hdr.open{border-radius:var(--rs) var(--rs) 0 0}
 .loc-section-hdr .loc-section-name{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:#fff;flex:1}
 .loc-section-hdr .loc-section-count{font-size:11px;color:rgba(255,255,255,.6)}
-.loc-section-body{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rs) var(--rs);padding:.5rem .875rem}
+.loc-section .loc-section-hdr::after{content:'▾';color:rgba(255,255,255,.5);font-size:12px;transition:transform .15s}
+.loc-section .loc-section-hdr.open::after{transform:rotate(180deg)}
+.loc-section-body{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rs) var(--rs);padding:.5rem .875rem;display:none}
+.loc-section-body.open{display:block}
 
 /* COLLAPSIBLE SECTION */
 .collapse-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:.5rem 0}
@@ -1119,6 +1124,17 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   document.addEventListener('focusin',function(e){if(e.target.matches('input,textarea,select'))_kbOpen=true;});
   document.addEventListener('focusout',function(e){if(e.target.matches('input,textarea,select')){_kbOpen=false;setTimeout(setVh,300);}});
 })();
+
+// Collapsible loc-section headers in task lists
+document.addEventListener('click',function(e){
+  const hdr=e.target.closest('.loc-section-hdr');
+  if(!hdr||!hdr.parentElement?.classList.contains('loc-section'))return;
+  const body=hdr.nextElementSibling;
+  if(body?.classList.contains('loc-section-body')){
+    body.classList.toggle('open');
+    hdr.classList.toggle('open',body.classList.contains('open'));
+  }
+});
 
 const SU='https://imojddlvfkpbistifqav.supabase.co';
 const SK='sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
