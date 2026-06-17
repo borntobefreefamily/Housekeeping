@@ -521,7 +521,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div><div class="hdr-name" id="m-name">Beheerder</div><div class="hdr-sub" id="m-sub"></div></div>
     </div>
     <div class="hdr-r">
-      <div class="lang-toggle"><button class="lang-btn" id="ml-nl" onclick="setSessionLang('nl')">🇳🇱</button><button class="lang-btn" id="ml-pt" onclick="setSessionLang('pt')">🇵🇹</button></div>
       <div class="weather-chip" id="m-weather">&#9728;</div>
       <button class="btn-notif" id="m-pts-btn" onclick="toggleKidsPointsPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">⭐</button>
       <button class="btn-notif" id="m-bell" onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">🔔<span class="notif-badge" id="m-notif-badge" style="display:none">0</span></button>
@@ -1633,7 +1632,7 @@ function setSessionLang(l){
   // Update all lang buttons
   document.getElementById('pin-nl')?.classList.toggle('active',l==='nl');
   document.getElementById('pin-pt')?.classList.toggle('active',l==='pt');
-  ['wl-nl','wl-pt','ml-nl','ml-pt'].forEach(id=>{
+  ['wl-nl','wl-pt'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.classList.toggle('on',id.endsWith(l));
   });
   // Update PIN screen
@@ -5406,6 +5405,7 @@ async function saveProfile(){
   const upd={name,language:lang};if(p)upd.pin=p;
   await sb.from('users').update(upd).eq('id',CU.id);
   await loadAll();CU=D.users.find(u=>u.id===CU.id);
+  setSessionLang(lang);
   document.getElementById('inst-pin').value='';document.getElementById('inst-pin2').value='';
   doFlash('inst-flash');renderManager();
 }
