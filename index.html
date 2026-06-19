@@ -530,10 +530,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
   <div class="tabs" id="mgr-tabs">
     <button class="tab on" id="t-week" onclick="mTab('week')"><span class="tab-ico">📆</span><span class="tab-lbl" id="tl-week">Week</span></button>
-    <button class="tab" id="t-plan" onclick="mTab('plan')"><span class="tab-ico">📌</span><span class="tab-lbl" id="tl-plan">Planning</span></button>
     <button class="tab" id="t-eten" onclick="mTab('eten')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="tl-eten">Eten</span></button>
     <button class="tab" id="t-taken" onclick="mTab('taken')"><span class="tab-ico">✅</span><span class="tab-lbl" id="tl-taken">Taken</span></button>
-    <button class="tab" id="t-inst" onclick="mTab('inst')"><span class="tab-ico">⚙️</span><span class="tab-lbl" id="tl-inst">Instellingen</span></button>
+    <button class="tab" id="t-inst" onclick="mTab('inst')"><span class="tab-ico">⚙️</span><span class="tab-lbl" id="tl-inst">Beheer</span></button>
   </div>
   <div class="tabs" id="rental-tabs" style="display:none">
     <button class="tab on" id="t-bookings" onclick="rTab('bookings')"><span class="tab-ico">📅</span><span class="tab-lbl" id="tl-bookings">Boekingen</span></button>
@@ -585,26 +584,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         </div>
       </div>
     </div>
-  </div>
-
-  <div id="mt-plan" class="scroll" style="display:none">
-    <div class="wk-nav" style="margin:-1rem -1rem 1rem -1rem;border-radius:0">
-      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
-      <div class="wk-lbl" id="p-wk-lbl"></div>
-      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
-    </div>
-    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
-      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
-      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
-    </div>
-    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
-      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
-        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
-      </select> extra weken
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
-    <div id="plan-grid"></div>
   </div>
 
   <div id="mt-eten" class="scroll" style="display:none">
@@ -759,6 +738,30 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 
   <div id="mt-inst" class="scroll" style="display:none">
+    <div class="collapse-hdr" onclick="togEl('plan-body','plan-chev')" style="margin-bottom:0">
+      <div class="sec-title" id="inst-plan-title" style="margin:0;border:none;padding:0">📌 Planning</div>
+      <span class="chev open" id="plan-chev">&#9662;</span>
+    </div>
+    <div class="day-body open" id="plan-body">
+    <div class="wk-nav" style="margin:0 0 1rem 0;border-radius:10px">
+      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
+      <div class="wk-lbl" id="p-wk-lbl"></div>
+      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
+    </div>
+    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
+      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
+      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
+    </div>
+    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
+      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
+        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
+      </select> extra weken
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
+    <div id="plan-grid"></div>
+    </div>
+
     <div class="sec-title" id="inst-prof-title">Mijn profiel</div>
     <div class="form-card">
       <label class="flbl" id="inst-lbl-name">Naam</label><input class="finput" type="text" id="inst-name">
@@ -1186,7 +1189,7 @@ const I={
     allRead:'Alles gelezen',
     persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
     // Tabs
-    tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabEten:'Eten',tabTasks:'Taken',tabSettings:'Instellingen',
+    tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabEten:'Eten',tabTasks:'Taken',tabSettings:'Instellingen',tabBeheer:'Beheer',
     // New task form
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
@@ -1314,7 +1317,7 @@ const I={
     allRead:'Tudo lido',
     persTasks:'Tarefas fixas por membro',addPersTask:'Adicionar tarefa pessoal',
     // Tabs
-    tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabEten:'Comida',tabTasks:'Tarefas',tabSettings:'Definições',
+    tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabEten:'Comida',tabTasks:'Tarefas',tabSettings:'Definições',tabBeheer:'Gestão',
     // New task form
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
@@ -1647,8 +1650,8 @@ function setSessionLang(l){
 
 function updateManagerLabels(){
   const m={
-    'tl-week':tr('tabWeek'),'tl-plan':tr('tabPlan'),'tl-eten':tr('tabEten'),
-    'tl-taken':tr('tabTasks'),'tl-inst':tr('tabSettings'),
+    'tl-week':tr('tabWeek'),'tl-eten':tr('tabEten'),
+    'tl-taken':tr('tabTasks'),'tl-inst':tr('tabBeheer'),
     'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
     'grp-overzicht-lbl':tr('grpOverview'),'grp-toevoegen-lbl':tr('grpAdd'),
@@ -2297,12 +2300,11 @@ function renderManager(){
 }
 
 function mTab(n){
-  ['week','plan','eten','taken','inst','bookings','locinfo','cleaning'].forEach(tab=>{
+  ['week','eten','taken','inst','bookings','locinfo','cleaning'].forEach(tab=>{
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?(tab==='week'?'flex':'block'):'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
   if(n==='week')renderMgrWeek();
-  if(n==='plan')setPlanScope(planScope);
   if(n==='eten'){renderRecSels();renderRcList();renderShopping('m');}
   if(n==='taken'){
     // Collapse all sections on entry
@@ -2312,7 +2314,7 @@ function mTab(n){
     });
     renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();
   }
-  if(n==='inst'){renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
+  if(n==='inst'){setPlanScope(planScope);renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
@@ -4168,7 +4170,7 @@ function switchMode(mode){
   document.getElementById('mgr-tabs').style.display=mode==='home'?'flex':'none';
   document.getElementById('rental-tabs').style.display=mode==='rental'?'flex':'none';
   // Hide all content panels
-  ['week','plan','eten','taken','inst','bookings','locinfo','cleaning'].forEach(t=>{
+  ['week','eten','taken','inst','bookings','locinfo','cleaning'].forEach(t=>{
     const el=document.getElementById('mt-'+t);if(el)el.style.display='none';
   });
   if(mode==='home')mTab('week');
