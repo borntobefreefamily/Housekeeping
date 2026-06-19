@@ -119,7 +119,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .day-hdr{padding:.65rem 1rem;background:var(--steam);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
 .day-name{font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--espresso)}
 .day-prog-txt{font-size:11px;color:var(--muted)}
-.chev{font-size:12px;color:var(--muted);transition:transform .2s;display:inline-block;margin-left:5px}
+.chev{font-size:18px;color:var(--muted);transition:transform .2s;display:inline-block;margin-left:5px}
 .chev.open{transform:rotate(180deg)}
 .day-body{padding:.75rem 1rem;display:none}
 .day-body.open{display:block}
@@ -230,7 +230,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 /* MERGED SHOPPING LIST */
 .shop-merged{margin-top:1rem;border:1px solid #c8e6d0;border-radius:var(--rs);overflow:hidden}
 .shop-merged-hdr{display:flex;align-items:center;gap:8px;padding:.6rem .7rem;background:#f0f7f4;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
-.shop-merged-hdr .chev{font-size:12px;color:var(--muted);transition:transform .2s}
+.shop-merged-hdr .chev{font-size:18px;color:var(--muted);transition:transform .2s}
 .shop-merged-hdr .chev.open{transform:rotate(180deg)}
 .shop-merged-title{font-size:14px;font-weight:600;color:#1a6b5a;flex:1;font-family:'Fraunces',serif}
 .shop-merged-body{padding:.3rem .7rem .5rem;background:var(--white)}
@@ -531,7 +531,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   <div class="tabs" id="mgr-tabs">
     <button class="tab on" id="t-week" onclick="mTab('week')"><span class="tab-ico">📆</span><span class="tab-lbl" id="tl-week">Week</span></button>
     <button class="tab" id="t-eten" onclick="mTab('eten')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="tl-eten">Eten</span></button>
-    <button class="tab" id="t-taken" onclick="mTab('taken')"><span class="tab-ico">✅</span><span class="tab-lbl" id="tl-taken">Taken</span></button>
     <button class="tab" id="t-inst" onclick="mTab('inst')"><span class="tab-ico">⚙️</span><span class="tab-lbl" id="tl-inst">Beheer</span></button>
   </div>
   <div class="tabs" id="rental-tabs" style="display:none">
@@ -611,9 +610,36 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
   </div>
 
-  <div id="mt-taken" class="scroll" style="display:none">
-    <!-- ═══ GROUP: OVERZICHT ═══ -->
-    <div class="group-hdr" id="grp-overzicht"><span>📋</span> <span id="grp-overzicht-lbl">Overzicht</span></div>
+  <div id="mt-inst" class="scroll" style="display:none">
+    <div class="collapse-hdr" onclick="togEl('plan-body','plan-chev')" style="margin-bottom:0">
+      <div class="sec-title" id="inst-plan-title" style="margin:0;border:none;padding:0">📌 Planning</div>
+      <span class="chev open" id="plan-chev">&#9662;</span>
+    </div>
+    <div class="day-body open" id="plan-body">
+    <div class="wk-nav" style="margin:0 0 1rem 0;border-radius:10px">
+      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
+      <div class="wk-lbl" id="p-wk-lbl"></div>
+      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
+    </div>
+    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
+      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
+      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
+    </div>
+    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
+      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
+        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
+      </select> extra weken
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
+    <div id="plan-grid"></div>
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('taken-mgr-body','taken-mgr-chev')" style="margin-bottom:0">
+      <div class="sec-title" style="margin:0;border:none;padding:0">📋 <span id="grp-overzicht-lbl">Taakbeheer</span></div>
+      <span class="chev" id="taken-mgr-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="taken-mgr-body">
 
     <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
       <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
@@ -647,10 +673,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="pers-list"></div>
     </div>
 
-    <!-- ═══ GROUP: TOEVOEGEN ═══ -->
-    <div class="group-hdr" id="grp-toevoegen"><span>➕</span> <span id="grp-toevoegen-lbl">Toevoegen</span></div>
-
-    <!-- Unified new task form -->
     <div class="collapse-hdr" onclick="togEl('taken-form-body','taken-form-chev')">
       <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
       <span class="chev" id="taken-form-chev">&#9662;</span>
@@ -671,19 +693,16 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <input class="finput" type="text" id="nt-pt" placeholder="">
         <label class="flbl" id="nt-lbl-loc">Locatie</label>
         <div class="pill-group" id="nt-locs"></div>
-        <!-- Daily task toggle (for fixed) -->
         <div id="nt-daily-wrap">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
             <input type="checkbox" id="nt-daily" onchange="togNtDaily()" style="width:16px;height:16px;accent-color:var(--caramel)">
             <span id="nt-daily-lbl" style="font-size:13px;color:var(--text)">Dagelijkse taak (verschijnt elke werkdag)</span>
           </label>
         </div>
-        <!-- Category (for fixed) -->
         <div id="nt-cat-wrap">
           <label class="flbl" id="nt-lbl-cat">Categorie</label>
           <select class="finput" id="nt-cat"><option value="Algemeen">Algemeen</option></select>
         </div>
-        <!-- Interval (for periodic) -->
         <div id="nt-interval-wrap" style="display:none">
           <label class="flbl" id="nt-lbl-interval">Interval</label>
           <select class="finput" id="nt-interval">
@@ -696,7 +715,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
           <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
           <input type="date" class="finput" id="nt-startdate">
         </div>
-        <!-- Extra fields (for extra) -->
         <div id="nt-extra-wrap" style="display:none">
           <label class="flbl" id="nt-lbl-days">Dagen</label>
           <div class="pill-group" id="nt-days"></div>
@@ -717,7 +735,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
             <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
           </select>
         </div>
-        <!-- Personal fields (for personal) -->
         <div id="nt-pers-wrap" style="display:none">
           <label class="flbl" id="nt-lbl-person">Gezinslid</label>
           <select class="finput" id="nt-person" onchange="setTaskType('personal')"></select>
@@ -735,31 +752,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
     </div>
 
-  </div>
-
-  <div id="mt-inst" class="scroll" style="display:none">
-    <div class="collapse-hdr" onclick="togEl('plan-body','plan-chev')" style="margin-bottom:0">
-      <div class="sec-title" id="inst-plan-title" style="margin:0;border:none;padding:0">📌 Planning</div>
-      <span class="chev open" id="plan-chev">&#9662;</span>
-    </div>
-    <div class="day-body open" id="plan-body">
-    <div class="wk-nav" style="margin:0 0 1rem 0;border-radius:10px">
-      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
-      <div class="wk-lbl" id="p-wk-lbl"></div>
-      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
-    </div>
-    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
-      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
-      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
-    </div>
-    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
-      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
-        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
-      </select> extra weken
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
-    <div id="plan-grid"></div>
     </div>
 
     <div class="sec-title" id="inst-prof-title">Mijn profiel</div>
@@ -1651,7 +1643,7 @@ function setSessionLang(l){
 function updateManagerLabels(){
   const m={
     'tl-week':tr('tabWeek'),'tl-eten':tr('tabEten'),
-    'tl-taken':tr('tabTasks'),'tl-inst':tr('tabBeheer'),
+    'tl-inst':tr('tabBeheer'),
     'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
     'grp-overzicht-lbl':tr('grpOverview'),'grp-toevoegen-lbl':tr('grpAdd'),
@@ -2300,21 +2292,13 @@ function renderManager(){
 }
 
 function mTab(n){
-  ['week','eten','taken','inst','bookings','locinfo','cleaning'].forEach(tab=>{
+  ['week','eten','inst','bookings','locinfo','cleaning'].forEach(tab=>{
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?(tab==='week'?'flex':'block'):'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
   if(n==='week')renderMgrWeek();
   if(n==='eten'){renderRecSels();renderRcList();renderShopping('m');}
-  if(n==='taken'){
-    // Collapse all sections on entry
-    ['fixed-list-body','periodic-list-body','extra-list-body','pers-list-body','taken-form-body'].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.classList.remove('open');
-      const chev=document.getElementById(id.replace('-body','-chev'));if(chev)chev.classList.remove('open');
-    });
-    renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();
-  }
-  if(n==='inst'){setPlanScope(planScope);renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
+  if(n==='inst'){setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
@@ -4170,7 +4154,7 @@ function switchMode(mode){
   document.getElementById('mgr-tabs').style.display=mode==='home'?'flex':'none';
   document.getElementById('rental-tabs').style.display=mode==='rental'?'flex':'none';
   // Hide all content panels
-  ['week','eten','taken','inst','bookings','locinfo','cleaning'].forEach(t=>{
+  ['week','eten','inst','bookings','locinfo','cleaning'].forEach(t=>{
     const el=document.getElementById('mt-'+t);if(el)el.style.display='none';
   });
   if(mode==='home')mTab('week');
