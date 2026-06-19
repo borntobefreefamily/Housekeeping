@@ -137,7 +137,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .loc-hdr-bar{padding:.5rem .875rem;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
 .loc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .loc-name-txt{font-size:13px;font-weight:600;color:var(--espresso);flex:1}
-.loc-task-count{font-size:10px;color:var(--muted)}
+.loc-task-count{font-size:12px;color:var(--espresso);font-weight:600}
 .loc-body{padding:.5rem .875rem .75rem;border-top:1px solid var(--border);display:none}
 .loc-body.open{display:block}
 
@@ -777,7 +777,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
       <div id="wd-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title" id="inst-gcat-title">Categorieën</div>
+    <div class="collapse-hdr" onclick="togEl('gcat-body','gcat-chev')" style="margin-bottom:0">
+      <div class="sec-title" id="inst-gcat-title" style="margin:0;border:none;padding:0">Categorieën</div>
+      <span class="chev" id="gcat-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="gcat-body">
     <div class="form-card">
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="inst-gcat-hint">Globale lijst voor alle locaties</div>
       <div id="gcat-list"></div>
@@ -787,7 +791,12 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
       <div id="gcat-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title" id="inst-loc-title">Locaties</div>
+    </div>
+    <div class="collapse-hdr" onclick="togEl('loc-body','loc-chev')" style="margin-bottom:0">
+      <div class="sec-title" id="inst-loc-title" style="margin:0;border:none;padding:0">Locaties</div>
+      <span class="chev" id="loc-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="loc-body">
     <div class="form-card">
       <div id="loc-list"></div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
@@ -796,6 +805,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <button class="btn-sm" onclick="addLoc()">+</button>
       </div>
       <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    </div>
     </div>
     <div class="sec-title" id="inst-pts-title">⭐ Puntensysteem</div>
     <div class="form-card">
@@ -1218,7 +1228,7 @@ const I={
     shopNl:'Artikel (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Hoeveelheid',shopQtyPlaceholder:'bijv. 500g, 2 stuks',
     shopAutoHint:'↳ Portugese vertaling automatisch',
     shopRecipe:'Recept (optioneel)',shopGeneral:'— Algemeen —',shopAdd:'+ Toevoegen',
-    shopNoItems:'Geen boodschappen gepland.',shopGeneralTitle:'Overige boodschappen',
+    shopNoItems:'Geen boodschappen gepland.',shopGeneralTitle:'Overige boodschappen',noRecipe:'Geen recept',
     shopBought:'gekocht',shopOf:'van',shopAll:'Alles gekocht! ✓',
     shopReminder:'🛒 Boodschappen!',shopReminderLong:'Boodschappen nodig over 2 dagen',
     shopOverig:'Overig',shopFilterFor:'Filter:',shopFilterClear:'Toon alles',shopSaved:'✓ Opgeslagen',
@@ -1345,7 +1355,7 @@ const I={
     shopNl:'Artigo (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Quantidade',shopQtyPlaceholder:'ex. 500g, 2 unidades',
     shopAutoHint:'↳ Tradução portuguesa automática',
     shopRecipe:'Receita (opcional)',shopGeneral:'— Geral —',shopAdd:'+ Adicionar',
-    shopNoItems:'Sem compras planeadas.',shopGeneralTitle:'Outras compras',
+    shopNoItems:'Sem compras planeadas.',shopGeneralTitle:'Outras compras',noRecipe:'Sem receita',
     shopBought:'comprados',shopOf:'de',shopAll:'Tudo comprado! ✓',
     shopReminder:'🛒 Compras!',shopReminderLong:'Compras necessárias em 2 dias',
     shopOverig:'Outros',shopFilterFor:'Filtro:',shopFilterClear:'Mostrar tudo',shopSaved:'✓ Guardado',
@@ -3883,11 +3893,15 @@ function renderShopList(prefix,wk){
   html+=`</div>`;
 
   // Inline add row at bottom
-  html+=`<div class="shop-add-row" style="margin-top:6px">`;
+  html+=`<div style="margin-top:6px">`;
+  html+=`<div class="shop-add-row">`;
   html+=`<input type="text" id="shop-inline-add-${prefix}" placeholder="${tr('shopItem')}..." style="flex:1">`;
   html+=`<input type="text" id="shop-inline-qty-${prefix}" placeholder="${tr('shopQty')}" style="width:55px">`;
-  html+=`<select id="shop-inline-rec-${prefix}" style="max-width:120px">`;
-  html+=`<option value="">🛒</option>`;
+  html+=`</div>`;
+  html+=`<div class="shop-add-row" style="margin-top:4px">`;
+  html+=`<select id="shop-inline-cat-${prefix}" style="flex:1">${catOptions('overig')}</select>`;
+  html+=`<select id="shop-inline-rec-${prefix}" style="flex:1">`;
+  html+=`<option value="">🛒 ${tr('noRecipe')}</option>`;
   for(let i=0;i<4;i++){
     const w=wkey(wOff+i);
     const wRecs=D.recipes.filter(r=>r.week_key===w);
@@ -3899,7 +3913,7 @@ function renderShopList(prefix,wk){
   }
   html+=`</select>`;
   html+=`<button onclick="addShopFlat('${prefix}')" class="shop-add-btn">+</button>`;
-  html+=`</div>`;
+  html+=`</div></div>`;
 
   // Merged shopping list by category (collapsible)
   html+=renderMergedShopList(allItems);
@@ -4050,13 +4064,15 @@ async function addShopFlat(prefix){
   const nameEl=document.getElementById('shop-inline-add-'+prefix);
   const qtyEl=document.getElementById('shop-inline-qty-'+prefix);
   const recEl=document.getElementById('shop-inline-rec-'+prefix);
+  const catEl=document.getElementById('shop-inline-cat-'+prefix);
   const name=nameEl?.value?.trim();
   if(!name)return;
   const qty=qtyEl?.value?.trim()||null;
   const recipeId=recEl?.value||null;
+  const category=catEl?.value||'overig';
   let wk=getShopWeekKey();
   if(recipeId){const r=D.recipes.find(x=>x.id===recipeId);if(r)wk=r.week_key;}
-  const{data}=await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId,week_key:wk,name,quantity:qty,created_by:CU.id}).select();
+  const{data}=await sb.from('shopping_items').insert({household_id:HID,recipe_id:recipeId,week_key:wk,name,quantity:qty,category,created_by:CU.id}).select();
   await loadAll();
   rerenderShop();
   if(data?.[0]?.id)autoTranslateShopItem(data[0].id,name);
