@@ -459,7 +459,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
     <div class="hdr-r">
       <div class="lang-toggle"><button class="lang-btn" id="wl-nl" onclick="setSessionLang('nl')">🇳🇱</button><button class="lang-btn" id="wl-pt" onclick="setSessionLang('pt')">🇵🇹</button></div>
-      <div class="weather-chip" id="w-weather">&#9728;</div>
       <button onclick="toggleNotifPanel()" style="position:relative;background:none;border:none;font-size:18px;cursor:pointer;padding:4px 6px;-webkit-tap-highlight-color:transparent">🔔<span class="notif-badge" id="w-notif-badge" style="display:none">0</span></button>
       <button class="btn-out" onclick="logout()">&#8617;</button>
     </div>
@@ -467,8 +466,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   <div class="tabs">
     <button class="tab on" id="wt-week" onclick="wTab('week')"><span class="tab-ico">📆</span><span class="tab-lbl" id="wtl-week">Mijn week</span></button>
     <button class="tab" id="wt-log" onclick="wTab('log')"><span class="tab-ico">📝</span><span class="tab-lbl" id="wt-log-lbl">Wijzigingen</span><span class="notif-dot" id="log-dot"></span></button>
-    <button class="tab" id="wt-recipe" onclick="wTab('recipe')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="wtl-recipe">Recepten</span></button>
-    <button class="tab" id="wt-shop" onclick="wTab('shop')"><span class="tab-ico">🛒</span><span class="tab-lbl" id="wtl-shop">Winkel</span></button>
+    <button class="tab" id="wt-eten" onclick="wTab('eten')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="wtl-eten">Eten</span></button>
     <button class="tab" id="wt-points" onclick="wTab('points')" style="display:none"><span class="tab-ico">⭐</span><span class="tab-lbl">Punten</span></button>
   </div>
   <div id="wmt-week" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
@@ -484,8 +482,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div class="sec-title" id="log-title"></div>
     <div id="w-log-list"></div>
   </div>
-  <div id="wmt-recipe" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+  <div id="wmt-eten" style="display:none;flex-direction:column;flex:1;overflow:hidden">
     <div class="scroll">
+      <div id="wmt-recipe">
       <div class="sec-title" id="w-recipe-title"></div>
       <div class="form-card" id="w-recipe-form">
         <label class="flbl" id="w-rc-lbl1"></label><input class="finput" type="text" id="w-rc-name" placeholder="">
@@ -497,13 +496,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
         <button class="save-btn" onclick="addRecipeWorker()"><span id="w-rc-btn"></span></button>
       </div>
       <div id="w-rc-list"></div>
-    </div>
-  </div>
-  <div id="wmt-shop" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div class="scroll">
+      </div>
+
+      <div style="border-top:1.5px solid var(--border);margin:1rem 0"></div>
+
+      <div id="wmt-shop">
       <div class="sec-title" id="w-shop-title">Boodschappenlijst</div>
       <div id="w-shop-summary"></div>
       <div id="w-shop-list"></div>
+      </div>
     </div>
   </div>
   <div id="wmt-points" style="display:none;flex-direction:column;flex:1;overflow:hidden">
@@ -1778,18 +1779,16 @@ function closeJump(){document.getElementById('jump-modal').classList.remove('ope
 
 // WORKER TABS
 function wTab(n){
-  ['week','log','recipe','shop','points'].forEach(tab=>{
-    const el=document.getElementById('wmt-'+tab);if(el)el.style.display=tab===n?(tab==='week'||tab==='recipe'||tab==='shop'||tab==='points'?'flex':'block'):'none';
+  ['week','log','eten','points'].forEach(tab=>{
+    const el=document.getElementById('wmt-'+tab);if(el)el.style.display=tab===n?(tab==='week'||tab==='eten'||tab==='points'?'flex':'block'):'none';
     document.getElementById('wt-'+tab)?.classList.toggle('on',tab===n);
   });
   const wt=document.getElementById('wtl-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
-  const rt=document.getElementById('wtl-recipe');if(rt)rt.textContent=tr('recipes');
-  const st=document.getElementById('wtl-shop');if(st)st.textContent=tr('tabShopping');
+  const et=document.getElementById('wtl-eten');if(et)et.textContent=tr('tabEten');
   const ltt=document.getElementById('log-title');if(ltt)ltt.textContent=tr('recentChanges');
   if(n==='log')renderLog();
-  if(n==='recipe')renderWorkerRecipes();
-  if(n==='shop')renderShopping('w');
+  if(n==='eten'){renderWorkerRecipes();renderShopping('w');}
   if(n==='points')renderPointsTab();
   updWkLbls();
 }
@@ -2165,8 +2164,7 @@ function renderWorker(){
   document.getElementById('w-sub').textContent=tr(CU.role);
   const wt=document.getElementById('wtl-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
-  const rt=document.getElementById('wtl-recipe');if(rt)rt.textContent=tr('recipes');
-  const st=document.getElementById('wtl-shop');if(st)st.textContent=tr('tabShopping');
+  const rt=document.getElementById('wtl-eten');if(rt)rt.textContent=tr('tabEten');
   const pt=document.getElementById('wt-points');if(pt)pt.style.display=CU?.role==='child'?'':'none';
   updWkLbls();
   ensureWeekSched(wOff).then(()=>{
@@ -4058,8 +4056,8 @@ function filterShopByRecipe(recipeId){
 function rerenderShop(){
   const mEten=document.getElementById('mt-eten');
   if(mEten&&mEten.style.display!=='none')renderShopping('m');
-  const wShop=document.getElementById('wmt-shop');
-  if(wShop&&wShop.style.display!=='none')renderShopping('w');
+  const wEten=document.getElementById('wmt-eten');
+  if(wEten&&wEten.style.display!=='none')renderShopping('w');
 }
 
 async function addShopFlat(prefix){
@@ -4158,7 +4156,7 @@ function shopReminderBadge(wk,di){
 
 function goShopTab(){
   if(isMgr())mTab('eten');
-  else wTab('shop');
+  else wTab('eten');
 }
 
 // ═══════════════ VERHUUR — BOEKINGEN ═══════════════
