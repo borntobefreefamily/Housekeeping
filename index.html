@@ -531,8 +531,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   <div class="tabs" id="mgr-tabs">
     <button class="tab on" id="t-week" onclick="mTab('week')"><span class="tab-ico">📆</span><span class="tab-lbl" id="tl-week">Week</span></button>
     <button class="tab" id="t-plan" onclick="mTab('plan')"><span class="tab-ico">📌</span><span class="tab-lbl" id="tl-plan">Planning</span></button>
-    <button class="tab" id="t-recipe" onclick="mTab('recipe')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="tl-recipe">Recepten</span></button>
-    <button class="tab" id="t-shop" onclick="mTab('shop')"><span class="tab-ico">🛒</span><span class="tab-lbl" id="tl-shop">Winkel</span></button>
+    <button class="tab" id="t-eten" onclick="mTab('eten')"><span class="tab-ico">🍽️</span><span class="tab-lbl" id="tl-eten">Eten</span></button>
     <button class="tab" id="t-taken" onclick="mTab('taken')"><span class="tab-ico">✅</span><span class="tab-lbl" id="tl-taken">Taken</span></button>
     <button class="tab" id="t-inst" onclick="mTab('inst')"><span class="tab-ico">⚙️</span><span class="tab-lbl" id="tl-inst">Instellingen</span></button>
   </div>
@@ -608,7 +607,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="plan-grid"></div>
   </div>
 
-  <div id="mt-recipe" class="scroll" style="display:none">
+  <div id="mt-eten" class="scroll" style="display:none">
+    <div id="mt-recipe">
     <div class="sec-title" id="rc-sec-title">Recept toevoegen</div>
     <div class="form-card">
       <label class="flbl" id="rc-lbl-dish"></label><input class="finput" type="text" id="rc-name" placeholder="">
@@ -621,12 +621,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="save-btn" onclick="addRecipe()" id="rc-add-btn">+ Toevoegen</button>
     </div>
     <div id="rc-list"></div>
-  </div>
+    </div>
 
-  <div id="mt-shop" class="scroll" style="display:none">
+    <div style="border-top:1.5px solid var(--border);margin:1rem 0"></div>
+
+    <div id="mt-shop">
     <div class="sec-title" id="m-shop-title">Boodschappenlijst</div>
     <div id="m-shop-summary"></div>
     <div id="m-shop-list"></div>
+    </div>
   </div>
 
   <div id="mt-taken" class="scroll" style="display:none">
@@ -1183,7 +1186,7 @@ const I={
     allRead:'Alles gelezen',
     persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
     // Tabs
-    tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabTasks:'Taken',tabSettings:'Instellingen',
+    tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabEten:'Eten',tabTasks:'Taken',tabSettings:'Instellingen',
     // New task form
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
@@ -1311,7 +1314,7 @@ const I={
     allRead:'Tudo lido',
     persTasks:'Tarefas fixas por membro',addPersTask:'Adicionar tarefa pessoal',
     // Tabs
-    tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabTasks:'Tarefas',tabSettings:'Definições',
+    tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabEten:'Comida',tabTasks:'Tarefas',tabSettings:'Definições',
     // New task form
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
@@ -1644,8 +1647,7 @@ function setSessionLang(l){
 
 function updateManagerLabels(){
   const m={
-    'tl-week':tr('tabWeek'),'tl-plan':tr('tabPlan'),'tl-recipe':tr('tabRecipes'),
-    'tl-shop':tr('tabShopping'),
+    'tl-week':tr('tabWeek'),'tl-plan':tr('tabPlan'),'tl-eten':tr('tabEten'),
     'tl-taken':tr('tabTasks'),'tl-inst':tr('tabSettings'),
     'new-task-title':tr('newTask'),'fixed-sec-title':tr('fixedTasks'),
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
@@ -2298,14 +2300,13 @@ function renderManager(){
 }
 
 function mTab(n){
-  ['week','plan','recipe','shop','taken','inst','bookings','locinfo','cleaning'].forEach(tab=>{
+  ['week','plan','eten','taken','inst','bookings','locinfo','cleaning'].forEach(tab=>{
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?(tab==='week'?'flex':'block'):'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
   if(n==='week')renderMgrWeek();
   if(n==='plan')setPlanScope(planScope);
-  if(n==='recipe'){renderRecSels();renderRcList();}
-  if(n==='shop')renderShopping('m');
+  if(n==='eten'){renderRecSels();renderRcList();renderShopping('m');}
   if(n==='taken'){
     // Collapse all sections on entry
     ['fixed-list-body','periodic-list-body','extra-list-body','pers-list-body','taken-form-body'].forEach(id=>{
@@ -4056,8 +4057,8 @@ function filterShopByRecipe(recipeId){
 }
 
 function rerenderShop(){
-  const mShop=document.getElementById('mt-shop');
-  if(mShop&&mShop.style.display!=='none')renderShopping('m');
+  const mEten=document.getElementById('mt-eten');
+  if(mEten&&mEten.style.display!=='none')renderShopping('m');
   const wShop=document.getElementById('wmt-shop');
   if(wShop&&wShop.style.display!=='none')renderShopping('w');
 }
@@ -4157,7 +4158,7 @@ function shopReminderBadge(wk,di){
 }
 
 function goShopTab(){
-  if(isMgr())mTab('shop');
+  if(isMgr())mTab('eten');
   else wTab('shop');
 }
 
@@ -4170,7 +4171,7 @@ function switchMode(mode){
   document.getElementById('mgr-tabs').style.display=mode==='home'?'flex':'none';
   document.getElementById('rental-tabs').style.display=mode==='rental'?'flex':'none';
   // Hide all content panels
-  ['week','plan','recipe','shop','taken','inst','bookings','locinfo','cleaning'].forEach(t=>{
+  ['week','plan','eten','taken','inst','bookings','locinfo','cleaning'].forEach(t=>{
     const el=document.getElementById('mt-'+t);if(el)el.style.display='none';
   });
   if(mode==='home')mTab('week');
