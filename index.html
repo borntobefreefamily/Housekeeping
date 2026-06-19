@@ -1214,7 +1214,7 @@ const I={
     // Planning
     planHint:'Vink per dag aan welke locaties Diana schoonmaakt.',workday:'werkdag',
     // Recipes
-    addRecipeTitle:'Recept toevoegen',plannedRecipes:'Geplande recepten',noRecipes:'Geen recepten gepland.',
+    addRecipeTitle:'Recept toevoegen',plannedRecipes:'Geplande recepten',noRecipes:'Geen recepten gepland.',pastRecipes:'Eerder',
     // Shopping
     tabShopping:'Winkel',shopTitle:'Boodschappenlijst',shopItem:'Artikel',shopQty:'Hoev.',
     shopNl:'Artikel (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Hoeveelheid',shopQtyPlaceholder:'bijv. 500g, 2 stuks',
@@ -1341,7 +1341,7 @@ const I={
     // Planning
     planHint:'Marque por dia quais os locais que a Diana limpa.',workday:'dia de trabalho',
     // Recipes
-    addRecipeTitle:'Adicionar receita',plannedRecipes:'Receitas planeadas',noRecipes:'Sem receitas planeadas.',
+    addRecipeTitle:'Adicionar receita',plannedRecipes:'Receitas planeadas',noRecipes:'Sem receitas planeadas.',pastRecipes:'Anteriores',
     // Shopping
     tabShopping:'Compras',shopTitle:'Lista de compras',shopItem:'Artigo',shopQty:'Qtd.',
     shopNl:'Artigo (NL)',shopPt:'Artigo (PT)',shopQtyLbl:'Quantidade',shopQtyPlaceholder:'ex. 500g, 2 unidades',
@@ -3794,15 +3794,27 @@ function renderRcList(){
     return a.day_index-b.day_index;
   });
   const byWk={};sorted.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
-  let html='';
-  Object.keys(byWk).sort().forEach(w=>{
+  const curWk=wkey(0);
+  const pastWks=Object.keys(byWk).filter(w=>w<curWk).sort();
+  const curWks=Object.keys(byWk).filter(w=>w>=curWk).sort();
+
+  function renderWeekGroup(w){
     const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
     const mon=new Date(w+'T12:00:00');
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
-    html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?`<span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px;margin-left:4px">${cook.avatar||''} ${cook.name}</span>`:'';const ingrCount=D.recipeIngr.filter(i=>i.recipe_id===r.id).length;const ingrBadge=ingrCount?`<span style="font-size:10px;color:#1a6b5a;background:#e8f5e9;padding:1px 5px;border-radius:8px;margin-left:4px">${ingrCount} ✓</span>`:'';return `<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}${cookLbl}${ingrBadge}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openIngrFromList('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px" title="${tr('ingrTitle')}">&#128203;</button><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`;}).join('');
-  });
+    let h=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
+    h+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?`<span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px;margin-left:4px">${cook.avatar||''} ${cook.name}</span>`:'';const ingrCount=D.recipeIngr.filter(i=>i.recipe_id===r.id).length;const ingrBadge=ingrCount?`<span style="font-size:10px;color:#1a6b5a;background:#e8f5e9;padding:1px 5px;border-radius:8px;margin-left:4px">${ingrCount} ✓</span>`:'';return `<div class="task-row" style="margin-bottom:4px"><span style="color:var(--caramel)">${r.url?'&#8599;':'\u25A1'}</span><div style="flex:1"><div class="task-txt">${r.name}${cookLbl}${ingrBadge}</div><div style="font-size:11px;color:var(--muted)">${dayArr()[r.day_index]}</div></div><button onclick="openIngrFromList('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px" title="${tr('ingrTitle')}">&#128203;</button><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px">&#9998;</button><button onclick="delRecipe('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button></div>`;}).join('');
+    return h;
+  }
+
+  let html='';
+  curWks.forEach(w=>{html+=renderWeekGroup(w);});
+  if(pastWks.length){
+    html+=`<div class="loc-section" style="margin-top:1rem"><div class="loc-section-hdr" style="background:var(--steam);color:var(--muted);font-size:13px;padding:8px 12px;cursor:pointer" onclick="this.parentElement.classList.toggle('open')">${tr('pastRecipes')} (${pastWks.reduce((n,w)=>n+byWk[w].length,0)})</div><div class="loc-section-body">`;
+    pastWks.forEach(w=>{html+=renderWeekGroup(w);});
+    html+=`</div></div>`;
+  }
   el.innerHTML=html;
 }
 
