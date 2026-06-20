@@ -65,6 +65,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .tab-ico{font-size:16px;line-height:1}.tab-lbl{font-size:9px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tab.on{color:var(--caramel);border-bottom-color:var(--caramel)}
 .mode-bar{display:flex;border:1px solid var(--border);border-radius:100px;overflow:hidden}
+.fab{position:fixed;bottom:70px;right:16px;width:52px;height:52px;border-radius:50%;background:var(--caramel);color:#fff;border:none;font-size:26px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;z-index:90;display:none;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.fab:active{transform:scale(.9)}
 .mode-btn{padding:4px 9px;font-size:13px;cursor:pointer;background:none;border:none;transition:all .15s;-webkit-tap-highlight-color:transparent;line-height:1}
 .mode-btn.on{background:var(--espresso);color:var(--cream)}
 .bk-card{background:var(--white);border-radius:12px;padding:12px;margin-bottom:8px;border:1px solid var(--border);position:relative}
@@ -673,85 +675,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="pers-list"></div>
     </div>
 
-    <div class="collapse-hdr" onclick="togEl('taken-form-body','taken-form-chev')">
-      <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
-      <span class="chev" id="taken-form-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="taken-form-body">
-      <div class="form-card" style="margin-top:6px">
-        <label class="flbl" id="nt-lbl-type">Type</label>
-        <div class="type-pills">
-          <button class="type-pill on" id="nt-type-fixed" onclick="setTaskType('fixed')">Vast</button>
-          <button class="type-pill" id="nt-type-periodic" onclick="setTaskType('periodic')">Periodiek</button>
-          <button class="type-pill" id="nt-type-extra" onclick="setTaskType('extra')">Extra</button>
-          <button class="type-pill" id="nt-type-personal" onclick="setTaskType('personal')">Persoonlijk</button>
-        </div>
-        <label class="flbl" id="nt-lbl-nl">Omschrijving (NL)</label>
-        <input class="finput" type="text" id="nt-nl" placeholder="" onblur="autoTr('nt-nl','nt-pt')">
-        <div class="fhint" id="nt-auto-hint">&#8627; Portugese vertaling automatisch</div>
-        <label class="flbl" id="nt-lbl-pt">Descrição (PT)</label>
-        <input class="finput" type="text" id="nt-pt" placeholder="">
-        <label class="flbl" id="nt-lbl-loc">Locatie</label>
-        <div class="pill-group" id="nt-locs"></div>
-        <div id="nt-daily-wrap">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
-            <input type="checkbox" id="nt-daily" onchange="togNtDaily()" style="width:16px;height:16px;accent-color:var(--caramel)">
-            <span id="nt-daily-lbl" style="font-size:13px;color:var(--text)">Dagelijkse taak (verschijnt elke werkdag)</span>
-          </label>
-        </div>
-        <div id="nt-cat-wrap">
-          <label class="flbl" id="nt-lbl-cat">Categorie</label>
-          <select class="finput" id="nt-cat"><option value="Algemeen">Algemeen</option></select>
-        </div>
-        <div id="nt-interval-wrap" style="display:none">
-          <label class="flbl" id="nt-lbl-interval">Interval</label>
-          <select class="finput" id="nt-interval">
-            <option value="0">Elke week</option>
-            <option value="-1">2-wekelijks</option>
-            <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
-            <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
-            <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
-          </select>
-          <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
-          <input type="date" class="finput" id="nt-startdate">
-        </div>
-        <div id="nt-extra-wrap" style="display:none">
-          <label class="flbl" id="nt-lbl-days">Dagen</label>
-          <div class="pill-group" id="nt-days"></div>
-          <label class="flbl" id="nt-lbl-rep">Herhaling</label>
-          <select class="finput" id="nt-rep" onchange="togNtRep()">
-            <option value="once">Eenmalig</option>
-            <option value="daily">Dagelijks</option>
-            <option value="weekly">Wekelijks</option>
-            <option value="monthly">Maandelijks (elke 4 weken)</option>
-            <option value="infinite">Oneindig</option>
-            <option value="weeks">Aantal weken</option>
-            <option value="until">Tot datum</option>
-          </select>
-          <div id="nt-rep-wks" style="display:none"><label class="flbl" id="nt-lbl-nwks">Aantal weken</label><input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2"></div>
-          <div id="nt-rep-until" style="display:none"><label class="flbl" id="nt-lbl-until">Tot en met</label><input class="finput" type="date" id="nt-until"></div>
-          <label class="flbl" id="nt-lbl-start">Startweek</label>
-          <select class="finput" id="nt-wk">
-            <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
-          </select>
-        </div>
-        <div id="nt-pers-wrap" style="display:none">
-          <label class="flbl" id="nt-lbl-person">Gezinslid</label>
-          <select class="finput" id="nt-person" onchange="setTaskType('personal')"></select>
-          <label class="flbl" id="nt-lbl-day">Dag</label>
-          <select class="finput" id="nt-day"></select>
-          <label class="flbl" id="nt-lbl-optloc">Locatie (optioneel)</label>
-          <select class="finput" id="nt-optloc"><option value="">— geen —</option></select>
-        </div>
-        <div id="nt-points-wrap" style="display:none">
-        <label class="flbl" id="nt-lbl-points">Punten</label>
-        <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
-        </div>
-        <button class="save-btn" onclick="addUnifiedTask()" id="nt-add-btn">+ Toevoegen</button>
-        <div id="nt-flash" class="flash" style="opacity:0"></div>
-      </div>
-    </div>
-
     </div>
 
     <div class="sec-title" id="inst-prof-title">Mijn profiel</div>
@@ -841,6 +764,89 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 </div>
 
 <!-- BOOKING MODAL -->
+<!-- FAB: New task button -->
+<button class="fab" id="fab-add" onclick="openTaskModal()">+</button>
+
+<!-- Task form modal -->
+<div class="modal-bg" id="task-add-modal" onclick="if(event.target===this)closeTaskModal()">
+  <div class="modal" style="max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
+      <button onclick="closeTaskModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px 8px">✕</button>
+    </div>
+    <label class="flbl" id="nt-lbl-type">Type</label>
+    <div class="type-pills">
+      <button class="type-pill on" id="nt-type-fixed" onclick="setTaskType('fixed')">Vast</button>
+      <button class="type-pill" id="nt-type-periodic" onclick="setTaskType('periodic')">Periodiek</button>
+      <button class="type-pill" id="nt-type-extra" onclick="setTaskType('extra')">Extra</button>
+      <button class="type-pill" id="nt-type-personal" onclick="setTaskType('personal')">Persoonlijk</button>
+    </div>
+    <label class="flbl" id="nt-lbl-nl">Omschrijving (NL)</label>
+    <input class="finput" type="text" id="nt-nl" placeholder="" onblur="autoTr('nt-nl','nt-pt')">
+    <div class="fhint" id="nt-auto-hint">&#8627; Portugese vertaling automatisch</div>
+    <label class="flbl" id="nt-lbl-pt">Descrição (PT)</label>
+    <input class="finput" type="text" id="nt-pt" placeholder="">
+    <label class="flbl" id="nt-lbl-loc">Locatie</label>
+    <div class="pill-group" id="nt-locs"></div>
+    <div id="nt-daily-wrap">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
+        <input type="checkbox" id="nt-daily" onchange="togNtDaily()" style="width:16px;height:16px;accent-color:var(--caramel)">
+        <span id="nt-daily-lbl" style="font-size:13px;color:var(--text)">Dagelijkse taak (verschijnt elke werkdag)</span>
+      </label>
+    </div>
+    <div id="nt-cat-wrap">
+      <label class="flbl" id="nt-lbl-cat">Categorie</label>
+      <select class="finput" id="nt-cat"><option value="Algemeen">Algemeen</option></select>
+    </div>
+    <div id="nt-interval-wrap" style="display:none">
+      <label class="flbl" id="nt-lbl-interval">Interval</label>
+      <select class="finput" id="nt-interval">
+        <option value="0">Elke week</option>
+        <option value="-1">2-wekelijks</option>
+        <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
+        <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
+        <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
+      </select>
+      <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
+      <input type="date" class="finput" id="nt-startdate">
+    </div>
+    <div id="nt-extra-wrap" style="display:none">
+      <label class="flbl" id="nt-lbl-days">Dagen</label>
+      <div class="pill-group" id="nt-days"></div>
+      <label class="flbl" id="nt-lbl-rep">Herhaling</label>
+      <select class="finput" id="nt-rep" onchange="togNtRep()">
+        <option value="once">Eenmalig</option>
+        <option value="daily">Dagelijks</option>
+        <option value="weekly">Wekelijks</option>
+        <option value="monthly">Maandelijks (elke 4 weken)</option>
+        <option value="infinite">Oneindig</option>
+        <option value="weeks">Aantal weken</option>
+        <option value="until">Tot datum</option>
+      </select>
+      <div id="nt-rep-wks" style="display:none"><label class="flbl" id="nt-lbl-nwks">Aantal weken</label><input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2"></div>
+      <div id="nt-rep-until" style="display:none"><label class="flbl" id="nt-lbl-until">Tot en met</label><input class="finput" type="date" id="nt-until"></div>
+      <label class="flbl" id="nt-lbl-start">Startweek</label>
+      <select class="finput" id="nt-wk">
+        <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
+      </select>
+    </div>
+    <div id="nt-pers-wrap" style="display:none">
+      <label class="flbl" id="nt-lbl-person">Gezinslid</label>
+      <select class="finput" id="nt-person" onchange="setTaskType('personal')"></select>
+      <label class="flbl" id="nt-lbl-day">Dag</label>
+      <select class="finput" id="nt-day"></select>
+      <label class="flbl" id="nt-lbl-optloc">Locatie (optioneel)</label>
+      <select class="finput" id="nt-optloc"><option value="">— geen —</option></select>
+    </div>
+    <div id="nt-points-wrap" style="display:none">
+      <label class="flbl" id="nt-lbl-points">Punten</label>
+      <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
+    </div>
+    <button class="save-btn" onclick="addUnifiedTask()" id="nt-add-btn">+ Toevoegen</button>
+    <div id="nt-flash" class="flash" style="opacity:0"></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="bk-modal">
   <div class="modal">
     <div class="modal-title" id="bk-modal-title">Boeking toevoegen</div>
@@ -2167,6 +2173,7 @@ function renderWorker(){
   document.getElementById('w-av').textContent=CU.avatar||CU.name[0];
   document.getElementById('w-name').textContent=CU.name;
   document.getElementById('w-sub').textContent=tr(CU.role);
+  const fab=document.getElementById('fab-add');if(fab)fab.style.display='none';
   const wt=document.getElementById('wtl-week');if(wt)wt.textContent=tr('myWeek');
   const lt=document.getElementById('wt-log-lbl');if(lt)lt.textContent=tr('changes');
   const rt=document.getElementById('wtl-eten');if(rt)rt.textContent=tr('tabEten');
@@ -2294,6 +2301,9 @@ function renderManager(){
   // Mode bar: only admin sees rental mode
   const modeBar=document.getElementById('mode-bar');
   if(modeBar)modeBar.style.display=CU.role==='admin'?'flex':'none';
+  // FAB: show for managers
+  const fab=document.getElementById('fab-add');
+  if(fab)fab.style.display=isMgr(CU)?'flex':'none';
   // Auto-anonymize old bookings (privacy by design)
   anonymizeOldBookings();
   updateManagerLabels();
@@ -3399,6 +3409,7 @@ async function addUnifiedTask(){
   await loadAll();
   doFlash('nt-flash',lg()==='pt'?'Tarefa adicionada':'Taak toegevoegd');
   renderFixedList();renderPeriodicList();renderExList();renderPersList();
+  setTimeout(()=>closeTaskModal(),800);
 }
 
 // ═══════════════ EXISTING TASK LISTS ═══════════════
@@ -3637,6 +3648,14 @@ async function deleteRecipeEdit(){
   if(isWkr())refreshWorker();
 }
 function closeRecipeModal(){document.getElementById('recipe-modal').classList.remove('open');}
+
+function openTaskModal(){
+  renderTaskForm();
+  document.getElementById('task-add-modal').classList.add('open');
+}
+function closeTaskModal(){
+  document.getElementById('task-add-modal').classList.remove('open');
+}
 
 // ═══════════════ RECIPE INGREDIENTS ═══════════════
 let _ingrRowCount=0;
