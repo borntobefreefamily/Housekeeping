@@ -786,14 +786,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <!-- 3. Voor wie? -->
     <label class="flbl" id="nt-lbl-who">Voor wie?</label>
     <select class="finput" id="nt-who" onchange="ntWhoChange()"></select>
-    <!-- Personal: dag + punten -->
+    <!-- Personal: dag -->
     <div id="nt-pers-wrap" style="display:none">
       <label class="flbl" id="nt-lbl-day">Dag</label>
       <select class="finput" id="nt-day"></select>
-      <div id="nt-points-wrap" style="display:none">
-        <label class="flbl" id="nt-lbl-points">Punten</label>
-        <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
-      </div>
+    </div>
+    <!-- Punten (kind, ongeacht frequentie) -->
+    <div id="nt-points-wrap" style="display:none">
+      <label class="flbl" id="nt-lbl-points">Punten</label>
+      <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
     </div>
     <!-- 4. Hoe vaak? -->
     <div id="nt-freq-wrap">
@@ -1200,7 +1201,7 @@ const I={
     // New task form
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
     taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
-    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1268,7 +1269,7 @@ const I={
     periodicLabel:'Periodieke taken',
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
     taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
-    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1332,7 +1333,7 @@ const I={
     // New task form
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
     taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
-    taskEveryone:'Todos',taskEveryDay:'Todos os dias',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1399,7 +1400,7 @@ const I={
     periodicLabel:'Tarefas periódicas',
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
     taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
-    taskEveryone:'Todos',taskEveryDay:'Todos os dias',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1887,6 +1888,18 @@ function renderChildDay(di,wk){
     html+=`</div>`;
   });
 
+  // Extra tasks assigned to this child
+  const myExtras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&e.user_id===CU.id);
+  myExtras.forEach(e=>{
+    const ck=!!D.checks[e.id+'_'+wk+'_'+di]?.on;
+    const locNm=e.location_id?locName(e.location_id):'';
+    html+=`<div class="task-row${ck?' done-row':''}" style="padding:10px 0">`;
+    html+=`<div class="cb${ck?' on':''}" onclick="togTask(this,'${e.id}','${wk}',${di},false)">${ck?'&#10003;':''}</div>`;
+    html+=`<div style="flex:1"><span class="task-txt${ck?' done':''}" style="font-size:15px;font-weight:600">${tx(e)}</span>${ptsBadge(e.points,ck)}<span class="badge-extra">${tr('extra')}</span>`;
+    if(locNm)html+=`<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${locNm}</div>`;
+    html+=`</div></div>`;
+  });
+
   // Recipe
   const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
   if(recs.length){
@@ -1915,7 +1928,8 @@ function renderDayBody(di,wk,isMgr){
   const mainLocs=schedDay.filter(s=>s.location_id!==DAILY_ID&&s.location_id!==BUITEN_ID);
   const hasDaily=schedIds.includes(DAILY_ID);
   const hasBuiten=schedIds.includes(BUITEN_ID);
-  const extras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+  let extras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+  if(!isMgr)extras=extras.filter(e=>!e.user_id||e.user_id===CU.id);
   const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
   // Daily tasks (is_daily=true, no location)
   const dailyTasks=D.tasks.filter(t=>t.is_daily);
@@ -1987,7 +2001,8 @@ function renderDayBody(di,wk,isMgr){
     const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
     const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
     const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${byStr}</span>`;
+    const whoStr=isMgr&&e.user_id?`<span class="badge-who" style="background:${ucol(e.user_id)}20;color:${ucol(e.user_id)}">→ ${uname(e.user_id)}</span>`:'';
+    html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${whoStr}${byStr}</span>`;
     if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
     if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
     if(isMgr)html+=`<button onclick="delExtraConfirm('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button>`;
@@ -2203,16 +2218,18 @@ function renderWorker(){
         const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
         const hasPending=D.swaps.some(s=>s.requester_id===CU.id&&s.week_key===wk&&s.original_day===di&&s.status==='pending');
         const hasMovedAway=movedAwayIds.length>0;
-        if(!allPt.length&&!rc.length&&!hasPending&&!hasMovedAway)return;
-        let dt=allPt.length,dd=0;
+        const childExtras2=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&e.user_id===CU.id);
+        if(!allPt.length&&!rc.length&&!hasPending&&!hasMovedAway&&!childExtras2.length)return;
+        let dt=allPt.length+childExtras2.length,dd=0;
         allPt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+        childExtras2.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
         const hasMePersC=allPt.length>0;
         const persStyleC=hasMePersC?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
         html+=`<div class="day-card" style="${persStyleC}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersC?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       } else {
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
-        const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+        const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&(!e.user_id||e.user_id===CU.id));
         const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
         let dt=0,dd=0;
         sd.forEach(sr=>{
@@ -2762,14 +2779,16 @@ function refreshWorker(){
       const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di&&r.assigned_to===CU.id);
       const hasPending=D.swaps.some(s=>s.requester_id===CU.id&&s.week_key===wk&&s.original_day===di&&s.status==='pending');
       const hasMovedAway=movedAwayIds.length>0;
-      if(!allPt.length&&!rc.length&&!hasPending&&!hasMovedAway)return;
-      let dt=allPt.length,dd=0;
+      const childExtras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&e.user_id===CU.id);
+      if(!allPt.length&&!rc.length&&!hasPending&&!hasMovedAway&&!childExtras.length)return;
+      let dt=allPt.length+childExtras.length,dd=0;
       allPt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
+      childExtras.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
     } else {
       // Worker: everything
       const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
-      const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di);
+      const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&(!e.user_id||e.user_id===CU.id));
       const rc=D.recipes.filter(r=>r.week_key===wk&&r.day_index===di);
       let dt=0,dd=0;
       if(sd.length)D.tasks.filter(t=>t.is_daily).forEach(t=>{dt++;if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
@@ -3273,21 +3292,40 @@ function setFreq(f){
   ['fixed','periodic','extra'].forEach(t=>{
     document.getElementById('nt-freq-'+t)?.classList.toggle('on',t===f);
   });
-  document.getElementById('nt-interval-wrap').style.display=f==='periodic'?'block':'none';
+  const who=document.getElementById('nt-who')?.value;
+  const isPers=!!who;
+  // Interval wrap: only for iedereen + periodic
+  document.getElementById('nt-interval-wrap').style.display=(!isPers&&f==='periodic')?'block':'none';
+  // Extra wrap: for extra (both person and iedereen)
   document.getElementById('nt-extra-wrap').style.display=f==='extra'?'block':'none';
+  // Pers wrap (dag dropdown): only for person + fixed (elke week)
+  document.getElementById('nt-pers-wrap').style.display=(isPers&&f!=='extra')?'block':'none';
+  // Points: for child regardless of freq
+  if(isPers){
+    const selU=D.users.find(u=>u.id===who);
+    document.getElementById('nt-points-wrap').style.display=(selU?.role==='child')?'block':'none';
+  } else {
+    document.getElementById('nt-points-wrap').style.display='none';
+  }
 }
 
 function ntWhoChange(){
   const who=document.getElementById('nt-who').value;
   const isPers=!!who;
-  document.getElementById('nt-pers-wrap').style.display=isPers?'block':'none';
-  document.getElementById('nt-freq-wrap').style.display=isPers?'none':'block';
+  // Always show freq wrap
+  document.getElementById('nt-freq-wrap').style.display='block';
+  // Toggle periodiek pill visibility
+  const pp=document.getElementById('nt-freq-periodic');
+  if(pp)pp.style.display=isPers?'none':'';
+  // Change "Vast" pill label
+  const fp=document.getElementById('nt-freq-fixed');
+  if(fp)fp.textContent=isPers?tr('taskEveryWeek'):tr('typeFixed');
+  // If currently on periodic and person selected, switch to fixed
+  if(isPers&&ntFreq==='periodic')ntFreq='fixed';
+  // Cat wrap: hide for personal
   document.getElementById('nt-cat-wrap').style.display=isPers?'none':'block';
-  // Points: only for child
-  if(isPers){
-    const selU=D.users.find(u=>u.id===who);
-    document.getElementById('nt-points-wrap').style.display=(selU?.role==='child')?'block':'none';
-  }
+  // Update all sub-field visibility via setFreq
+  setFreq(ntFreq);
 }
 
 function renderTaskForm(){
@@ -3348,14 +3386,14 @@ async function addUnifiedTask(){
   const cat=document.getElementById('nt-cat').value||'Algemeen';
   const pts=parseInt(document.getElementById('nt-points').value)||0;
 
-  if(who){
-    // PERSONAL TASK
+  if(who&&ntFreq!=='extra'){
+    // PERSONAL TASK (elke week)
     const day=parseInt(document.getElementById('nt-day').value);
     const locId=selLocs[0]||null;
     await sb.from('personal_tasks').insert({household_id:HID,user_id:who,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
     const uName=D.users.find(x=>x.id===who)?.name||'';
     await logChange(`${tr('typePersonal')}: "${nl}" → ${uName} (${dayArr()[day]})`);
-  } else if(ntFreq==='fixed'){
+  } else if(!who&&ntFreq==='fixed'){
     if(!isDailySelected&&!selLocs.length)return;
     if(isDailySelected){
       await sb.from('fixed_tasks').insert({household_id:HID,location_id:null,is_daily:true,category:cat,text_nl:nl,text_pt:pt||nl,points:pts});
@@ -3365,7 +3403,7 @@ async function addUnifiedTask(){
       }
     }
     await logChange(`${tr('typeFixed')}: "${nl}"`);
-  } else if(ntFreq==='periodic'){
+  } else if(!who&&ntFreq==='periodic'){
     if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
     const interval=parseInt(document.getElementById('nt-interval').value)??1;
     const startDate=document.getElementById('nt-startdate').value||null;
@@ -3376,7 +3414,8 @@ async function addUnifiedTask(){
     if(res.error){doFlash('nt-flash','❌ '+res.error.message);return;}
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
   } else {
-    if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
+    // EXTRA TASK (eenmalig/tijdelijk — voor iedereen of specifiek persoon)
+    if(!who&&!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
     const daysSelected=[...document.querySelectorAll('#nt-days .cpill.on')].map(el=>parseInt(el.id.replace('ntd-','')));
     if(!daysSelected.length){doFlash('nt-flash',tr('selectMinDay'));return;}
     const rep=document.getElementById('nt-rep').value;
@@ -3390,9 +3429,22 @@ async function addUnifiedTask(){
     else if(rep==='weeks'){const n=parseInt(document.getElementById('nt-wks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
     else if(rep==='until'){const ud=document.getElementById('nt-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>260)break;wks.push(w);o++;}}
     const ins=[];
-    for(const loc of selLocs)for(const di of daysSelected)for(const wk of wks)ins.push({household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl,category:cat,points:pts});
-    for(let i=0;i<ins.length;i+=500)await sb.from('extra_tasks').insert(ins.slice(i,i+500));
-    await logChange(`${tr('typeExtra')}: "${nl}" (${rep})`);
+    const locs=selLocs.length?selLocs:[null];
+    for(const loc of locs)for(const di of daysSelected)for(const wk of wks){
+      const row={household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl,category:cat,points:pts};
+      if(who)row.user_id=who;
+      ins.push(row);
+    }
+    for(let i=0;i<ins.length;i+=500){
+      let res=await sb.from('extra_tasks').insert(ins.slice(i,i+500));
+      if(res.error&&who){
+        // Fallback: probeer zonder user_id als kolom nog niet bestaat
+        const batch=ins.slice(i,i+500).map(r=>{const{user_id,...rest}=r;return rest;});
+        await sb.from('extra_tasks').insert(batch);
+      }
+    }
+    const uName=who?D.users.find(x=>x.id===who)?.name:'';
+    await logChange(`${tr('typeExtra')}: "${nl}"${uName?' → '+uName:''} (${rep})`);
   }
 
   // Reset form
