@@ -774,73 +774,72 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div class="sec-title" id="new-task-title" style="margin:0;border:none;padding:0">Nieuwe taak</div>
       <button onclick="closeTaskModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);padding:4px 8px">✕</button>
     </div>
-    <label class="flbl" id="nt-lbl-type">Type</label>
-    <div class="type-pills">
-      <button class="type-pill on" id="nt-type-fixed" onclick="setTaskType('fixed')">Vast</button>
-      <button class="type-pill" id="nt-type-periodic" onclick="setTaskType('periodic')">Periodiek</button>
-      <button class="type-pill" id="nt-type-extra" onclick="setTaskType('extra')">Extra</button>
-      <button class="type-pill" id="nt-type-personal" onclick="setTaskType('personal')">Persoonlijk</button>
-    </div>
-    <label class="flbl" id="nt-lbl-nl">Omschrijving (NL)</label>
+    <!-- 1. Wat? -->
+    <label class="flbl" id="nt-lbl-nl">Wat?</label>
     <input class="finput" type="text" id="nt-nl" placeholder="" onblur="autoTr('nt-nl','nt-pt')">
     <div class="fhint" id="nt-auto-hint">&#8627; Portugese vertaling automatisch</div>
     <label class="flbl" id="nt-lbl-pt">Descrição (PT)</label>
     <input class="finput" type="text" id="nt-pt" placeholder="">
-    <label class="flbl" id="nt-lbl-loc">Locatie</label>
+    <!-- 2. Waar? -->
+    <label class="flbl" id="nt-lbl-loc">Waar?</label>
     <div class="pill-group" id="nt-locs"></div>
-    <div id="nt-daily-wrap">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:6px">
-        <input type="checkbox" id="nt-daily" onchange="togNtDaily()" style="width:16px;height:16px;accent-color:var(--caramel)">
-        <span id="nt-daily-lbl" style="font-size:13px;color:var(--text)">Dagelijkse taak (verschijnt elke werkdag)</span>
-      </label>
+    <!-- 3. Voor wie? -->
+    <label class="flbl" id="nt-lbl-who">Voor wie?</label>
+    <select class="finput" id="nt-who" onchange="ntWhoChange()"></select>
+    <!-- Personal: dag + punten -->
+    <div id="nt-pers-wrap" style="display:none">
+      <label class="flbl" id="nt-lbl-day">Dag</label>
+      <select class="finput" id="nt-day"></select>
+      <div id="nt-points-wrap" style="display:none">
+        <label class="flbl" id="nt-lbl-points">Punten</label>
+        <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
+      </div>
     </div>
+    <!-- 4. Hoe vaak? -->
+    <div id="nt-freq-wrap">
+      <label class="flbl" id="nt-lbl-freq">Hoe vaak?</label>
+      <div class="type-pills">
+        <button class="type-pill on" id="nt-freq-fixed" onclick="setFreq('fixed')">Vast</button>
+        <button class="type-pill" id="nt-freq-periodic" onclick="setFreq('periodic')">Periodiek</button>
+        <button class="type-pill" id="nt-freq-extra" onclick="setFreq('extra')">Eenmalig</button>
+      </div>
+      <div id="nt-interval-wrap" style="display:none">
+        <label class="flbl" id="nt-lbl-interval">Interval</label>
+        <select class="finput" id="nt-interval">
+          <option value="0">Elke week</option>
+          <option value="-1">2-wekelijks</option>
+          <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
+          <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
+          <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
+        </select>
+        <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
+        <input type="date" class="finput" id="nt-startdate">
+      </div>
+      <div id="nt-extra-wrap" style="display:none">
+        <label class="flbl" id="nt-lbl-days">Dagen</label>
+        <div class="pill-group" id="nt-days"></div>
+        <label class="flbl" id="nt-lbl-rep">Herhaling</label>
+        <select class="finput" id="nt-rep" onchange="togNtRep()">
+          <option value="once">Eenmalig</option>
+          <option value="daily">Dagelijks</option>
+          <option value="weekly">Wekelijks</option>
+          <option value="monthly">Maandelijks (elke 4 weken)</option>
+          <option value="infinite">Oneindig</option>
+          <option value="weeks">Aantal weken</option>
+          <option value="until">Tot datum</option>
+        </select>
+        <div id="nt-rep-wks" style="display:none"><label class="flbl" id="nt-lbl-nwks">Aantal weken</label><input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2"></div>
+        <div id="nt-rep-until" style="display:none"><label class="flbl" id="nt-lbl-until">Tot en met</label><input class="finput" type="date" id="nt-until"></div>
+        <label class="flbl" id="nt-lbl-start">Startweek</label>
+        <select class="finput" id="nt-wk">
+          <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
+        </select>
+      </div>
+    </div>
+    <!-- Categorie -->
     <div id="nt-cat-wrap">
       <label class="flbl" id="nt-lbl-cat">Categorie</label>
       <select class="finput" id="nt-cat"><option value="Algemeen">Algemeen</option></select>
-    </div>
-    <div id="nt-interval-wrap" style="display:none">
-      <label class="flbl" id="nt-lbl-interval">Interval</label>
-      <select class="finput" id="nt-interval">
-        <option value="0">Elke week</option>
-        <option value="-1">2-wekelijks</option>
-        <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
-        <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
-        <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
-      </select>
-      <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
-      <input type="date" class="finput" id="nt-startdate">
-    </div>
-    <div id="nt-extra-wrap" style="display:none">
-      <label class="flbl" id="nt-lbl-days">Dagen</label>
-      <div class="pill-group" id="nt-days"></div>
-      <label class="flbl" id="nt-lbl-rep">Herhaling</label>
-      <select class="finput" id="nt-rep" onchange="togNtRep()">
-        <option value="once">Eenmalig</option>
-        <option value="daily">Dagelijks</option>
-        <option value="weekly">Wekelijks</option>
-        <option value="monthly">Maandelijks (elke 4 weken)</option>
-        <option value="infinite">Oneindig</option>
-        <option value="weeks">Aantal weken</option>
-        <option value="until">Tot datum</option>
-      </select>
-      <div id="nt-rep-wks" style="display:none"><label class="flbl" id="nt-lbl-nwks">Aantal weken</label><input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2"></div>
-      <div id="nt-rep-until" style="display:none"><label class="flbl" id="nt-lbl-until">Tot en met</label><input class="finput" type="date" id="nt-until"></div>
-      <label class="flbl" id="nt-lbl-start">Startweek</label>
-      <select class="finput" id="nt-wk">
-        <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
-      </select>
-    </div>
-    <div id="nt-pers-wrap" style="display:none">
-      <label class="flbl" id="nt-lbl-person">Gezinslid</label>
-      <select class="finput" id="nt-person" onchange="setTaskType('personal')"></select>
-      <label class="flbl" id="nt-lbl-day">Dag</label>
-      <select class="finput" id="nt-day"></select>
-      <label class="flbl" id="nt-lbl-optloc">Locatie (optioneel)</label>
-      <select class="finput" id="nt-optloc"><option value="">— geen —</option></select>
-    </div>
-    <div id="nt-points-wrap" style="display:none">
-      <label class="flbl" id="nt-lbl-points">Punten</label>
-      <input class="finput" type="number" id="nt-points" min="0" max="100" value="0" placeholder="0" style="width:80px">
     </div>
     <button class="save-btn" onclick="addUnifiedTask()" id="nt-add-btn">+ Toevoegen</button>
     <div id="nt-flash" class="flash" style="opacity:0"></div>
@@ -1160,7 +1159,7 @@ const DAILY_ID='eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
-let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',newTaskType='fixed',planScope='default';
+let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',ntFreq='fixed',planScope='default';
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
@@ -1200,6 +1199,8 @@ const I={
     tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabEten:'Eten',tabTasks:'Taken',tabSettings:'Instellingen',tabBeheer:'Beheer',
     // New task form
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
+    taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1266,6 +1267,8 @@ const I={
     taskAdded:'Taak toegevoegd!',ago:'geleden',min:'min',
     periodicLabel:'Periodieke taken',
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
+    taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1328,6 +1331,8 @@ const I={
     tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabEten:'Comida',tabTasks:'Tarefas',tabSettings:'Definições',tabBeheer:'Gestão',
     // New task form
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
+    taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1393,6 +1398,8 @@ const I={
     taskAdded:'Tarefa adicionada!',ago:'atrás',min:'min',
     periodicLabel:'Tarefas periódicas',
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
+    taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1664,12 +1671,11 @@ function updateManagerLabels(){
     'periodic-sec-title':tr('periodicTasks'),'extra-sec-title':tr('extraTasks'),
     'grp-overzicht-lbl':tr('grpOverview'),'grp-toevoegen-lbl':tr('grpAdd'),
     'pers-list-title':tr('persTasks'),
-    'nt-lbl-type':tr('type'),'nt-type-fixed':tr('typeFixed'),
-    'nt-type-periodic':tr('typePeriodic'),'nt-type-extra':tr('typeExtra'),
-    'nt-type-personal':tr('typePersonal'),
-    'nt-lbl-nl':tr('descNl'),'nt-lbl-pt':tr('descPt'),
-    'nt-auto-hint':tr('autoHint'),'nt-lbl-loc':tr('location'),
-    'nt-lbl-person':tr('person'),'nt-lbl-day':tr('day'),'nt-lbl-optloc':tr('optLocation'),
+    'nt-lbl-nl':tr('taskWhat'),'nt-lbl-pt':tr('descPt'),
+    'nt-auto-hint':tr('autoHint'),'nt-lbl-loc':tr('taskWhere'),
+    'nt-lbl-who':tr('taskWho'),'nt-lbl-day':tr('day'),
+    'nt-lbl-freq':tr('taskFreq'),
+    'nt-freq-fixed':tr('typeFixed'),'nt-freq-periodic':tr('typePeriodic'),'nt-freq-extra':tr('repOnce'),
     'nt-lbl-cat':tr('category'),'nt-lbl-interval':tr('interval'),'nt-lbl-startdate':tr('startDate'),'edit-lbl-startdate':tr('startDate'),
     'nt-lbl-days':tr('days'),'nt-lbl-rep':tr('repetition'),
     'nt-lbl-start':tr('startWeek'),'nt-lbl-nwks':tr('numWeeks'),
@@ -3262,78 +3268,64 @@ async function togPlan(lid,di){
 }
 
 // ═══════════════ UNIFIED TASK FORM ═══════════════
-function setTaskType(type){
-  newTaskType=type;
-  ['fixed','periodic','extra','personal'].forEach(t=>{
-    document.getElementById('nt-type-'+t)?.classList.toggle('on',t===type);
+function setFreq(f){
+  ntFreq=f;
+  ['fixed','periodic','extra'].forEach(t=>{
+    document.getElementById('nt-freq-'+t)?.classList.toggle('on',t===f);
   });
-  const isPers=type==='personal';
-  document.getElementById('nt-cat-wrap').style.display=isPers?'none':'block';
-  document.getElementById('nt-interval-wrap').style.display=type==='periodic'?'block':'none';
-  document.getElementById('nt-extra-wrap').style.display=type==='extra'?'block':'none';
-  document.getElementById('nt-pers-wrap').style.display=isPers?'block':'none';
-  // Daily toggle only for fixed tasks
-  const dw=document.getElementById('nt-daily-wrap');
-  if(dw)dw.style.display=type==='fixed'?'block':'none';
-  // Loc pills: hide for personal, or if daily is checked
-  const isDailyChecked=document.getElementById('nt-daily')?.checked;
-  const hideLoc=isPers||(type==='fixed'&&isDailyChecked);
-  const lbl=document.getElementById('nt-lbl-loc');
-  const locs=document.getElementById('nt-locs');
-  if(lbl)lbl.style.display=hideLoc?'none':'block';
-  if(locs)locs.style.display=hideLoc?'none':'flex';
-  // Points: only for personal type when a child is selected
-  if(isPers){
-    const selUser=document.getElementById('nt-person')?.value;
-    const selU=D.users.find(u=>u.id===selUser);
-    document.getElementById('nt-points-wrap').style.display=(selU?.role==='child')?'block':'none';
-  } else {
-    document.getElementById('nt-points-wrap').style.display='none';
-  }
+  document.getElementById('nt-interval-wrap').style.display=f==='periodic'?'block':'none';
+  document.getElementById('nt-extra-wrap').style.display=f==='extra'?'block':'none';
 }
 
-function togNtDaily(){
-  const isDailyChecked=document.getElementById('nt-daily')?.checked;
-  const lbl=document.getElementById('nt-lbl-loc');
-  const locs=document.getElementById('nt-locs');
-  if(lbl)lbl.style.display=isDailyChecked?'none':'block';
-  if(locs)locs.style.display=isDailyChecked?'none':'block';
-  if(isDailyChecked){
-    // Deselect all loc pills
-    document.querySelectorAll('#nt-locs .cpill').forEach(p=>p.classList.remove('on'));
-    updateNtCats();
+function ntWhoChange(){
+  const who=document.getElementById('nt-who').value;
+  const isPers=!!who;
+  document.getElementById('nt-pers-wrap').style.display=isPers?'block':'none';
+  document.getElementById('nt-freq-wrap').style.display=isPers?'none':'block';
+  document.getElementById('nt-cat-wrap').style.display=isPers?'none':'block';
+  // Points: only for child
+  if(isPers){
+    const selU=D.users.find(u=>u.id===who);
+    document.getElementById('nt-points-wrap').style.display=(selU?.role==='child')?'block':'none';
   }
 }
 
 function renderTaskForm(){
   updateManagerLabels();
+  // Location pills with "Elke dag" option
   const lc=document.getElementById('nt-locs');
-  if(lc)lc.innerHTML=D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${lnm(l)}</div>`).join('');
+  if(lc)lc.innerHTML=`<div class="cpill" id="ntl-daily" onclick="ntLocClick(this,'daily')" style="font-style:italic">${tr('taskEveryDay')}</div>`+D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${lnm(l)}</div>`).join('');
+  // Day pills for eenmalig
   const dc=document.getElementById('nt-days');
   if(dc)dc.innerHTML=dayArr().map((d,i)=>`<div class="cpill" id="ntd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
-  // Reset daily checkbox
-  const dailyCb=document.getElementById('nt-daily');
-  if(dailyCb)dailyCb.checked=false;
-  const dailyLbl=document.getElementById('nt-daily-lbl');
-  if(dailyLbl)dailyLbl.textContent=lg()==='pt'?'Tarefa diária (aparece todos os dias de trabalho)':'Dagelijkse taak (verschijnt elke werkdag)';
-  // Personal fields — deduplicate by user ID
-  const psel=document.getElementById('nt-person');
-  if(psel){const seen=new Set();psel.innerHTML=D.users.filter(u=>{if(u.role==='worker'||seen.has(u.id))return false;seen.add(u.id);return true;}).map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');}
+  // "Voor wie" dropdown: Iedereen + gezinsleden (geen workers)
+  const wsel=document.getElementById('nt-who');
+  if(wsel){const seen=new Set();wsel.innerHTML=`<option value="">${tr('taskEveryone')}</option>`+D.users.filter(u=>{if(u.role==='worker'||seen.has(u.id))return false;seen.add(u.id);return true;}).map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');}
+  // Dag dropdown voor persoonlijke taken
   const pdsel=document.getElementById('nt-day');
   if(pdsel)pdsel.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
-  const plsel=document.getElementById('nt-optloc');
-  if(plsel)plsel.innerHTML=`<option value="">— ${lg()==='pt'?'nenhum':'geen'} —</option>`+D.locs.map(l=>`<option value="${l.id}">${lnm(l)}</option>`).join('');
-  updateNtCats();setTaskType(newTaskType);
+  updateNtCats();
+  // Reset state
+  document.getElementById('nt-who').value='';
+  ntWhoChange();
+  setFreq(ntFreq);
 }
 
 function ntLocClick(el,lid){
-  el.classList.toggle('on');
+  if(lid==='daily'){
+    const wasOn=el.classList.contains('on');
+    document.querySelectorAll('#nt-locs .cpill').forEach(p=>p.classList.remove('on'));
+    if(!wasOn)el.classList.add('on');
+  } else {
+    document.getElementById('ntl-daily')?.classList.remove('on');
+    el.classList.toggle('on');
+  }
   updateNtCats();
 }
 
 function updateNtCats(){
   const sel=document.getElementById('nt-cat');if(!sel)return;
-  const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
+  const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-','')).filter(id=>id!=='daily');
   let allCats=[];
   if(selLocs.length){selLocs.forEach(lid=>{locCats(lid).forEach(c=>{if(!allCats.includes(c)&&c!=='Algemeen'&&c!==tr('general'))allCats.push(c);});});}
   else{allCats=D.globalCats.map(gc=>gc.name).filter(c=>c!=='Algemeen'&&c!==tr('general'));}
@@ -3350,14 +3342,22 @@ async function addUnifiedTask(){
   const nl=document.getElementById('nt-nl').value.trim();
   const pt=document.getElementById('nt-pt').value.trim();
   if(!nl)return;
-  const isDaily=newTaskType==='fixed'&&document.getElementById('nt-daily')?.checked;
-  const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-',''));
-  if(newTaskType!=='personal'&&!isDaily&&!selLocs.length)return;
+  const who=document.getElementById('nt-who').value;
+  const isDailySelected=document.getElementById('ntl-daily')?.classList.contains('on');
+  const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-','')).filter(id=>id!=='daily');
   const cat=document.getElementById('nt-cat').value||'Algemeen';
   const pts=parseInt(document.getElementById('nt-points').value)||0;
 
-  if(newTaskType==='fixed'){
-    if(isDaily){
+  if(who){
+    // PERSONAL TASK
+    const day=parseInt(document.getElementById('nt-day').value);
+    const locId=selLocs[0]||null;
+    await sb.from('personal_tasks').insert({household_id:HID,user_id:who,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
+    const uName=D.users.find(x=>x.id===who)?.name||'';
+    await logChange(`${tr('typePersonal')}: "${nl}" → ${uName} (${dayArr()[day]})`);
+  } else if(ntFreq==='fixed'){
+    if(!isDailySelected&&!selLocs.length)return;
+    if(isDailySelected){
       await sb.from('fixed_tasks').insert({household_id:HID,location_id:null,is_daily:true,category:cat,text_nl:nl,text_pt:pt||nl,points:pts});
     } else {
       for(const loc of selLocs){
@@ -3365,7 +3365,8 @@ async function addUnifiedTask(){
       }
     }
     await logChange(`${tr('typeFixed')}: "${nl}"`);
-  } else if(newTaskType==='periodic'){
+  } else if(ntFreq==='periodic'){
+    if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
     const interval=parseInt(document.getElementById('nt-interval').value)??1;
     const startDate=document.getElementById('nt-startdate').value||null;
     const row={household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat,points:pts};
@@ -3374,17 +3375,10 @@ async function addUnifiedTask(){
     if(res.error&&startDate){delete row.start_date;res=await sb.from('monthly_tasks').insert(row);}
     if(res.error){doFlash('nt-flash','❌ '+res.error.message);return;}
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
-  } else if(newTaskType==='personal'){
-    const userId=document.getElementById('nt-person').value;
-    if(!userId)return;
-    const day=parseInt(document.getElementById('nt-day').value);
-    const locId=document.getElementById('nt-optloc').value||null;
-    await sb.from('personal_tasks').insert({household_id:HID,user_id:userId,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
-    const uName=D.users.find(x=>x.id===userId)?.name||'';
-    await logChange(`${tr('typePersonal')}: "${nl}" → ${uName} (${dayArr()[day]})`);
   } else {
+    if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
     const daysSelected=[...document.querySelectorAll('#nt-days .cpill.on')].map(el=>parseInt(el.id.replace('ntd-','')));
-    if(!daysSelected.length)return;
+    if(!daysSelected.length){doFlash('nt-flash',tr('selectMinDay'));return;}
     const rep=document.getElementById('nt-rep').value;
     const sOff=parseInt(document.getElementById('nt-wk').value);
     const wks=[];
@@ -3403,9 +3397,9 @@ async function addUnifiedTask(){
 
   // Reset form
   document.getElementById('nt-nl').value='';document.getElementById('nt-pt').value='';
-  document.getElementById('nt-points').value='0';document.getElementById('nt-startdate').value='';
+  document.getElementById('nt-points').value='0';
+  const sd=document.getElementById('nt-startdate');if(sd)sd.value='';
   document.querySelectorAll('#nt-locs .cpill.on,#nt-days .cpill.on').forEach(el=>el.classList.remove('on'));
-  const dailyCb=document.getElementById('nt-daily');if(dailyCb)dailyCb.checked=false;
   await loadAll();
   doFlash('nt-flash',lg()==='pt'?'Tarefa adicionada':'Taak toegevoegd');
   renderFixedList();renderPeriodicList();renderExList();renderPersList();
