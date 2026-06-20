@@ -799,42 +799,28 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <!-- 4. Hoe vaak? -->
     <div id="nt-freq-wrap">
       <label class="flbl" id="nt-lbl-freq">Hoe vaak?</label>
-      <div class="type-pills">
-        <button class="type-pill on" id="nt-freq-fixed" onclick="setFreq('fixed')">Vast</button>
-        <button class="type-pill" id="nt-freq-periodic" onclick="setFreq('periodic')">Periodiek</button>
-        <button class="type-pill" id="nt-freq-extra" onclick="setFreq('extra')">Eenmalig</button>
-      </div>
-      <div id="nt-interval-wrap" style="display:none">
-        <label class="flbl" id="nt-lbl-interval">Interval</label>
-        <select class="finput" id="nt-interval">
-          <option value="0">Elke week</option>
-          <option value="-1">2-wekelijks</option>
-          <option value="1">Elke maand</option><option value="2">Elke 2 maanden</option>
-          <option value="3">Elke 3 maanden</option><option value="4">Elke 4 maanden</option>
-          <option value="6">Elke 6 maanden</option><option value="12">Jaarlijks</option>
-        </select>
-        <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
-        <input type="date" class="finput" id="nt-startdate">
-      </div>
-      <div id="nt-extra-wrap" style="display:none">
+      <select class="finput" id="nt-freq-sel" onchange="ntFreqChange()"></select>
+      <!-- Dagen + startweek (voor eenmalig/weeks/until) -->
+      <div id="nt-days-wrap" style="display:none">
         <label class="flbl" id="nt-lbl-days">Dagen</label>
         <div class="pill-group" id="nt-days"></div>
-        <label class="flbl" id="nt-lbl-rep">Herhaling</label>
-        <select class="finput" id="nt-rep" onchange="togNtRep()">
-          <option value="once">Eenmalig</option>
-          <option value="daily">Dagelijks</option>
-          <option value="weekly">Wekelijks</option>
-          <option value="monthly">Maandelijks (elke 4 weken)</option>
-          <option value="infinite">Oneindig</option>
-          <option value="weeks">Aantal weken</option>
-          <option value="until">Tot datum</option>
-        </select>
-        <div id="nt-rep-wks" style="display:none"><label class="flbl" id="nt-lbl-nwks">Aantal weken</label><input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2"></div>
-        <div id="nt-rep-until" style="display:none"><label class="flbl" id="nt-lbl-until">Tot en met</label><input class="finput" type="date" id="nt-until"></div>
         <label class="flbl" id="nt-lbl-start">Startweek</label>
         <select class="finput" id="nt-wk">
           <option value="0">Deze week</option><option value="1">Volgende week</option><option value="2">Over 2 weken</option>
         </select>
+      </div>
+      <div id="nt-wks-wrap" style="display:none">
+        <label class="flbl" id="nt-lbl-nwks">Aantal weken</label>
+        <input class="finput" type="number" id="nt-wks-n" min="1" max="52" value="2">
+      </div>
+      <div id="nt-until-wrap" style="display:none">
+        <label class="flbl" id="nt-lbl-until">Tot en met</label>
+        <input class="finput" type="date" id="nt-until">
+      </div>
+      <!-- Startdatum (voor periodieke taken) -->
+      <div id="nt-startdate-wrap" style="display:none">
+        <label class="flbl" id="nt-lbl-startdate">Startdatum (optioneel)</label>
+        <input type="date" class="finput" id="nt-startdate">
       </div>
     </div>
     <!-- Categorie -->
@@ -1160,7 +1146,7 @@ const DAILY_ID='eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
 const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
-let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',ntFreq='fixed',planScope='default';
+let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',planScope='default';
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
@@ -1201,7 +1187,7 @@ const I={
     // New task form
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
     taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
-    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',freqAlways:'Altijd',freqOptional:'— optioneel —',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1269,7 +1255,7 @@ const I={
     periodicLabel:'Periodieke taken',
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
     taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
-    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',freqAlways:'Altijd',freqOptional:'— optioneel —',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1333,7 +1319,7 @@ const I={
     // New task form
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
     taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
-    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',freqAlways:'Sempre',freqOptional:'— opcional —',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1400,7 +1386,7 @@ const I={
     periodicLabel:'Tarefas periódicas',
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
     taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
-    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',freqAlways:'Sempre',freqOptional:'— opcional —',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1676,9 +1662,8 @@ function updateManagerLabels(){
     'nt-auto-hint':tr('autoHint'),'nt-lbl-loc':tr('taskWhere'),
     'nt-lbl-who':tr('taskWho'),'nt-lbl-day':tr('day'),
     'nt-lbl-freq':tr('taskFreq'),
-    'nt-freq-fixed':tr('typeFixed'),'nt-freq-periodic':tr('typePeriodic'),'nt-freq-extra':tr('repOnce'),
-    'nt-lbl-cat':tr('category'),'nt-lbl-interval':tr('interval'),'nt-lbl-startdate':tr('startDate'),'edit-lbl-startdate':tr('startDate'),
-    'nt-lbl-days':tr('days'),'nt-lbl-rep':tr('repetition'),
+    'nt-lbl-cat':tr('category'),'nt-lbl-startdate':tr('startDate'),'edit-lbl-startdate':tr('startDate'),
+    'nt-lbl-days':tr('days'),
     'nt-lbl-start':tr('startWeek'),'nt-lbl-nwks':tr('numWeeks'),
     'nt-lbl-until':tr('untilDate'),'nt-add-btn':tr('addTask'),
     'nt-lbl-points':tr('pointsPerTask'),
@@ -1693,16 +1678,8 @@ function updateManagerLabels(){
     'inst-pts-title':`⭐ ${tr('pointsLabel')}`,'inst-pts-val-lbl':tr('pointsValue'),'inst-pts-save':tr('save'),
   };
   Object.entries(m).forEach(([id,txt])=>{const el=document.getElementById(id);if(el)el.textContent=txt;});
-  // Rep options (include daily)
-  const rep=document.getElementById('nt-rep');
-  if(rep){
-    const keys=['repOnce','repDaily','repWeekly','repMonthly','repInfinite','repWeeks','repUntil'];
-    [...rep.options].forEach((o,i)=>{if(keys[i])o.text=tr(keys[i]);});
-  }
   const sw=document.getElementById('nt-wk');
   if(sw){if(sw.options[0])sw.options[0].text=tr('thisWeek');if(sw.options[1])sw.options[1].text=tr('nextWeek');if(sw.options[2])sw.options[2].text=tr('in2weeks');}
-  const iv=document.getElementById('nt-interval');
-  if(iv){[0,-1,1,2,3,4,6,12].forEach((v,i)=>{if(iv.options[i])iv.options[i].text=v===-1?tr('intervalBi'):tr('interval'+v);});}
 }
 
 async function init(){
@@ -3287,20 +3264,17 @@ async function togPlan(lid,di){
 }
 
 // ═══════════════ UNIFIED TASK FORM ═══════════════
-function setFreq(f){
-  ntFreq=f;
-  ['fixed','periodic','extra'].forEach(t=>{
-    document.getElementById('nt-freq-'+t)?.classList.toggle('on',t===f);
-  });
+function ntFreqChange(){
+  const f=document.getElementById('nt-freq-sel')?.value||'always';
   const who=document.getElementById('nt-who')?.value;
   const isPers=!!who;
-  // Interval wrap: only for iedereen + periodic
-  document.getElementById('nt-interval-wrap').style.display=(!isPers&&f==='periodic')?'block':'none';
-  // Extra wrap: for extra (both person and iedereen)
-  document.getElementById('nt-extra-wrap').style.display=f==='extra'?'block':'none';
-  // Pers wrap (dag dropdown): only for person + fixed (elke week)
-  document.getElementById('nt-pers-wrap').style.display=(isPers&&f!=='extra')?'block':'none';
-  // Points: for child regardless of freq
+  const needsDays=['once','weeks','until'].includes(f);
+  const isPeriodic=['biweekly','monthly','3months','6months','yearly'].includes(f);
+  document.getElementById('nt-days-wrap').style.display=needsDays?'block':'none';
+  document.getElementById('nt-wks-wrap').style.display=f==='weeks'?'block':'none';
+  document.getElementById('nt-until-wrap').style.display=f==='until'?'block':'none';
+  document.getElementById('nt-startdate-wrap').style.display=isPeriodic?'block':'none';
+  document.getElementById('nt-pers-wrap').style.display=(isPers&&f==='always')?'block':'none';
   if(isPers){
     const selU=D.users.find(u=>u.id===who);
     document.getElementById('nt-points-wrap').style.display=(selU?.role==='child')?'block':'none';
@@ -3309,44 +3283,41 @@ function setFreq(f){
   }
 }
 
+function populateFreqDropdown(){
+  const who=document.getElementById('nt-who')?.value;
+  const isPers=!!who;
+  const sel=document.getElementById('nt-freq-sel');if(!sel)return;
+  const prev=sel.value||'always';
+  if(isPers){
+    sel.innerHTML=`<option value="always">${tr('taskEveryWeek')}</option><option value="once">${tr('repOnce')}</option><option value="weeks">${tr('repWeeks')}</option><option value="until">${tr('repUntil')}</option>`;
+  } else {
+    sel.innerHTML=`<option value="always">${tr('freqAlways')}</option><option value="once">${tr('repOnce')}</option><option value="biweekly">${tr('intervalBi')}</option><option value="monthly">${tr('interval1')}</option><option value="3months">${tr('interval3')}</option><option value="6months">${tr('interval6')}</option><option value="yearly">${tr('interval12')}</option><option value="weeks">${tr('repWeeks')}</option><option value="until">${tr('repUntil')}</option>`;
+  }
+  if([...sel.options].some(o=>o.value===prev))sel.value=prev;
+  else sel.value='always';
+}
+
 function ntWhoChange(){
   const who=document.getElementById('nt-who').value;
-  const isPers=!!who;
-  // Always show freq wrap
-  document.getElementById('nt-freq-wrap').style.display='block';
-  // Toggle periodiek pill visibility
-  const pp=document.getElementById('nt-freq-periodic');
-  if(pp)pp.style.display=isPers?'none':'';
-  // Change "Vast" pill label
-  const fp=document.getElementById('nt-freq-fixed');
-  if(fp)fp.textContent=isPers?tr('taskEveryWeek'):tr('typeFixed');
-  // If currently on periodic and person selected, switch to fixed
-  if(isPers&&ntFreq==='periodic')ntFreq='fixed';
-  // Cat wrap: hide for personal
-  document.getElementById('nt-cat-wrap').style.display=isPers?'none':'block';
-  // Update all sub-field visibility via setFreq
-  setFreq(ntFreq);
+  document.getElementById('nt-cat-wrap').style.display=who?'none':'block';
+  populateFreqDropdown();
+  ntFreqChange();
 }
 
 function renderTaskForm(){
   updateManagerLabels();
-  // Location pills with "Elke dag" option
   const lc=document.getElementById('nt-locs');
   if(lc)lc.innerHTML=`<div class="cpill" id="ntl-daily" onclick="ntLocClick(this,'daily')" style="font-style:italic">${tr('taskEveryDay')}</div>`+D.locs.map(l=>`<div class="cpill" id="ntl-${l.id}" onclick="ntLocClick(this,'${l.id}')">${lnm(l)}</div>`).join('');
-  // Day pills for eenmalig
   const dc=document.getElementById('nt-days');
   if(dc)dc.innerHTML=dayArr().map((d,i)=>`<div class="cpill" id="ntd-${i}" onclick="this.classList.toggle('on')">${d}</div>`).join('');
-  // "Voor wie" dropdown: Iedereen + gezinsleden (geen workers)
   const wsel=document.getElementById('nt-who');
-  if(wsel){const seen=new Set();wsel.innerHTML=`<option value="">${tr('taskEveryone')}</option>`+D.users.filter(u=>{if(u.role==='worker'||seen.has(u.id))return false;seen.add(u.id);return true;}).map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');}
-  // Dag dropdown voor persoonlijke taken
+  if(wsel){const seen=new Set();wsel.innerHTML=`<option value="">${tr('freqOptional')}</option>`+D.users.filter(u=>{if(seen.has(u.id))return false;seen.add(u.id);return true;}).map(u=>`<option value="${u.id}">${u.avatar||''} ${u.name}</option>`).join('');}
   const pdsel=document.getElementById('nt-day');
   if(pdsel)pdsel.innerHTML=dayArr().map((d,i)=>`<option value="${i}">${d}</option>`).join('');
   updateNtCats();
-  // Reset state
   document.getElementById('nt-who').value='';
-  ntWhoChange();
-  setFreq(ntFreq);
+  populateFreqDropdown();
+  ntFreqChange();
 }
 
 function ntLocClick(el,lid){
@@ -3370,30 +3341,27 @@ function updateNtCats(){
   sel.innerHTML=`<option value="Algemeen">${tr('general')}</option>`+allCats.map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
-function togNtRep(){
-  const v=document.getElementById('nt-rep').value;
-  document.getElementById('nt-rep-wks').style.display=v==='weeks'?'block':'none';
-  document.getElementById('nt-rep-until').style.display=v==='until'?'block':'none';
-}
 
 async function addUnifiedTask(){
   const nl=document.getElementById('nt-nl').value.trim();
   const pt=document.getElementById('nt-pt').value.trim();
   if(!nl)return;
   const who=document.getElementById('nt-who').value;
+  const freq=document.getElementById('nt-freq-sel')?.value||'always';
   const isDailySelected=document.getElementById('ntl-daily')?.classList.contains('on');
   const selLocs=[...document.querySelectorAll('#nt-locs .cpill.on')].map(el=>el.id.replace('ntl-','')).filter(id=>id!=='daily');
   const cat=document.getElementById('nt-cat').value||'Algemeen';
   const pts=parseInt(document.getElementById('nt-points').value)||0;
 
-  if(who&&ntFreq!=='extra'){
+  if(who&&freq==='always'){
     // PERSONAL TASK (elke week)
     const day=parseInt(document.getElementById('nt-day').value);
     const locId=selLocs[0]||null;
     await sb.from('personal_tasks').insert({household_id:HID,user_id:who,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
     const uName=D.users.find(x=>x.id===who)?.name||'';
     await logChange(`${tr('typePersonal')}: "${nl}" → ${uName} (${dayArr()[day]})`);
-  } else if(!who&&ntFreq==='fixed'){
+  } else if(!who&&freq==='always'){
+    // FIXED TASK (altijd bij locatie)
     if(!isDailySelected&&!selLocs.length)return;
     if(isDailySelected){
       await sb.from('fixed_tasks').insert({household_id:HID,location_id:null,is_daily:true,category:cat,text_nl:nl,text_pt:pt||nl,points:pts});
@@ -3403,10 +3371,12 @@ async function addUnifiedTask(){
       }
     }
     await logChange(`${tr('typeFixed')}: "${nl}"`);
-  } else if(!who&&ntFreq==='periodic'){
+  } else if(!who&&['biweekly','monthly','3months','6months','yearly'].includes(freq)){
+    // PERIODIC TASK
     if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
-    const interval=parseInt(document.getElementById('nt-interval').value)??1;
-    const startDate=document.getElementById('nt-startdate').value||null;
+    const iMap={biweekly:-1,monthly:1,'3months':3,'6months':6,yearly:12};
+    const interval=iMap[freq]??1;
+    const startDate=document.getElementById('nt-startdate')?.value||null;
     const row={household_id:HID,location_id:selLocs[0]||null,location_ids:selLocs,text_nl:nl,text_pt:pt||nl,interval_months:interval,category:cat,points:pts};
     if(startDate)row.start_date=startDate;
     let res=await sb.from('monthly_tasks').insert(row);
@@ -3414,20 +3384,15 @@ async function addUnifiedTask(){
     if(res.error){doFlash('nt-flash','❌ '+res.error.message);return;}
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
   } else {
-    // EXTRA TASK (eenmalig/tijdelijk — voor iedereen of specifiek persoon)
+    // EXTRA TASK (eenmalig/weeks/until — voor iedereen of specifiek persoon)
     if(!who&&!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
     const daysSelected=[...document.querySelectorAll('#nt-days .cpill.on')].map(el=>parseInt(el.id.replace('ntd-','')));
     if(!daysSelected.length){doFlash('nt-flash',tr('selectMinDay'));return;}
-    const rep=document.getElementById('nt-rep').value;
     const sOff=parseInt(document.getElementById('nt-wk').value);
     const wks=[];
-    if(rep==='once'){wks.push(wkey(sOff));}
-    else if(rep==='daily'){for(let i=0;i<90;i++){const w=wkey(sOff+Math.floor(i/7));if(!wks.includes(w))wks.push(w);}}
-    else if(rep==='weekly'){for(let i=0;i<52;i++)wks.push(wkey(sOff+i));}
-    else if(rep==='monthly'){for(let i=0;i<12;i++)wks.push(wkey(sOff+i*4));}
-    else if(rep==='infinite'){for(let i=0;i<260;i++)wks.push(wkey(sOff+i));}
-    else if(rep==='weeks'){const n=parseInt(document.getElementById('nt-wks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
-    else if(rep==='until'){const ud=document.getElementById('nt-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>260)break;wks.push(w);o++;}}
+    if(freq==='once'){wks.push(wkey(sOff));}
+    else if(freq==='weeks'){const n=parseInt(document.getElementById('nt-wks-n').value)||1;for(let i=0;i<n;i++)wks.push(wkey(sOff+i));}
+    else if(freq==='until'){const ud=document.getElementById('nt-until').value;if(!ud)return;let o=sOff;while(true){const w=wkey(o);if(w>ud||o>260)break;wks.push(w);o++;}}
     const ins=[];
     const locs=selLocs.length?selLocs:[null];
     for(const loc of locs)for(const di of daysSelected)for(const wk of wks){
@@ -3438,13 +3403,12 @@ async function addUnifiedTask(){
     for(let i=0;i<ins.length;i+=500){
       let res=await sb.from('extra_tasks').insert(ins.slice(i,i+500));
       if(res.error&&who){
-        // Fallback: probeer zonder user_id als kolom nog niet bestaat
         const batch=ins.slice(i,i+500).map(r=>{const{user_id,...rest}=r;return rest;});
         await sb.from('extra_tasks').insert(batch);
       }
     }
     const uName=who?D.users.find(x=>x.id===who)?.name:'';
-    await logChange(`${tr('typeExtra')}: "${nl}"${uName?' → '+uName:''} (${rep})`);
+    await logChange(`${tr('typeExtra')}: "${nl}"${uName?' → '+uName:''} (${freq})`);
   }
 
   // Reset form
