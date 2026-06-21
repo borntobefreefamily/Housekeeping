@@ -327,6 +327,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 
 /* COLLAPSIBLE SECTION */
 .collapse-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:.5rem 0}
+.beheer-hdr{background:var(--steam);border-radius:10px;padding:12px 14px;margin:8px 0 2px;border-left:4px solid var(--caramel)}
 .collapse-hdr .sec-title{margin:0;padding:0;border:none;flex:1}
 
 /* Task tab group headers */
@@ -613,7 +614,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 
   <div id="mt-inst" class="scroll" style="display:none">
-    <div class="collapse-hdr" onclick="togEl('taken-mgr-body','taken-mgr-chev')" style="margin-bottom:0">
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('taken-mgr-body','taken-mgr-chev')">
       <div class="sec-title" style="margin:0;border:none;padding:0">📋 <span id="grp-overzicht-lbl">Taakbeheer</span></div>
       <span class="chev open" id="taken-mgr-chev">&#9662;</span>
     </div>
@@ -653,7 +654,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 
     </div>
 
-    <div class="collapse-hdr" onclick="togEl('plan-body','plan-chev')" style="margin-bottom:0">
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('plan-body','plan-chev')">
       <div class="sec-title" id="inst-plan-title" style="margin:0;border:none;padding:0">📌 Planning</div>
       <span class="chev" id="plan-chev">&#9662;</span>
     </div>
@@ -677,7 +678,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="plan-grid"></div>
     </div>
 
-    <div class="sec-title" id="inst-prof-title">Mijn profiel</div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('prof-body','prof-chev')">
+      <div class="sec-title" id="inst-prof-title" style="margin:0;border:none;padding:0">Mijn profiel</div>
+      <span class="chev" id="prof-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="prof-body">
     <div class="form-card">
       <label class="flbl" id="inst-lbl-name">Naam</label><input class="finput" type="text" id="inst-name">
       <label class="flbl" id="inst-lbl-pin">Nieuwe PIN (4 cijfers)</label><input class="finput" type="password" id="inst-pin" placeholder="" maxlength="4">
@@ -687,20 +692,31 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="save-btn" onclick="saveProfile()" id="inst-save-btn">Opslaan</button>
       <div id="inst-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title" id="inst-users-title">Gebruikers</div>
+    </div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('users-body','users-chev')">
+      <div class="sec-title" id="inst-users-title" style="margin:0;border:none;padding:0">Gebruikers</div>
+      <span class="chev" id="users-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="users-body">
     <div class="form-card">
       <div id="user-list"></div>
       <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
         <button class="save-btn" onclick="openUserEdit(null)" style="width:100%" id="add-user-btn">+ Gebruiker toevoegen</button>
       </div>
     </div>
-    <div class="sec-title" id="inst-wd-title">Werkdagen</div>
+    </div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('wd-body','wd-chev')">
+      <div class="sec-title" id="inst-wd-title" style="margin:0;border:none;padding:0">Werkdagen</div>
+      <span class="chev" id="wd-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="wd-body">
     <div class="form-card">
       <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
       <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
       <div id="wd-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="collapse-hdr" onclick="togEl('gcat-body','gcat-chev')" style="margin-bottom:0">
+    </div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('gcat-body','gcat-chev')">
       <div class="sec-title" id="inst-gcat-title" style="margin:0;border:none;padding:0">Categorieën</div>
       <span class="chev" id="gcat-chev">&#9662;</span>
     </div>
@@ -715,7 +731,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="gcat-flash" class="flash" style="opacity:0"></div>
     </div>
     </div>
-    <div class="collapse-hdr" onclick="togEl('loc-body','loc-chev')" style="margin-bottom:0">
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('loc-body','loc-chev')">
       <div class="sec-title" id="inst-loc-title" style="margin:0;border:none;padding:0">Locaties</div>
       <span class="chev" id="loc-chev">&#9662;</span>
     </div>
@@ -730,7 +746,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
     </div>
     </div>
-    <div class="sec-title" id="inst-pts-title">⭐ Puntensysteem</div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('pts-body','pts-chev')">
+      <div class="sec-title" id="inst-pts-title" style="margin:0;border:none;padding:0">⭐ Puntensysteem</div>
+      <span class="chev" id="pts-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="pts-body">
     <div class="form-card">
       <label class="flbl" id="inst-pts-val-lbl">Puntwaarde (€ per punt)</label>
       <div style="display:flex;gap:8px;align-items:center">
@@ -740,19 +760,34 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
       <div id="pts-val-flash" class="flash" style="opacity:0"></div>
     </div>
-    <div class="sec-title" id="inst-wk-title">Week beheren</div>
+    </div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('wkm-body','wkm-chev')">
+      <div class="sec-title" id="inst-wk-title" style="margin:0;border:none;padding:0">Week beheren</div>
+      <span class="chev" id="wkm-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="wkm-body">
     <div class="form-card">
       <div class="set-row"><div><div class="set-lbl" id="inst-clear-lbl">Vinkjes wissen</div><div class="set-sub" id="inst-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="inst-clear-btn">Wissen</button></div>
       <div class="set-row" style="margin-top:8px"><div><div class="set-lbl">Taken vertalen naar PT</div><div class="set-sub">Vertaalt alle taken zonder Portugese tekst</div></div><button class="btn-sm" onclick="translateAllTasks()" id="translate-btn">Vertalen</button></div>
       <div id="translate-flash" class="flash" style="opacity:0">Vertaling klaar!</div>
     </div>
+    </div>
 
-    <div class="sec-title">Activiteitenlog</div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('log-body','log-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">Activiteitenlog</div>
+      <span class="chev" id="log-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="log-body">
     <div class="form-card" style="max-height:300px;overflow-y:auto">
       <div id="m-log-list"></div>
     </div>
+    </div>
 
-    <div class="sec-title">Notities zoeken</div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('notes-body','notes-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">Notities zoeken</div>
+      <span class="chev" id="notes-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="notes-body">
     <div class="form-card">
       <div style="display:flex;gap:4px">
         <input type="text" class="finput" id="note-search" placeholder="Zoek in notities..." style="flex:1" onkeydown="if(event.key==='Enter')searchNotes()">
@@ -760,8 +795,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
       <div id="note-search-results" style="margin-top:8px"></div>
     </div>
+    </div>
+
   </div>
-</div>
 
 <!-- BOOKING MODAL -->
 <!-- FAB: New task button -->
