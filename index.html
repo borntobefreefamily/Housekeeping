@@ -1123,6 +1123,7 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',planScope='default';
+let _editReplace=null,_editMap={};
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
@@ -3365,6 +3366,12 @@ async function addUnifiedTask(){
     await logChange(`${tr('typeExtra')}: "${nl}"${uName?' → '+uName:''} (${freq})`);
   }
 
+  // Delete old records if editing
+  if(_editReplace){
+    for(const id of _editReplace.ids)await sb.from(_editReplace.table).delete().eq('id',id);
+    _editReplace=null;
+  }
+
   // Reset
   document.getElementById('nt-nl').value='';document.getElementById('nt-pt').value='';
   document.getElementById('nt-points').value='0';
@@ -3516,9 +3523,11 @@ function renderExGroup(tasks,title,color){
     const dateStr=ts.length>1?`${wks[0]} – ${wks[wks.length-1]} (${ts.length}×)`:wks[0];
     const locId=ts[0].location_id||'none';
     const mapKey=locId+'_'+txt.slice(0,20).replace(/\W/g,'_')+(ts[0].user_id?'_'+ts[0].user_id.slice(0,8):'');
+    const ek='ex_'+(ts[0].location_id||'none').slice(0,8)+'_'+txt.slice(0,20).replace(/\W/g,'')+(ts[0].user_id?'_'+ts[0].user_id.slice(0,8):'');
     exIdMap[mapKey]=ts.map(x=>x.id);
+    _editMap[ek]={table:'extra_tasks',ids:ts.map(x=>x.id),data:{nl:txt,pt:ts[0].text_pt||'',who:ts[0].user_id||'',days:[...new Set(ts.map(e=>e.day_index))],locs:ts[0].location_id?[ts[0].location_id]:[],freq:'once',cat:ts[0].category||'',points:ts[0].points||0}};
     const whoStr=ts[0].user_id?` → ${uname(ts[0].user_id)}`:'';
-    html+=`<div class="task-row" style="margin-bottom:4px"><div style="flex:1"><div class="task-txt">${esc(txt)}${whoStr}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dns} &middot; ${dateStr}</div></div><button class="btn-edit" onclick="openEdit('${ts[0].id}','extra','${esc(txt)}','${esc(ts[0].text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delExGr(exIdMap['${mapKey}'])">&#10005;</button></div>`;
+    html+=`<div class="task-row" style="margin-bottom:4px"><div style="flex:1"><div class="task-txt">${esc(txt)}${whoStr}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dns} &middot; ${dateStr}</div></div><button class="btn-edit" onclick="editFromMap('${ek}')">&#9998;</button><button class="btn-del" onclick="delExGr(exIdMap['${mapKey}'])">&#10005;</button></div>`;
   });
   html+='</div></div>';
   return html;
@@ -3627,12 +3636,37 @@ async function deleteRecipeEdit(){
 }
 function closeRecipeModal(){document.getElementById('recipe-modal').classList.remove('open');}
 
+function editFromMap(key){
+  const m=_editMap[key];if(!m)return;
+  _editReplace={table:m.table,ids:m.ids};
+  openTaskModal();
+  setTimeout(()=>prefillTaskForm(m.data),60);
+}
+
+function prefillTaskForm(d){
+  if(d.nl)document.getElementById('nt-nl').value=d.nl;
+  if(d.pt)document.getElementById('nt-pt').value=d.pt;
+  if(d.locs)d.locs.forEach(lid=>{const el=document.getElementById('ntl-'+lid);if(el)el.classList.add('on');});
+  updateNtCats();
+  if(d.who){document.getElementById('nt-who').value=d.who;ntWhoChange();}
+  if(d.days)d.days.forEach(di=>{const el=document.getElementById('ntd-'+di);if(el)el.classList.add('on');});
+  if(d.freq){const sel=document.getElementById('nt-freq-sel');if(sel)sel.value=d.freq;}
+  if(d.startDate)document.getElementById('nt-startdate').value=d.startDate;
+  if(d.cat){const c=document.getElementById('nt-cat');if(c)c.value=d.cat;}
+  if(d.points)document.getElementById('nt-points').value=d.points;
+  document.getElementById('nt-add-btn').textContent=lg()==='pt'?'✓ Bijwerken':'✓ Bijwerken';
+  document.getElementById('new-task-title').textContent=lg()==='pt'?'Tarefa editar':'Taak bewerken';
+}
+
 function openTaskModal(){
   renderTaskForm();
   document.getElementById('task-add-modal').classList.add('open');
 }
 function closeTaskModal(){
   document.getElementById('task-add-modal').classList.remove('open');
+  _editReplace=null;
+  document.getElementById('nt-add-btn').textContent='+ '+tr('addTask');
+  document.getElementById('new-task-title').textContent=tr('newTask');
 }
 
 // ═══════════════ RECIPE INGREDIENTS ═══════════════
@@ -5173,17 +5207,22 @@ function renderPersList(){
     const u=D.users.find(x=>x.id===uid);if(!u)return;
     const tasks=D.persTasks.filter(t=>t.user_id===uid);
     const col=ucol(uid);
-    html+=`<div class="loc-section" style="margin-bottom:10px"><div class="loc-section-hdr" style="background:${col}"><span class="loc-section-name">${u.avatar||''} ${u.name}</span><span class="loc-section-count">${tasks.length} taken</span></div><div class="loc-section-body">`;
-    const byDay={};tasks.forEach(t=>{if(!byDay[t.day_index])byDay[t.day_index]=[];byDay[t.day_index].push(t);});
-    Object.keys(byDay).sort((a,b)=>a-b).forEach(di=>{
-      html+=`<span class="slbl">${dayArr()[di]}</span>`;
-      byDay[di].forEach(t=>{
-        const locNm=t.location_id?locName(t.location_id):'';
-        html+=`<div class="task-row"><span class="task-txt">${t.text_nl||t.text_pt||''}${locNm?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locNm}</span>`:''}</span>`;
-        html+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button>`;
-        html+=`<button onclick="delPersTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px">&#10005;</button>`;
-        html+=`</div>`;
-      });
+    // Group by text_nl — edit all days at once
+    const byText={};
+    tasks.forEach(t=>{const k=t.text_nl||'';if(!byText[k])byText[k]=[];byText[k].push(t);});
+    html+=`<div class="loc-section" style="margin-bottom:10px"><div class="loc-section-hdr" style="background:${col}"><span class="loc-section-name">${u.avatar||''} ${u.name}</span><span class="loc-section-count">${Object.keys(byText).length} taken</span></div><div class="loc-section-body">`;
+    Object.entries(byText).forEach(([txt,ts])=>{
+      const days=ts.map(t=>t.day_index).sort();
+      const dayNames=days.map(d=>dayArr()[d]).join(', ');
+      const locNm=ts[0].location_id?locName(ts[0].location_id):'';
+      const pts=ts[0].points||0;
+      const ids=ts.map(t=>t.id);
+      const ek='pe_'+uid.slice(0,8)+'_'+txt.slice(0,20).replace(/\W/g,'');
+      _editMap[ek]={table:'personal_tasks',ids:ids,data:{nl:txt,pt:ts[0].text_pt||'',who:uid,days:days,locs:ts[0].location_id?[ts[0].location_id]:[],freq:'weekly',points:pts}};
+      html+=`<div class="task-row"><div style="flex:1"><span class="task-txt">${esc(txt)}${locNm?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locNm}</span>`:''}</span><div style="font-size:11px;color:var(--muted);margin-top:2px">${dayNames}${pts?' · '+pts+'⭐':''}</div></div>`;
+      html+=`<button class="btn-edit" onclick="editFromMap('${ek}')">&#9998;</button>`;
+      html+=`<button onclick="delPersGroup('${ek}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px">&#10005;</button>`;
+      html+=`</div>`;
     });
     html+=`</div></div>`;
   });
@@ -5254,6 +5293,13 @@ function openPersEdit(id){
 async function delPersTask(id){
   if(!confirm('Verwijderen?'))return;
   await sb.from('personal_tasks').delete().eq('id',id);
+  await loadAll();renderPersList();renderMgrWeek();
+}
+
+async function delPersGroup(ek){
+  const m=_editMap[ek];if(!m)return;
+  if(!confirm('Alle '+m.ids.length+' dagen verwijderen?'))return;
+  for(const id of m.ids)await sb.from('personal_tasks').delete().eq('id',id);
   await loadAll();renderPersList();renderMgrWeek();
 }
 
