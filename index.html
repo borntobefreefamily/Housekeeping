@@ -678,21 +678,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="plan-grid"></div>
     </div>
 
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('prof-body','prof-chev')">
-      <div class="sec-title" id="inst-prof-title" style="margin:0;border:none;padding:0">Mijn profiel</div>
-      <span class="chev" id="prof-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="prof-body">
-    <div class="form-card">
-      <label class="flbl" id="inst-lbl-name">Naam</label><input class="finput" type="text" id="inst-name">
-      <label class="flbl" id="inst-lbl-pin">Nieuwe PIN (4 cijfers)</label><input class="finput" type="password" id="inst-pin" placeholder="" maxlength="4">
-      <label class="flbl" id="inst-lbl-pin2">PIN bevestigen</label><input class="finput" type="password" id="inst-pin2" placeholder="" maxlength="4">
-      <label class="flbl" id="inst-lbl-lang">Taal</label>
-      <select class="finput" id="inst-lang"><option value="nl">Nederlands</option><option value="pt">Português</option></select>
-      <button class="save-btn" onclick="saveProfile()" id="inst-save-btn">Opslaan</button>
-      <div id="inst-flash" class="flash" style="opacity:0"></div>
-    </div>
-    </div>
     <div class="collapse-hdr beheer-hdr" onclick="togEl('users-body','users-chev')">
       <div class="sec-title" id="inst-users-title" style="margin:0;border:none;padding:0">Gebruikers</div>
       <span class="chev" id="users-chev">&#9662;</span>
@@ -1682,9 +1667,7 @@ function updateManagerLabels(){
     'nt-add-btn':tr('addTask'),
     'nt-lbl-points':tr('pointsPerTask'),
     'edit-lbl-points':tr('pointsPerTask'),
-    'inst-prof-title':tr('myProfile'),'inst-lbl-name':tr('name'),
-    'inst-lbl-pin':tr('newPin'),'inst-lbl-pin2':tr('confirmPin'),
-    'inst-lbl-lang':tr('language'),'inst-save-btn':tr('save'),
+    'inst-users-title':tr('users'),
     'inst-wd-title':tr('workdays'),'inst-wd-btn':tr('saveWorkdays'),
     'inst-gcat-title':tr('globalCats'),'inst-gcat-hint':tr('globalCatsHint'),
     'inst-loc-title':tr('locationsList'),'inst-wk-title':tr('weekManage'),
@@ -5133,6 +5116,9 @@ function openUserEdit(uid){
   document.getElementById('um-title').textContent=u?'Gebruiker bewerken':'Nieuwe gebruiker';
   document.getElementById('um-name').value=u?.name||'';
   document.getElementById('um-pin').value='';
+  // PIN label: hint for existing users
+  const pinLbl=document.querySelector('#user-modal label[for="um-pin"],#user-modal .flbl:nth-of-type(2)');
+  if(!pinLbl){const labels=document.querySelectorAll('#user-modal .flbl');if(labels[1])labels[1].textContent=u?(lg()==='pt'?'PIN (deixe vazio para manter)':'PIN (leeg = niet wijzigen)'):(lg()==='pt'?'PIN (4 dígitos)':'PIN (4 cijfers)');}
   document.getElementById('um-role').value=u?.role||'child';
   document.getElementById('um-lang').value=u?.language||'nl';
   // Avatar picker
@@ -5228,7 +5214,7 @@ async function saveUser(){
     await logChange(`Nieuwe gebruiker: ${name} (${ROLE_LABELS[role]})`);
   }
   await loadAll();
-  if(uid===CU.id)CU=D.users.find(x=>x.id===CU.id);
+  if(uid===CU.id){CU=D.users.find(x=>x.id===CU.id);setSessionLang(lang);}
   closeUserModal();renderUserList();
 }
 
