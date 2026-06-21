@@ -1123,7 +1123,9 @@ const BUITEN_ID='dddddddd-dddd-dddd-dddd-dddddddddddd';
 const WEATHER_LAT=38.56,WEATHER_LON=-8.90;
 
 let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',planScope='default';
-let _editReplace=null,_editMap={};
+let _editReplace=null,_editMap={},_editSeq=0;
+
+function mkEdit(table,ids,data){const k='em_'+(++_editSeq);_editMap[k]={table,ids:Array.isArray(ids)?ids:[ids],data};return k;}
 let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
@@ -1993,7 +1995,7 @@ function renderDayBody(di,wk,isMgr){
         lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${byStr}</span>`;
         if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
         if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
-        if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
+        if(isMgr)lb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('fixed_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',locs:t.location_id?[t.location_id]:[],freq:'weekly',cat:t.category||''})}')">&#9998;</button>`;
         lb+='</div>';
       });
     });
@@ -2041,7 +2043,7 @@ function renderDayBody(di,wk,isMgr){
         const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${locName(t.location_id)}</span>`:'';
         pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${t.text_nl}${ptsBadge(t.points,ck)}${ownerBadge}${locBadge}${byStr}</span>`;
         if(!ck&&!skipped)pb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
-        pb+=`<button class="btn-edit" onclick="openPersEdit('${t.id}')">&#9998;</button></div>`;
+        pb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('personal_tasks',t.id,{nl:t.text_nl||t.text_pt||'',pt:t.text_pt||'',who:t.user_id,days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0})}')">&#9998;</button></div>`;
       });
       html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#8e7cc3;cursor:pointer" onclick="togEl('lb-${uid2}','lc-${uid2}')"><span class="loc-section-name">📌 ${tr('addPersTask').replace('toevoegen','').replace('Adicionar ','').trim()}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${pDone}/${orphanPers.length}</span><span class="chev" id="lc-${uid2}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid2}">${pb}</div></div>`;
     }
@@ -2073,7 +2075,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${byStr}</span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
       if(skipped)lb+=`<span style="font-size:10px;color:var(--muted);margin-left:2px">${tr('skipped')}</span>`;
-      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('fixed_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',locs:t.location_id?[t.location_id]:[],freq:'weekly',cat:t.category||''})}')">&#9998;</button>`;
       lb+='</div>';
     });
   });
@@ -2086,7 +2088,7 @@ function renderLocBlock(loc,wk,di,isMgr){
       const skipped=!!D.skipped[pt.id+'_'+wk+'_'+di];
       lb+=`<div class="task-row periodic-row${ck?' monthly-done-row':skipped?' skip-row':' monthly-due-row'}"><div class="cb${ck?' on':''}" onclick="togPeriodic(this,'${pt.id}',${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?pt.text_nl:tx(pt)}${ptsBadge(pt.points,ck)}<span class="badge-interval">${intervalLabel(pt.interval_months??1)}</span></span>`;
       if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${pt.id}','${wk}',${di},${isMgr},'periodic')" title="${tr('skip')}">&#8864;</button>`;
-      if(isMgr)lb+=`<button class="btn-edit" onclick="openEdit('${pt.id}','periodic','${esc(pt.text_nl)}','${esc(pt.text_pt||'')}','${pt.interval_months??1}')">&#9998;</button>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('monthly_tasks',pt.id,{nl:pt.text_nl,pt:pt.text_pt||'',locs:pt.location_id?[pt.location_id]:[],freq:({[-1]:'2weekly',1:'monthly',2:'2monthly',3:'3monthly',4:'4monthly',5:'5monthly',6:'6monthly',12:'yearly'})[pt.interval_months??1]||'monthly',cat:pt.category||'',startDate:pt.start_date||''})}')">&#9998;</button>`;
       lb+='</div>';
     });
   }
@@ -3399,7 +3401,7 @@ function renderFixedList(){
       const catTasks=dailyTasks.filter(t=>(t.category||tr('general'))===cat);
       html+=`<div class="cat-sub-hdr">${cat}</div>`;
       catTasks.forEach(t=>{
-        html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="daily" data-cat="${esc(cat)}" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" ondragleave="ftDragLeave(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+        html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="daily" data-cat="${esc(cat)}" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" ondragleave="ftDragLeave(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="editFromMap('${mkEdit('fixed_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',locs:t.location_id?[t.location_id]:[],freq:'weekly',cat:t.category||''})}')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
       });
     });
     html+=`</div></div>`;
@@ -3415,7 +3417,7 @@ function renderFixedList(){
       const catTasks=tasks.filter(t=>(t.category||tr('general'))===cat);
       html+=`<div class="cat-sub-hdr">${cat}</div>`;
       catTasks.forEach(t=>{
-        html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="${loc.id}" data-cat="${esc(cat)}" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" ondragleave="ftDragLeave(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','fixed','${esc(t.text_nl)}','${esc(t.text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
+        html+=`<div class="task-row" draggable="true" data-task-id="${t.id}" data-loc="${loc.id}" data-cat="${esc(cat)}" ondragstart="ftDragStart(event)" ondragover="ftDragOver(event)" ondrop="ftDrop(event)" ondragleave="ftDragLeave(event)" style="margin-bottom:2px"><span class="task-drag">☰</span><div style="flex:1"><div class="task-txt">${t.text_nl}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="editFromMap('${mkEdit('fixed_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',locs:t.location_id?[t.location_id]:[],freq:'weekly',cat:t.category||''})}')">&#9998;</button><button class="btn-del" onclick="delFixed('${t.id}')">&#10005;</button></div>`;
       });
     });
     html+=`</div></div>`;
@@ -3482,13 +3484,13 @@ function renderPeriodicList(){
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${lnm(loc)}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
     tasks.forEach(t=>{
       const sdBadge=t.start_date?`<span class="mini-badge" style="background:#e3f2fd;color:#1565c0">📅 ${t.start_date}</span>`:'';
-      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span>${sdBadge}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
+      html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span>${sdBadge}</div>${t.text_pt&&t.text_pt!==t.text_nl?`<div style="font-size:11px;color:var(--muted)">${t.text_pt}</div>`:''}</div><button class="btn-edit" onclick="editFromMap('${mkEdit('monthly_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',locs:t.location_id?[t.location_id]:[],freq:({[-1]:'2weekly',1:'monthly',2:'2monthly',3:'3monthly',4:'4monthly',5:'5monthly',6:'6monthly',12:'yearly'})[t.interval_months??1]||'monthly',cat:t.category||'',startDate:t.start_date||''})}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;
     });
     html+='</div></div>';
   });
   if(byLoc['none']){
     html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:#8a7e74"><span class="loc-section-name">${tr('general')}</span></div><div class="loc-section-body">`;
-    byLoc['none'].forEach(t=>{const sdB=t.start_date?`<span class="mini-badge" style="background:#e3f2fd;color:#1565c0">📅 ${t.start_date}</span>`:'';html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span>${sdB}</div></div><button class="btn-edit" onclick="openEdit('${t.id}','periodic','${esc(t.text_nl)}','${esc(t.text_pt||'')}','${t.interval_months??1}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
+    byLoc['none'].forEach(t=>{const sdB=t.start_date?`<span class="mini-badge" style="background:#e3f2fd;color:#1565c0">📅 ${t.start_date}</span>`:'';html+=`<div class="task-row" style="margin-bottom:3px"><div style="flex:1"><div class="task-txt">${t.text_nl}<span class="mini-badge">${intervalLabel(t.interval_months??1)}</span>${sdB}</div></div><button class="btn-edit" onclick="editFromMap('${mkEdit('monthly_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',locs:t.location_id?[t.location_id]:[],freq:({[-1]:'2weekly',1:'monthly',2:'2monthly',3:'3monthly',4:'4monthly',5:'5monthly',6:'6monthly',12:'yearly'})[t.interval_months??1]||'monthly',cat:t.category||'',startDate:t.start_date||''})}')">&#9998;</button><button class="btn-del" onclick="delPeriodic('${t.id}')">&#10005;</button></div>`;});
     html+='</div></div>';
   }
   el.innerHTML=html;
