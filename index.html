@@ -613,35 +613,11 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 
   <div id="mt-inst" class="scroll" style="display:none">
-    <div class="collapse-hdr" onclick="togEl('plan-body','plan-chev')" style="margin-bottom:0">
-      <div class="sec-title" id="inst-plan-title" style="margin:0;border:none;padding:0">📌 Planning</div>
-      <span class="chev open" id="plan-chev">&#9662;</span>
-    </div>
-    <div class="day-body open" id="plan-body">
-    <div class="wk-nav" style="margin:0 0 1rem 0;border-radius:10px">
-      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
-      <div class="wk-lbl" id="p-wk-lbl"></div>
-      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
-    </div>
-    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
-      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
-      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
-    </div>
-    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
-      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
-        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
-      </select> extra weken
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
-    <div id="plan-grid"></div>
-    </div>
-
     <div class="collapse-hdr" onclick="togEl('taken-mgr-body','taken-mgr-chev')" style="margin-bottom:0">
       <div class="sec-title" style="margin:0;border:none;padding:0">📋 <span id="grp-overzicht-lbl">Taakbeheer</span></div>
-      <span class="chev" id="taken-mgr-chev">&#9662;</span>
+      <span class="chev open" id="taken-mgr-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="taken-mgr-body">
+    <div class="day-body open" id="taken-mgr-body">
 
     <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
       <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
@@ -675,6 +651,30 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="pers-list"></div>
     </div>
 
+    </div>
+
+    <div class="collapse-hdr" onclick="togEl('plan-body','plan-chev')" style="margin-bottom:0">
+      <div class="sec-title" id="inst-plan-title" style="margin:0;border:none;padding:0">📌 Planning</div>
+      <span class="chev" id="plan-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="plan-body">
+    <div class="wk-nav" style="margin:0 0 1rem 0;border-radius:10px">
+      <button class="wbtn" onclick="chWeekPlan(-1)">&#8249;</button>
+      <div class="wk-lbl" id="p-wk-lbl"></div>
+      <button class="wbtn" onclick="chWeekPlan(1)">&#8250;</button>
+    </div>
+    <div id="plan-scope" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="scope-btn on" id="ps-default" onclick="setPlanScope('default')">📌 Standaard</button>
+      <button class="scope-btn" id="ps-week" onclick="setPlanScope('week')">📅 Deze week</button>
+      <button class="scope-btn" id="ps-weeks" onclick="setPlanScope('weeks')">📅 Meerdere weken</button>
+    </div>
+    <div id="plan-weeks-wrap" style="display:none;margin-bottom:10px;font-size:12px;color:var(--espresso)">
+      Toepassen op deze week + <select id="plan-weeks-n" onchange="renderPlan()" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border)">
+        <option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option>
+      </select> extra weken
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;font-weight:300" id="plan-hint"></div>
+    <div id="plan-grid"></div>
     </div>
 
     <div class="sec-title" id="inst-prof-title">Mijn profiel</div>
@@ -1959,6 +1959,7 @@ function renderDayBody(di,wk,isMgr){
     if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
     if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
     if(isMgr)html+=`<button onclick="delExtraConfirm('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button>`;
+    if(isMgr)html+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('extra_tasks',e.id,{nl:e.text_nl,pt:e.text_pt||'',who:e.user_id||'',days:[e.day_index],locs:e.location_id?[e.location_id]:[],freq:'once',cat:e.category||'',points:e.points||0})}')">&#9998;</button>`;
     html+='</div>';
   });
 
@@ -3310,25 +3311,28 @@ async function addUnifiedTask(){
   const startDate=document.getElementById('nt-startdate')?.value||null;
 
   if(!daysSelected.length){doFlash('nt-flash',tr('selectMinDay'));return;}
+  let insertOk=false;
 
+  try{
   if(freq==='weekly'&&who){
     // PERSONAL TASK — one record per selected day
     const locId=selLocs[0]||null;
     for(const day of daysSelected){
-      await sb.from('personal_tasks').insert({household_id:HID,user_id:who,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
+      const r=await sb.from('personal_tasks').insert({household_id:HID,user_id:who,text_nl:nl,text_pt:pt||null,day_index:day,location_id:locId,created_by:CU.id,points:pts});
+      if(r.error){doFlash('nt-flash','❌ '+r.error.message);return;}
     }
     const uName=D.users.find(x=>x.id===who)?.name||'';
     await logChange(`${tr('typePersonal')}: "${nl}" → ${uName} (${daysSelected.map(d=>dayArr()[d]).join(', ')})`);
+    insertOk=true;
   } else if(freq==='weekly'&&!who){
-    // FIXED TASK — per locatie (geen locatie = dagelijks)
-    if(selLocs.length){
-      for(const loc of selLocs){
-        await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,is_daily:false,category:cat,text_nl:nl,text_pt:pt||nl,points:pts});
-      }
-    } else {
-      await sb.from('fixed_tasks').insert({household_id:HID,location_id:null,is_daily:true,category:cat,text_nl:nl,text_pt:pt||nl,points:pts});
+    // FIXED TASK — per locatie
+    if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
+    for(const loc of selLocs){
+      const r=await sb.from('fixed_tasks').insert({household_id:HID,location_id:loc,is_daily:false,category:cat,text_nl:nl,text_pt:pt||nl,points:pts});
+      if(r.error){doFlash('nt-flash','❌ '+r.error.message);return;}
     }
     await logChange(`${tr('typeFixed')}: "${nl}"`);
+    insertOk=true;
   } else if(!who&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq)){
     // PERIODIC TASK (monthly_tasks)
     if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
@@ -3340,6 +3344,7 @@ async function addUnifiedTask(){
     if(res.error&&startDate){delete row.start_date;res=await sb.from('monthly_tasks').insert(row);}
     if(res.error){doFlash('nt-flash','❌ '+res.error.message);return;}
     await logChange(`${tr('typePeriodic')}: "${nl}"`);
+    insertOk=true;
   } else {
     // EXTRA TASKS — generate week_keys (person+non-weekly, 3weekly, 4weekly, once)
     if(!who&&!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
@@ -3349,7 +3354,7 @@ async function addUnifiedTask(){
     if(startDate){const sd2=new Date(startDate),now=new Date();sOff=Math.max(0,Math.round((sd2-now)/(7*864e5)));}
     const wks=[];
     if(freq==='once'){wks.push(wkey(sOff));}
-    else{const n=freq==='yearly'?3:Math.min(52,Math.ceil(104/wInt));for(let i=0;i<n;i++)wks.push(wkey(sOff+i*wInt));}
+    else{const n=freq==='yearly'?5:Math.min(130,Math.ceil(260/wInt));for(let i=0;i<n;i++)wks.push(wkey(sOff+i*wInt));}
     const ins=[];
     const locs=selLocs.length?selLocs:[null];
     for(const loc of locs)for(const di of daysSelected)for(const wk of wks){
@@ -3366,10 +3371,12 @@ async function addUnifiedTask(){
     }
     const uName=who?D.users.find(x=>x.id===who)?.name:'';
     await logChange(`${tr('typeExtra')}: "${nl}"${uName?' → '+uName:''} (${freq})`);
+    insertOk=true;
   }
+  }catch(err){doFlash('nt-flash','❌ '+err.message);return;}
 
-  // Delete old records if editing
-  if(_editReplace){
+  // Delete old records only if insert succeeded
+  if(_editReplace&&insertOk){
     for(const id of _editReplace.ids)await sb.from(_editReplace.table).delete().eq('id',id);
     _editReplace=null;
   }
