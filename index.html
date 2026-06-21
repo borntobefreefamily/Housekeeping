@@ -1155,7 +1155,7 @@ const I={
     interval1:'Elke maand',interval2:'Elke 2 maanden',interval3:'Elke 3 maanden',
     interval4:'Elke 4 maanden',interval6:'Elke 6 maanden',interval12:'Jaarlijks',
     interval0:'Elke week',intervalBi:'2-wekelijks',
-    grpOverview:'Overzicht',grpAdd:'Toevoegen',
+    grpOverview:'Taken overzicht',grpAdd:'Toevoegen',
     allRead:'Alles gelezen',
     persTasks:'Vaste taken per gezinslid',addPersTask:'Persoonlijke taak toevoegen',
     // Tabs
@@ -1287,7 +1287,7 @@ const I={
     interval1:'Mensal',interval2:'A cada 2 meses',interval3:'A cada 3 meses',
     interval4:'A cada 4 meses',interval6:'A cada 6 meses',interval12:'Anual',
     interval0:'Semanal',intervalBi:'Quinzenal',
-    grpOverview:'Visão geral',grpAdd:'Adicionar',
+    grpOverview:'Visão geral de tarefas',grpAdd:'Adicionar',
     allRead:'Tudo lido',
     persTasks:'Tarefas fixas por membro',addPersTask:'Adicionar tarefa pessoal',
     // Tabs
@@ -3494,21 +3494,34 @@ function renderExList(){
   const byLoc={};
   up.forEach(e=>{const lid=e.location_id||'none';if(!byLoc[lid])byLoc[lid]=[];byLoc[lid].push(e);});
   let html='';
+  // Per locatie
   D.locs.forEach(loc=>{
     const tasks=byLoc[loc.id];if(!tasks||!tasks.length)return;
-    html+=`<div class="loc-section"><div class="loc-section-hdr" style="background:${loc.color}"><span class="loc-section-name">${lnm(loc)}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
-    const gr={};tasks.forEach(e=>{if(!gr[e.text_nl])gr[e.text_nl]=[];gr[e.text_nl].push(e);});
-    Object.entries(gr).forEach(([txt,ts])=>{
-      const wks=ts.map(x=>x.week_key).sort();
-      const dns=[...new Set(ts.map(e=>dayArr()[e.day_index]))].join(', ');
-      const dateStr=ts.length>1?`${wks[0]} – ${wks[wks.length-1]} (${ts.length}×)`:wks[0];
-      const mapKey=loc.id+'_'+txt.slice(0,20).replace(/\W/g,'_');
-      exIdMap[mapKey]=ts.map(x=>x.id);
-      html+=`<div class="task-row" style="margin-bottom:4px"><div style="flex:1"><div class="task-txt">${txt}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dns} &middot; ${dateStr}</div></div><button class="btn-edit" onclick="openEdit('${ts[0].id}','extra','${esc(txt)}','${esc(ts[0].text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delExGr(exIdMap['${mapKey}'])">&#10005;</button></div>`;
-    });
-    html+='</div></div>';
+    html+=renderExGroup(tasks,lnm(loc),loc.color);
   });
+  // Zonder locatie
+  if(byLoc['none']&&byLoc['none'].length){
+    html+=renderExGroup(byLoc['none'],lg()==='pt'?'Sem local':'Zonder locatie','#888');
+  }
   el.innerHTML=html||`<div class="empty">${tr('noExtras')}</div>`;
+}
+
+function renderExGroup(tasks,title,color){
+  let html=`<div class="loc-section"><div class="loc-section-hdr" style="background:${color}"><span class="loc-section-name">${title}</span><span class="loc-section-count">${tasks.length}</span></div><div class="loc-section-body">`;
+  const gr={};tasks.forEach(e=>{const k=(e.text_nl||'')+(e.user_id||'');if(!gr[k])gr[k]=[];gr[k].push(e);});
+  Object.entries(gr).forEach(([k,ts])=>{
+    const txt=ts[0].text_nl;
+    const wks=ts.map(x=>x.week_key).sort();
+    const dns=[...new Set(ts.map(e=>dayArr()[e.day_index]))].join(', ');
+    const dateStr=ts.length>1?`${wks[0]} – ${wks[wks.length-1]} (${ts.length}×)`:wks[0];
+    const locId=ts[0].location_id||'none';
+    const mapKey=locId+'_'+txt.slice(0,20).replace(/\W/g,'_')+(ts[0].user_id?'_'+ts[0].user_id.slice(0,8):'');
+    exIdMap[mapKey]=ts.map(x=>x.id);
+    const whoStr=ts[0].user_id?` → ${uname(ts[0].user_id)}`:'';
+    html+=`<div class="task-row" style="margin-bottom:4px"><div style="flex:1"><div class="task-txt">${esc(txt)}${whoStr}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dns} &middot; ${dateStr}</div></div><button class="btn-edit" onclick="openEdit('${ts[0].id}','extra','${esc(txt)}','${esc(ts[0].text_pt||'')}','')">&#9998;</button><button class="btn-del" onclick="delExGr(exIdMap['${mapKey}'])">&#10005;</button></div>`;
+  });
+  html+='</div></div>';
+  return html;
 }
 
 async function delFixed(id){if(!confirm(tr('confirmDelete')))return;await sb.from('fixed_tasks').delete().eq('id',id);await loadAll();renderFixedList();}
