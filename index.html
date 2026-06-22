@@ -5237,15 +5237,25 @@ function renderPersForm(){/* removed — personal tasks now in unified form */}
 function renderPersList(){
   const el=document.getElementById('pers-list');if(!el)return;
   let html='';
-  const usersWithTasks=[...new Set(D.persTasks.map(t=>t.user_id))];
-  usersWithTasks.forEach(uid=>{
+  const wk=wkey(wOff);
+  // Collect all users with personal_tasks OR extra_tasks with user_id
+  const uids=new Set();
+  D.persTasks.forEach(t=>uids.add(t.user_id));
+  D.extras.filter(e=>e.user_id&&e.week_key>=wk).forEach(e=>uids.add(e.user_id));
+  [...uids].forEach(uid=>{
     const u=D.users.find(x=>x.id===uid);if(!u)return;
     const tasks=D.persTasks.filter(t=>t.user_id===uid);
+    const userExtras=D.extras.filter(e=>e.user_id===uid&&e.week_key>=wk);
     const col=ucol(uid);
-    // Group by text_nl — edit all days at once
+    // Group personal by text_nl
     const byText={};
     tasks.forEach(t=>{const k=t.text_nl||'';if(!byText[k])byText[k]=[];byText[k].push(t);});
-    html+=`<div class="loc-section" style="margin-bottom:10px"><div class="loc-section-hdr" style="background:${col}"><span class="loc-section-name">${u.avatar||''} ${u.name}</span><span class="loc-section-count">${Object.keys(byText).length} taken</span></div><div class="loc-section-body">`;
+    // Group extras by text_nl
+    const exByText={};
+    userExtras.forEach(e=>{const k=e.text_nl||'';if(!exByText[k])exByText[k]=[];exByText[k].push(e);});
+    const totalTaken=Object.keys(byText).length+Object.keys(exByText).length;
+    html+=`<div class="loc-section" style="margin-bottom:10px"><div class="loc-section-hdr" style="background:${col}"><span class="loc-section-name">${u.avatar||''} ${u.name}</span><span class="loc-section-count">${totalTaken} taken</span></div><div class="loc-section-body">`;
+    // Personal tasks (elke week)
     Object.entries(byText).forEach(([txt,ts])=>{
       const days=ts.map(t=>t.day_index).sort();
       const dayNames=days.map(d=>dayArr()[d]).join(', ');
@@ -5255,6 +5265,22 @@ function renderPersList(){
       const ek='pe_'+uid.slice(0,8)+'_'+txt.slice(0,20).replace(/\W/g,'');
       _editMap[ek]={table:'personal_tasks',ids:ids,data:{nl:txt,pt:ts[0].text_pt||'',who:uid,days:days,locs:ts[0].location_id?[ts[0].location_id]:[],freq:'weekly',points:pts}};
       html+=`<div class="task-row"><div style="flex:1"><span class="task-txt">${esc(txt)}${locNm?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locNm}</span>`:''}</span><div style="font-size:11px;color:var(--muted);margin-top:2px">${dayNames}${pts?' · '+pts+'⭐':''}</div></div>`;
+      html+=`<button class="btn-edit" onclick="editFromMap('${ek}')">&#9998;</button>`;
+      html+=`<button onclick="delPersGroup('${ek}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px">&#10005;</button>`;
+      html+=`</div>`;
+    });
+    // Extra tasks (eenmalig/tijdelijk)
+    Object.entries(exByText).forEach(([txt,ts])=>{
+      const days=[...new Set(ts.map(e=>e.day_index))].sort();
+      const dayNames=days.map(d=>dayArr()[d]).join(', ');
+      const wks=ts.map(x=>x.week_key).sort();
+      const locNm=ts[0].location_id?locName(ts[0].location_id):'';
+      const pts=ts[0].points||0;
+      const ids=ts.map(t=>t.id);
+      const dateStr=ts.length>1?`${wks[0]} – ${wks[wks.length-1]} (${ts.length}×)`:wks[0];
+      const ek='px_'+uid.slice(0,8)+'_'+txt.slice(0,20).replace(/\W/g,'');
+      _editMap[ek]={table:'extra_tasks',ids:ids,data:{nl:txt,pt:ts[0].text_pt||'',who:uid,days:days,locs:ts[0].location_id?[ts[0].location_id]:[],freq:'once',cat:ts[0].category||'',points:pts}};
+      html+=`<div class="task-row"><div style="flex:1"><span class="task-txt">${esc(txt)}<span class="badge-extra">${tr('extra')}</span>${locNm?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px;margin-left:4px">${locNm}</span>`:''}</span><div style="font-size:11px;color:var(--muted);margin-top:2px">${dayNames} · ${dateStr}${pts?' · '+pts+'⭐':''}</div></div>`;
       html+=`<button class="btn-edit" onclick="editFromMap('${ek}')">&#9998;</button>`;
       html+=`<button onclick="delPersGroup('${ek}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 4px">&#10005;</button>`;
       html+=`</div>`;
@@ -5333,9 +5359,9 @@ async function delPersTask(id){
 
 async function delPersGroup(ek){
   const m=_editMap[ek];if(!m)return;
-  if(!confirm('Alle '+m.ids.length+' dagen verwijderen?'))return;
-  for(const id of m.ids)await sb.from('personal_tasks').delete().eq('id',id);
-  await loadAll();renderPersList();renderMgrWeek();
+  if(!confirm('Alle '+m.ids.length+' items verwijderen?'))return;
+  for(const id of m.ids)await sb.from(m.table).delete().eq('id',id);
+  await loadAll();renderPersList();renderExList();renderMgrWeek();
 }
 
 function renderGlobalCatList(){
