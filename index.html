@@ -3265,6 +3265,7 @@ function populateFreqDropdown(){
   const l=lg()==='pt';
   sel.innerHTML=
     `<option value="weekly">${l?'Cada semana':'Elke week'}</option>`+
+    `<option value="once">${l?'Uma vez':'Eenmalig'}</option>`+
     `<option value="2weekly">${l?'A cada 2 semanas':'Om de week'}</option>`+
     `<option value="3weekly">${l?'A cada 3 semanas':'Om de twee weken'}</option>`+
     `<option value="4weekly">${l?'A cada 4 semanas':'Om de drie weken'}</option>`+
@@ -3274,8 +3275,7 @@ function populateFreqDropdown(){
     `<option value="4monthly">${l?'A cada 4 meses':'Elke 4 maanden'}</option>`+
     `<option value="5monthly">${l?'A cada 5 meses':'Elke 5 maanden'}</option>`+
     `<option value="6monthly">${l?'A cada 6 meses':'Elke 6 maanden'}</option>`+
-    `<option value="yearly">${l?'Anual':'Elk jaar'}</option>`+
-    `<option value="once">${l?'Uma vez':'Eenmalig'}</option>`;
+    `<option value="yearly">${l?'Anual':'Elk jaar'}</option>`;
 }
 
 function ntWhoChange(){
