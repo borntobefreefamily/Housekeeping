@@ -1224,7 +1224,7 @@ const I={
     shopAutoHint:'↳ Portugese vertaling automatisch',
     shopRecipe:'Recept (optioneel)',shopGeneral:'— Algemeen —',shopAdd:'+ Toevoegen',
     shopNoItems:'Geen boodschappen gepland.',shopGeneralTitle:'Overige boodschappen',noRecipe:'Geen recept',
-    shopBought:'gekocht',shopOf:'van',shopAll:'Alles gekocht! ✓',
+    shopBought:'gekocht',shopOf:'van',shopAll:'Alles gekocht! ✓',shopDelChecked:'Afgevinkte verwijderen',
     shopReminder:'🛒 Boodschappen!',shopReminderLong:'Boodschappen nodig over 2 dagen',
     shopOverig:'Overig',shopFilterFor:'Filter:',shopFilterClear:'Toon alles',shopSaved:'✓ Opgeslagen',
     // Shopping categories
@@ -1355,7 +1355,7 @@ const I={
     shopAutoHint:'↳ Tradução portuguesa automática',
     shopRecipe:'Receita (opcional)',shopGeneral:'— Geral —',shopAdd:'+ Adicionar',
     shopNoItems:'Sem compras planeadas.',shopGeneralTitle:'Outras compras',noRecipe:'Sem receita',
-    shopBought:'comprados',shopOf:'de',shopAll:'Tudo comprado! ✓',
+    shopBought:'comprados',shopOf:'de',shopAll:'Tudo comprado! ✓',shopDelChecked:'Remover marcados',
     shopReminder:'🛒 Compras!',shopReminderLong:'Compras necessárias em 2 dias',
     shopOverig:'Outros',shopFilterFor:'Filtro:',shopFilterClear:'Mostrar tudo',shopSaved:'✓ Guardado',
     // Shopping categories
@@ -3949,6 +3949,10 @@ function renderShopList(prefix,wk){
   }
   html+=`</div>`;
 
+  // Delete checked button
+  const checkedCount=items.filter(i=>i.checked).length;
+  if(checkedCount)html+=`<div style="text-align:right;margin:6px 0"><button onclick="delCheckedShopItems()" style="background:none;border:1px solid var(--muted);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">🗑 ${tr('shopDelChecked')} (${checkedCount})</button></div>`;
+
   // Inline add row at bottom
   html+=`<div style="margin-top:6px">`;
   html+=`<div class="shop-add-row">`;
@@ -4197,6 +4201,15 @@ async function togShopItem(id,currentChecked){
 
 async function delShopItem(id){
   await sb.from('shopping_items').delete().eq('id',id);
+  await loadAll();
+  rerenderShop();
+}
+
+async function delCheckedShopItems(){
+  const weeks=[];for(let i=0;i<4;i++)weeks.push(wkey(wOff+i));
+  const ids=D.shopping.filter(s=>weeks.includes(s.week_key)&&s.checked).map(s=>s.id);
+  if(!ids.length)return;
+  await sb.from('shopping_items').delete().in('id',ids);
   await loadAll();
   rerenderShop();
 }
