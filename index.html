@@ -162,6 +162,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .task-txt.skipped{text-decoration:line-through;color:var(--muted);font-style:italic}
 .badge-extra{display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:100px;background:var(--extra-border);color:var(--espresso);margin-left:4px}
 .badge-who{display:inline-block;font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:100px;margin-left:3px}
+.badge-person{display:inline-block;font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:100px;margin-left:4px;white-space:nowrap}
 .badge-loc{display:inline-block;font-size:.6rem;font-weight:500;padding:2px 6px;border-radius:100px;background:var(--steam);color:var(--muted);margin-left:3px}
 .badge-interval{display:inline-block;font-size:.6rem;font-weight:600;padding:2px 6px;border-radius:100px;background:var(--monthly-due);color:#E65100;margin-left:3px;border:1px solid #FFB74D}
 .skip-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:4px 6px;flex-shrink:0;opacity:.5;transition:opacity .15s;-webkit-tap-highlight-color:transparent;min-width:32px;min-height:32px;display:flex;align-items:center;justify-content:center}
@@ -1449,6 +1450,7 @@ function ptsBadge(pts,ck){
   if(!pts||pts<=0)return '';
   return ck?`<span style="font-size:10px;background:#fff8e1;color:#f57f17;padding:1px 5px;border-radius:8px;margin-left:4px;font-weight:600">⭐ ${pts}</span>`:`<span style="font-size:10px;background:#f3f0fa;color:#8e7cc3;padding:1px 5px;border-radius:8px;margin-left:4px;font-weight:500">🔸 ${pts}</span>`;
 }
+function personBadge(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '';return `<span class="badge-person" style="background:${ucol(uid)}20;color:${ucol(uid)}">${u.avatar||''} ${u.name}</span>`;}
 // Role helpers — admin+parent see manager screen, child+worker see worker screen
 function isMgr(u){const r=(u||CU)?.role;return r==='admin'||r==='parent';}
 function isWkr(u){const r=(u||CU)?.role;return r==='worker'||r==='child';}
@@ -1973,7 +1975,7 @@ function renderDayBody(di,wk,isMgr){
     const skipped=!!D.skipped[e.id+'_'+wk+'_'+di];
     const by=D.checks[e.id+'_'+wk+'_'+di]?.by;
     const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-    const whoStr=isMgr&&e.user_id?`<span class="badge-who" style="background:${ucol(e.user_id)}20;color:${ucol(e.user_id)}">→ ${uname(e.user_id)}</span>`:'';
+    const whoStr=isMgr&&e.user_id?personBadge(e.user_id):'';
     html+=`<div class="task-row extra-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${e.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${tx(e)}<span class="badge-extra">${tr('extra')}</span>${whoStr}${byStr}</span>`;
     if(!ck&&!skipped)html+=`<button class="skip-btn" onclick="skipTask('${e.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
     if(skipped)html+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
@@ -2046,24 +2048,24 @@ function renderDayBody(di,wk,isMgr){
   if(hasBuiten){const loc=D.locs.find(l=>l.id===BUITEN_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
 
   // 6. Persoonlijke taken niet gekoppeld aan een ingeplande locatie
-  if(isMgr){
+  {
     const schedLids=new Set(schedDay.map(s=>s.location_id));
-    const orphanPers=D.persTasks.filter(t=>t.user_id===CU.id&&t.day_index===di&&(!t.location_id||!schedLids.has(t.location_id)));
+    const orphanPers=D.persTasks.filter(t=>t.day_index===di&&(!t.location_id||!schedLids.has(t.location_id))&&(isMgr||t.user_id===CU.id));
     if(orphanPers.length){
       const uid2=`pers-${di}`;
       const pDone=orphanPers.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
       let pb='';
       orphanPers.forEach(t=>{
-        const owner=D.users.find(u=>u.id===t.user_id);
         const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
         const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
         const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
-        const ownerBadge=owner?`<span style="font-size:10px;background:${ucol(owner.id)}20;color:${ucol(owner.id)};padding:1px 6px;border-radius:100px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
+        const ownerBdg=isMgr?personBadge(t.user_id):'';
         const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${locName(t.location_id)}</span>`:'';
-        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${t.text_nl}${ptsBadge(t.points,ck)}${ownerBadge}${locBadge}${byStr}</span>`;
+        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${ownerBdg}${locBadge}${byStr}</span>`;
         if(!ck&&!skipped)pb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
-        pb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('personal_tasks',t.id,{nl:t.text_nl||t.text_pt||'',pt:t.text_pt||'',who:t.user_id,days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0})}')">&#9998;</button></div>`;
+        if(isMgr)pb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('personal_tasks',t.id,{nl:t.text_nl||t.text_pt||'',pt:t.text_pt||'',who:t.user_id,days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0})}')">&#9998;</button>`;
+        pb+='</div>';
       });
       html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#8e7cc3;cursor:pointer" onclick="togEl('lb-${uid2}','lc-${uid2}')"><span class="loc-section-name">📌 ${tr('addPersTask').replace('toevoegen','').replace('Adicionar ','').trim()}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${pDone}/${orphanPers.length}</span><span class="chev" id="lc-${uid2}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid2}">${pb}</div></div>`;
     }
@@ -2113,15 +2115,18 @@ function renderLocBlock(loc,wk,di,isMgr){
     });
   }
 
-  // Personal tasks at this location (shown in manager view with child badge)
-  const persAtLoc=D.persTasks.filter(t=>t.user_id===CU.id&&t.location_id===loc.id&&t.day_index===di);
-  if(persAtLoc.length&&isMgr){
-    lb+=`<div class="cat-sub-hdr">Persoonlijke taken</div>`;
+  // Personal tasks at this location
+  const persAtLoc=D.persTasks.filter(t=>t.location_id===loc.id&&t.day_index===di&&(isMgr||t.user_id===CU.id));
+  if(persAtLoc.length){
+    lb+=`<div class="cat-sub-hdr">${isMgr?'Persoonlijke taken':tr('addPersTask').replace('toevoegen','').replace('Adicionar ','').trim()}</div>`;
     persAtLoc.forEach(t=>{
-      const owner=D.users.find(u=>u.id===t.user_id);
       const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
-      const ownerBadge=owner?`<span style="font-size:10px;color:#fff;background:${ucol(t.user_id)};padding:1px 6px;border-radius:8px;margin-left:4px">${owner.avatar||''} ${owner.name}</span>`:'';
-      lb+=`<div class="task-row${ck?' done-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':''}">${t.text_nl||t.text_pt||''}${ptsBadge(t.points,ck)}${ownerBadge}</span></div>`;
+      const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
+      const ownerBdg=isMgr?personBadge(t.user_id):'';
+      lb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${ownerBdg}</span>`;
+      if(!ck&&!skipped)lb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
+      if(isMgr)lb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('personal_tasks',t.id,{nl:t.text_nl||t.text_pt||'',pt:t.text_pt||'',who:t.user_id,days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0})}')">&#9998;</button>`;
+      lb+='</div>';
     });
   }
 
@@ -2647,7 +2652,7 @@ function renderMgrWeek(){
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
-      const hasMePers=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di);
+      const hasMePers=D.persTasks.some(t=>t.day_index===di);
       const persStyle=hasMePers?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
       html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePers?' 📌':''}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
     });
