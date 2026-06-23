@@ -2251,15 +2251,27 @@ function renderWorkerRcList(){
     return a.day_index-b.day_index;
   });
   const byWk={};sorted.forEach(r=>{if(!byWk[r.week_key])byWk[r.week_key]=[];byWk[r.week_key].push(r);});
-  let html='';
-  Object.keys(byWk).sort().forEach(w=>{
+  const curWk=wkey(0);
+  const pastWks=Object.keys(byWk).filter(w=>w<curWk).sort();
+  const curWks=Object.keys(byWk).filter(w=>w>=curWk).sort();
+
+  function renderWkGroup(w){
     const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
     const mon=new Date(w+'T12:00:00');
     const sun=new Date(mon);sun.setDate(mon.getDate()+6);
     const lbl=mon.getMonth()===sun.getMonth()?`${mon.getDate()} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`:`${mon.getDate()} ${ms[mon.getMonth()]} – ${sun.getDate()} ${ms[sun.getMonth()]} ${sun.getFullYear()}`;
-    html+=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
-    html+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px">${cook.avatar||''} ${cook.name}</span>`:'';const ingrCount=D.recipeIngr.filter(i=>i.recipe_id===r.id).length;const ingrBadge=ingrCount?`<span style="font-size:10px;color:#1a6b5a;background:#e8f5e9;padding:1px 5px;border-radius:8px;margin-left:4px">${ingrCount} ✓</span>`:'';return `<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}${cookLbl}${ingrBadge}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}${cookLbl}${ingrBadge}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openIngrFromList('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent" title="${tr('ingrTitle')}">&#128203;</button><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`;}).join('');
-  });
+    let h=`<div class="sec-title" style="margin-top:.5rem">${lbl}</div>`;
+    h+=byWk[w].map(r=>{const cook=r.assigned_to?D.users.find(u=>u.id===r.assigned_to):null;const cookLbl=cook?` <span style="font-size:10px;color:var(--muted);background:var(--steam);padding:1px 5px;border-radius:8px">${cook.avatar||''} ${cook.name}</span>`:'';const ingrCount=D.recipeIngr.filter(i=>i.recipe_id===r.id).length;const ingrBadge=ingrCount?`<span style="font-size:10px;color:#1a6b5a;background:#e8f5e9;padding:1px 5px;border-radius:8px;margin-left:4px">${ingrCount} ✓</span>`:'';return `<div class="task-row" style="margin-bottom:4px">`+(r.url?`<a href="${r.url}" target="_blank" style="font-size:13px;color:var(--espresso);text-decoration:none;flex:1">&#8599; ${r.name}${cookLbl}${ingrBadge}</a>`:`<span style="font-size:13px;color:var(--text);flex:1">${r.name}${cookLbl}${ingrBadge}</span>`)+`<span style="font-size:11px;color:var(--muted);margin-left:6px">${dayArr()[r.day_index]}</span><button onclick="openIngrFromList('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent" title="${tr('ingrTitle')}">&#128203;</button><button onclick="openRecipeEdit('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 5px;-webkit-tap-highlight-color:transparent">&#9998;</button></div>`;}).join('');
+    return h;
+  }
+
+  let html='';
+  curWks.forEach(w=>{html+=renderWkGroup(w);});
+  if(pastWks.length){
+    html+=`<div class="loc-section" style="margin-top:1rem"><div class="loc-section-hdr" style="background:var(--steam);color:var(--muted);font-size:13px;padding:8px 12px;cursor:pointer" onclick="this.parentElement.classList.toggle('open')">${tr('pastRecipes')} (${pastWks.reduce((n,w)=>n+byWk[w].length,0)})</div><div class="loc-section-body">`;
+    pastWks.forEach(w=>{html+=renderWkGroup(w);});
+    html+=`</div></div>`;
+  }
   el.innerHTML=html;
 }
 
