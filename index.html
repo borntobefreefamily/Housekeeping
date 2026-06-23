@@ -2536,8 +2536,8 @@ function renderFamilyOverview(wk){
   if(!isMgr())return;
   // Show all users who have personal tasks, plus all children
   const kids=D.users.filter(u=>u.role==='child');
-  const mgrsWithTasks=D.users.filter(u=>(u.role==='admin'||u.role==='parent')&&D.persTasks.some(t=>t.user_id===u.id));
-  const allMembers=[...mgrsWithTasks,...kids];
+  const othersWithTasks=D.users.filter(u=>u.role!=='child'&&(D.persTasks.some(t=>t.user_id===u.id)||D.extras.some(e=>e.user_id===u.id&&e.week_key===wk&&!e.booking_id)));
+  const allMembers=[...othersWithTasks,...kids];
   if(!allMembers.length){el.innerHTML='';return;}
   let html=`<div class="fam-card"><div class="fam-hdr" onclick="togEl('fam-body','fam-chev')" style="background:var(--steam)"><span style="font-family:'Fraunces',serif;font-weight:700;font-size:14px;flex:1">👨‍👩‍👧‍👦 ${lg()==='pt'?'Família':'Gezin'}</span><span class="chev" id="fam-chev">&#9662;</span></div><div class="fam-body" id="fam-body">`;
   
@@ -2559,6 +2559,7 @@ function renderFamilyOverview(wk){
 
   allMembers.forEach(kid=>{
     const tasks=D.persTasks.filter(t=>t.user_id===kid.id);
+    const kidExtras=D.extras.filter(e=>e.user_id===kid.id&&e.week_key===wk&&!e.booking_id);
     const kidSwaps=D.swaps.filter(s=>s.requester_id===kid.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring&&s.task_id);
     const col=ucol(kid.id);
     let tot=0,done=0;
@@ -2568,9 +2569,16 @@ function renderFamilyOverview(wk){
       const movedTo=kidSwaps.find(s=>s.task_id===t.id);
       const displayDay=movedTo?movedTo.requested_day:t.day_index;
       if(!dayMap[displayDay])dayMap[displayDay]=[];
-      dayMap[displayDay].push({...t,_swapped:!!movedTo,_origDay:t.day_index});
+      dayMap[displayDay].push({...t,_swapped:!!movedTo,_origDay:t.day_index,_src:'pers'});
       tot++;
       if(D.checks[t.id+'_'+wk+'_'+displayDay]?.on)done++;
+    });
+    kidExtras.forEach(e=>{
+      const di=e.day_index;
+      if(!dayMap[di])dayMap[di]=[];
+      dayMap[di].push({...e,_src:'extra'});
+      tot++;
+      if(D.checks[e.id+'_'+wk+'_'+di]?.on)done++;
     });
     const pct=tot?Math.round(done/tot*100):0;
     const kidId='fam-kid-'+kid.id.slice(0,6);
@@ -2593,7 +2601,7 @@ function renderFamilyOverview(wk){
         const byName=ck&&by?` ✓ ${uname(by)}`:'';
         const rxBadges=renderReactionBadges(t.id,wk,parseInt(di));
         const rxBtn=ck?renderReactionBtn(t.id,wk,parseInt(di),'personal'):'';
-        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}${ptsBadge(t.points,ck)}</span>${locNm?`<span class="fam-loc-badge">${locNm}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
+        html+=`<div class="fam-task${ck?' done':''}"><span>${ck?'☑':'☐'}</span><span>${t.text_nl||t.text_pt||''}${t._src==='extra'?'<span class="badge-extra">'+tr('extra')+'</span>':''}${ptsBadge(t.points,ck)}</span>${locNm?`<span class="fam-loc-badge">${locNm}</span>`:''}${rxBadges?`<span style="margin-left:4px">${rxBadges}</span>`:''}${rxBtn}${ck?`<span style="font-size:10px;color:var(--muted)">${byName}</span>`:''}</div>`;
       });
       const recs=D.recipes.filter(r=>r.week_key===wk&&r.day_index===parseInt(di)&&r.assigned_to===kid.id);
       recs.forEach(r=>{
