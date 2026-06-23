@@ -1953,7 +1953,7 @@ function renderDayBody(di,wk,isMgr){
 
   // 2. Extra taken (verhuur-taken visueel onderscheiden)
   const bookingExtras=extras.filter(e=>e.booking_id);
-  const regularExtras=extras.filter(e=>!e.booking_id);
+  const regularExtras=extras.filter(e=>!e.booking_id&&!e.user_id);
   // Booking tasks first, with special styling
   if(bookingExtras.length){
     html+=`<div style="background:linear-gradient(135deg,#fff8e1,#fff3e0);border-radius:8px;padding:6px 8px;margin-bottom:6px;border:1px solid #ffe0b2">`;
@@ -2047,26 +2047,31 @@ function renderDayBody(di,wk,isMgr){
   mainLocs.forEach(sr=>{const loc=D.locs.find(l=>l.id===sr.location_id);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);});
   if(hasBuiten){const loc=D.locs.find(l=>l.id===BUITEN_ID);if(loc)html+=renderLocBlock(loc,wk,di,isMgr);}
 
-  // 6. Persoonlijke taken — eigen paarse balk
+  // 6. Persoonlijke taken — eigen paarse balk (personal_tasks + extra_tasks met user_id)
   {
     const allPers=D.persTasks.filter(t=>t.day_index===di&&(isMgr||t.user_id===CU.id));
-    if(allPers.length){
+    const persExtras=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&e.user_id&&!e.booking_id&&(isMgr||e.user_id===CU.id));
+    const combined=[...allPers.map(t=>({...t,_src:'pers'})),...persExtras.map(e=>({...e,_src:'extra'}))];
+    if(combined.length){
       const uid2=`pers-${di}`;
-      const pDone=allPers.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
+      const pDone=combined.filter(t=>D.checks[t.id+'_'+wk+'_'+di]?.on).length;
       let pb='';
-      allPers.forEach(t=>{
+      combined.forEach(t=>{
         const ck=!!D.checks[t.id+'_'+wk+'_'+di]?.on;
         const skipped=!!D.skipped[t.id+'_'+wk+'_'+di];
         const by=D.checks[t.id+'_'+wk+'_'+di]?.by;
         const byStr=ck&&by?`<span class="badge-who" style="background:${ucol(by)}20;color:${ucol(by)}">${uname(by)}</span>`:'';
         const ownerBdg=isMgr?personBadge(t.user_id):'';
+        const extraBdg=t._src==='extra'?'<span class="badge-extra">'+tr('extra')+'</span>':'';
         const locBadge=t.location_id?`<span class="fam-loc-badge" style="margin-left:4px">${locName(t.location_id)}</span>`:'';
-        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${ptsBadge(t.points,ck)}${ownerBdg}${locBadge}${byStr}</span>`;
+        pb+=`<div class="task-row${ck?' done-row':skipped?' skip-row':''}"><div class="cb${ck?' on':''}" onclick="togTask(this,'${t.id}','${wk}',${di},${isMgr})">${ck?'&#10003;':''}</div><span class="task-txt${ck?' done':skipped?' skipped':''}">${isMgr?t.text_nl:tx(t)}${extraBdg}${ptsBadge(t.points,ck)}${ownerBdg}${locBadge}${byStr}</span>`;
         if(!ck&&!skipped)pb+=`<button class="skip-btn" onclick="skipTask('${t.id}','${wk}',${di},${isMgr})" title="${tr('skip')}">&#8864;</button>`;
-        if(isMgr)pb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('personal_tasks',t.id,{nl:t.text_nl||t.text_pt||'',pt:t.text_pt||'',who:t.user_id,days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0})}')">&#9998;</button>`;
+        if(skipped)pb+=`<span style="font-size:10px;color:var(--muted);margin-left:4px">${tr('skipped')}</span>`;
+        if(isMgr&&t._src==='pers')pb+=`<button class="btn-edit" onclick="editFromMap('${mkEdit('personal_tasks',t.id,{nl:t.text_nl||t.text_pt||'',pt:t.text_pt||'',who:t.user_id,days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0})}')">&#9998;</button>`;
+        if(isMgr&&t._src==='extra')pb+=`<button onclick="delExtraConfirm('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 4px">&#10005;</button><button class="btn-edit" onclick="editFromMap('${mkEdit('extra_tasks',t.id,{nl:t.text_nl,pt:t.text_pt||'',who:t.user_id||'',days:[t.day_index],locs:t.location_id?[t.location_id]:[],freq:'once',cat:t.category||'',points:t.points||0})}')">&#9998;</button>`;
         pb+='</div>';
       });
-      html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#8e7cc3;cursor:pointer" onclick="togEl('lb-${uid2}','lc-${uid2}')"><span class="loc-section-name">📌 ${lg()==='pt'?'Tarefas pessoais':'Persoonlijke taken'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${pDone}/${allPers.length}</span><span class="chev" id="lc-${uid2}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid2}">${pb}</div></div>`;
+      html+=`<div class="loc-block" style="margin-bottom:8px"><div class="loc-section-hdr" style="background:#8e7cc3;cursor:pointer" onclick="togEl('lb-${uid2}','lc-${uid2}')"><span class="loc-section-name">${lg()==='pt'?'Tarefas pessoais':'Persoonlijke taken'}</span><span style="display:flex;align-items:center;gap:8px"><span class="loc-section-count">${pDone}/${combined.length}</span><span class="chev" id="lc-${uid2}" style="color:rgba(255,255,255,.7)">&#9662;</span></span></div><div class="loc-body" id="lb-${uid2}">${pb}</div></div>`;
     }
   }
 
@@ -2186,9 +2191,9 @@ function renderWorker(){
         allPt.forEach(t=>{if(D.checks[t.id+'_'+wk+'_'+di]?.on)dd++;});
         childExtras2.forEach(e=>{if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
-        const hasMePersC=allPt.length>0;
+        const hasMePersC=allPt.length>0||childExtras2.length>0;
         const persStyleC=hasMePersC?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-        html+=`<div class="day-card" style="${persStyleC}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersC?' 📌':''}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        html+=`<div class="day-card" style="${persStyleC}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       } else {
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
         const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&(!e.user_id||e.user_id===CU.id));
@@ -2202,9 +2207,9 @@ function renderWorker(){
         });
         ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
         tot+=dt;done+=dd;
-        const hasMePersW=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di);
+        const hasMePersW=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di)||D.extras.some(e=>e.week_key===wk&&e.day_index===di&&e.user_id===CU.id&&!e.booking_id);
         const persStyleW=hasMePersW?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePersW?' 📌':''}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       }
     });
     const pct=tot?Math.round(done/tot*100):0;
@@ -2636,9 +2641,9 @@ function renderMgrWeek(){
       });
       ex.forEach(e=>{dt++;if(D.checks[e.id+'_'+wk+'_'+di]?.on)dd++;});
       tot+=dt;done+=dd;
-      const hasMePers=D.persTasks.some(t=>t.day_index===di);
+      const hasMePers=D.persTasks.some(t=>t.day_index===di)||D.extras.some(e=>e.week_key===wk&&e.day_index===di&&e.user_id&&!e.booking_id);
       const persStyle=hasMePers?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${hasMePers?' 📌':''}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
+      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
     });
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
