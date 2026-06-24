@@ -3462,8 +3462,11 @@ async function addUnifiedTask(){
 
 
 // ═══════════════ EXISTING TASK LISTS ═══════════════
+function _saveOpen(el){if(!el)return[];return[...el.querySelectorAll('.loc-section-body.open')].map(b=>{const h=b.previousElementSibling;return h?.querySelector('.loc-section-name')?.textContent||'';}).filter(Boolean);}
+function _restoreOpen(el,names){if(!el||!names.length)return;el.querySelectorAll('.loc-section-body').forEach(b=>{const h=b.previousElementSibling;const n=h?.querySelector('.loc-section-name')?.textContent||'';if(names.includes(n)){b.classList.add('open');h?.classList.add('open');}});}
 function renderFixedList(){
   const el=document.getElementById('fixed-list');if(!el)return;
+  const _open=_saveOpen(el);
   if(!D.tasks.length){el.innerHTML=`<div class="empty">${tr('noFixed')}</div>`;return;}
   let html='';
 
@@ -3498,9 +3501,8 @@ function renderFixedList(){
     html+=`</div></div>`;
   });
   el.innerHTML=html||`<div class="empty">${tr('noFixed')}</div>`;
+  _restoreOpen(el,_open);
 }
-
-// Drag-and-drop reorder for fixed tasks within same category
 let _ftDragId=null,_ftDragLoc=null,_ftDragCat=null;
 function ftDragStart(e){
   const row=e.target.closest('[data-task-id]');if(!row)return;
@@ -3545,6 +3547,7 @@ async function ftDrop(e){
 
 function renderPeriodicList(){
   const el=document.getElementById('periodic-list');if(!el)return;
+  const _open=_saveOpen(el);
   if(!D.periodic.length){el.innerHTML=`<div class="empty">${tr('noPeriodic')}</div>`;return;}
   // Group per location: a task can appear under multiple locations
   const byLoc={};
@@ -3569,10 +3572,12 @@ function renderPeriodicList(){
     html+='</div></div>';
   }
   el.innerHTML=html;
+  _restoreOpen(el,_open);
 }
 
 function renderExList(){
   const el=document.getElementById('ex-list');if(!el)return;
+  const _open=_saveOpen(el);
   const wk=wkey(wOff);const up=D.extras.filter(e=>e.week_key>=wk);
   if(!up.length){el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('noExtras')}</div>`;return;}
   const byLoc={};
@@ -3588,6 +3593,7 @@ function renderExList(){
     html+=renderExGroup(byLoc['none'],lg()==='pt'?'Sem local':'Zonder locatie','#888');
   }
   el.innerHTML=html||`<div class="empty">${tr('noExtras')}</div>`;
+  _restoreOpen(el,_open);
 }
 
 function renderExGroup(tasks,title,color){
