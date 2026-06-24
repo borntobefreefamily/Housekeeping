@@ -7,6 +7,37 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2B1A0E">
+<link rel="apple-touch-icon" id="pwa-icon">
+<link rel="icon" id="pwa-favicon" type="image/png">
+<link rel="manifest" id="pwa-manifest">
+<script>
+(function(){
+  var s=180,c=document.createElement('canvas');c.width=s;c.height=s;var x=c.getContext('2d');
+  // Background: espresso
+  x.fillStyle='#2B1A0E';x.beginPath();x.roundRect(0,0,s,s,28);x.fill();
+  // House body: gold
+  x.fillStyle='#E8A84C';x.fillRect(50,88,80,52);
+  // Roof: triangle
+  x.beginPath();x.moveTo(90,32);x.lineTo(140,88);x.lineTo(40,88);x.closePath();x.fill();
+  // Door
+  x.fillStyle='#2B1A0E';x.fillRect(78,108,24,32);
+  // Window left
+  x.fillRect(56,98,18,18);
+  // Window right
+  x.fillRect(106,98,18,18);
+  // Window panes (cross)
+  x.strokeStyle='#E8A84C';x.lineWidth=2;
+  [56,106].forEach(function(wx){x.beginPath();x.moveTo(wx+9,98);x.lineTo(wx+9,116);x.moveTo(wx,107);x.lineTo(wx+18,107);x.stroke();});
+  // Chimney
+  x.fillStyle='#E8A84C';x.fillRect(112,46,16,30);
+  var url=c.toDataURL('image/png');
+  document.getElementById('pwa-icon').href=url;
+  document.getElementById('pwa-favicon').href=url;
+  // Manifest for Android
+  var m=JSON.stringify({name:'Huisplanner',short_name:'Huisplanner',start_url:'.',display:'standalone',background_color:'#FDF6ED',theme_color:'#2B1A0E',icons:[{src:url,sizes:'180x180',type:'image/png'}]});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(new Blob([m],{type:'application/json'}));
+})();
+</script>
 <title>Huisplanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
