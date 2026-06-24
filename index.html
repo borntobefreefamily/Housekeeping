@@ -3133,7 +3133,7 @@ function renderDayNotes(wk,di){
       const tlbl=`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
       const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
       const canDel=CU.id===n.created_by||CU.role==='admin'||CU.role==='parent';
-      h+=`<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:13px"><span style="flex:1">${personBadge(n.created_by)} <span style="font-size:11px;color:var(--muted)">${dlbl} ${tlbl}</span><br>${esc(n.text)}</span>${canDel?`<button onclick="delDayNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 4px;-webkit-tap-highlight-color:transparent" title="Verwijderen">✕</button>`:''}</div>`;
+      h+=`<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;font-size:13px"><span style="flex:1">${personBadge(n.created_by)} <span style="font-size:11px;color:var(--muted)">${dlbl} ${tlbl}</span><br>${esc(n.text||n.note||'')}</span>${canDel?`<button onclick="delDayNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0 4px;-webkit-tap-highlight-color:transparent" title="Verwijderen">✕</button>`:''}</div>`;
     });
     h+=`</div>`;
   }
@@ -3144,7 +3144,7 @@ function renderDayNotes(wk,di){
 async function addDayNote(wk,di,inputId){
   const inp=document.getElementById(inputId);if(!inp)return;
   const text=inp.value.trim();if(!text)return;
-  await sb.from('day_notes').insert({household_id:HID,week_key:wk,day_index:di,text:text,created_by:CU.id});
+  await sb.from('day_notes').insert({household_id:HID,week_key:wk,day_index:di,text:text,note:text,created_by:CU.id});
   const dayName=dayArr()[di]||'';
   await logChange(`${tr('notes')}: "${text}" (${dayName})`);
   // Notify all other users
@@ -3173,14 +3173,14 @@ function doFlash(id,msg){const fl=document.getElementById(id);if(!fl)return;if(m
 async function searchNotes(){
   const q=document.getElementById('note-search')?.value.trim().toLowerCase();
   const el=document.getElementById('note-search-results');if(!el||!q)return;
-  const{data}=await sb.from('day_notes').select('*').eq('household_id',HID).ilike('text','%'+q+'%').order('created_at',{ascending:false}).limit(30);
+  const{data}=await sb.from('day_notes').select('*').eq('household_id',HID).or(`text.ilike.%${q}%,note.ilike.%${q}%`).order('created_at',{ascending:false}).limit(30);
   if(!data||!data.length){el.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:4px">${lg()==='pt'?'Sem resultados':'Geen resultaten'}</div>`;return;}
   el.innerHTML=data.map(n=>{
     const who=D.users.find(u=>u.id===n.created_by);
     const dt=new Date(n.created_at);
     const dlbl=`${dt.getDate()}/${dt.getMonth()+1}/${dt.getFullYear()}`;
     const dayName=dayArr()[n.day_index]||'';
-    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div><strong>${esc(n.text)}</strong></div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dayName} · ${dlbl} · ${who?.name||'?'}</div></div>`;
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><div><strong>${esc(n.text||n.note||'')}</strong></div><div style="font-size:11px;color:var(--muted);margin-top:2px">${dayName} · ${dlbl} · ${who?.name||'?'}</div></div>`;
   }).join('');
 }
 
