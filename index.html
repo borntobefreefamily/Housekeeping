@@ -840,13 +840,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <label class="flbl" id="nt-lbl-who">Voor wie?</label>
     <select class="finput" id="nt-who" onchange="ntWhoChange()"></select>
     <!-- 4. Dagen -->
+    <div id="nt-days-wrap">
     <label class="flbl" id="nt-lbl-days">Dagen</label>
     <div class="pill-group" id="nt-days"></div>
+    </div>
     <!-- 5. Hoe vaak? -->
     <label class="flbl" id="nt-lbl-freq">Hoe vaak?</label>
     <label class="flbl" id="nt-lbl-startdate" style="font-weight:400;font-size:12px;margin-top:2px">Startdatum</label>
     <input type="date" class="finput" id="nt-startdate">
-    <select class="finput" id="nt-freq-sel"></select>
+    <select class="finput" id="nt-freq-sel" onchange="ntUpdateDaysVis()"></select>
     <!-- 6. Categorie -->
     <div id="nt-cat-wrap">
       <label class="flbl" id="nt-lbl-cat">Categorie</label>
@@ -3323,6 +3325,14 @@ function populateFreqDropdown(){
     `<option value="yearly">${l?'Anual':'Elk jaar'}</option>`;
 }
 
+function ntUpdateDaysVis(){
+  const who=document.getElementById('nt-who').value;
+  const freq=document.getElementById('nt-freq-sel')?.value||'weekly';
+  const isFixed=freq==='weekly'&&!who;
+  const isPeriodic=!who&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq);
+  const wrap=document.getElementById('nt-days-wrap');
+  if(wrap)wrap.style.display=(isFixed||isPeriodic)?'none':'';
+}
 function ntWhoChange(){
   const who=document.getElementById('nt-who').value;
   if(who){
@@ -3331,6 +3341,7 @@ function ntWhoChange(){
   } else {
     document.getElementById('nt-points-wrap').style.display='none';
   }
+  ntUpdateDaysVis();
 }
 
 function renderTaskForm(){
@@ -3346,11 +3357,13 @@ function renderTaskForm(){
   document.getElementById('nt-who').value='';
   document.getElementById('nt-startdate').value='';
   ntWhoChange();
+  ntUpdateDaysVis();
 }
 
 function ntLocClick(el,lid){
   el.classList.toggle('on');
   updateNtCats();
+  ntUpdateDaysVis();
 }
 
 function updateNtCats(){
@@ -3374,7 +3387,9 @@ async function addUnifiedTask(){
   const pts=parseInt(document.getElementById('nt-points').value)||0;
   const startDate=document.getElementById('nt-startdate')?.value||null;
 
-  if(!daysSelected.length){doFlash('nt-flash',tr('selectMinDay'));return;}
+  const isFixed=freq==='weekly'&&!who;
+  const isPeriodic=!who&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq);
+  if(!daysSelected.length&&!isFixed&&!isPeriodic){doFlash('nt-flash',tr('selectMinDay'));return;}
   let insertOk=false;
 
   try{
@@ -3739,6 +3754,7 @@ function prefillTaskForm(d){
   if(d.points)document.getElementById('nt-points').value=d.points;
   document.getElementById('nt-add-btn').textContent=lg()==='pt'?'✓ Bijwerken':'✓ Bijwerken';
   document.getElementById('new-task-title').textContent=lg()==='pt'?'Tarefa editar':'Taak bewerken';
+  ntUpdateDaysVis();
 }
 
 function openTaskModal(){
