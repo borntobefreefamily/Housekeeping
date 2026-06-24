@@ -1181,7 +1181,7 @@ let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',planScope='default';
 let _editReplace=null,_editMap={},_editSeq=0;
 
 function mkEdit(table,ids,data){const k='em_'+(++_editSeq);_editMap[k]={table,ids:Array.isArray(ids)?ids:[ids],data};return k;}
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},notes:{},recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},dayNotes:[],recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
@@ -1238,7 +1238,7 @@ const I={
     // Settings
     myProfile:'Mijn profiel',name:'Naam',newPin:'Nieuwe PIN (4 cijfers)',
     confirmPin:'PIN bevestigen',language:'Taal',pinUnchanged:'Laat leeg = ongewijzigd',pinRepeat:'Herhaal nieuwe PIN',
-    workdays:'Werkdagen',saveWorkdays:'Werkdagen opslaan',
+    workdays:'Werkdagen',users:'Gebruikers',saveWorkdays:'Werkdagen opslaan',
     globalCats:'Categorieën',globalCatsHint:'Globale lijst voor alle locaties',newCatPlaceholder:'bijv. Keuken',
     locationsList:'Locaties',locPlaceholder:'Naam locatie',
     weekManage:'Week beheren',clearChecks:'Vinkjes wissen',clearSub:'Begin nieuwe week opgeschoond',clearBtn:'Wissen',
@@ -1369,7 +1369,7 @@ const I={
     // Settings
     myProfile:'O meu perfil',name:'Nome',newPin:'Novo PIN (4 dígitos)',
     confirmPin:'Confirmar PIN',language:'Idioma',pinUnchanged:'Deixar vazio = inalterado',pinRepeat:'Repetir novo PIN',
-    workdays:'Dias de trabalho',saveWorkdays:'Guardar dias de trabalho',
+    workdays:'Dias de trabalho',users:'Utilizadores',saveWorkdays:'Guardar dias de trabalho',
     globalCats:'Categorias',globalCatsHint:'Lista global para todos os locais',newCatPlaceholder:'ex. Cozinha',
     locationsList:'Locais',locPlaceholder:'Nome do local',
     weekManage:'Gerir semana',clearChecks:'Limpar marcações',clearSub:'Começar semana limpa',clearBtn:'Limpar',
@@ -2306,6 +2306,7 @@ function mTab(n){
     const el=document.getElementById('mt-'+tab);if(el)el.style.display=tab===n?(tab==='week'?'flex':'block'):'none';
     document.getElementById('t-'+tab)?.classList.toggle('on',tab===n);
   });
+  const fab=document.getElementById('fab-add');if(fab)fab.style.display=(n==='week'&&isMgr())?'flex':'none';
   if(n==='week')renderMgrWeek();
   if(n==='eten'){renderRecSels();renderRcList();renderShopping('m');}
   if(n==='inst'){setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
@@ -2930,6 +2931,17 @@ async function delGoal(id){
   await loadAll();renderPointsTab();
 }
 
+async function editGoalAdmin(id){
+  const g=D.savingsGoals.find(x=>x.id===id);if(!g)return;
+  const newName=prompt('Naam:',g.name);if(newName===null)return;
+  const newPrice=prompt('Prijs (€):',String(g.price_cents/100));if(newPrice===null)return;
+  const newUrl=prompt('Link (optioneel):',g.url||'');
+  const upd={name:newName.trim()||g.name,price_cents:Math.round((parseFloat(newPrice)||0)*100)};
+  if(newUrl!==null)upd.url=newUrl.trim()||null;
+  await sb.from('savings_goals').update(upd).eq('id',id);
+  await loadAll();renderKidsPointsPanel();renderPointsTab();
+}
+
 async function completeGoal(id){
   const g=D.savingsGoals.find(x=>x.id===id);if(!g)return;
   const price=g.price_cents/100;
@@ -2973,7 +2985,7 @@ function renderKidsPointsPanel(){
     const col=ucol(kid.id);
     html+=`<div style="padding:.75rem;border-bottom:1px solid var(--border)">`;
     html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="width:28px;height:28px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff">${kid.avatar||kid.name[0]}</span><span style="font-weight:600;font-size:14px">${kid.name}</span><span style="margin-left:auto;font-size:14px;font-weight:700;color:#f57f17">⭐ ${pts} = €${val.toFixed(2)}</span></div>`;
-    // Active goals
+    // Active goals with edit/delete
     const goals=D.savingsGoals.filter(g=>g.user_id===kid.id&&!g.completed).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const doneGoals=D.savingsGoals.filter(g=>g.user_id===kid.id&&g.completed);
     let running=0;
@@ -2983,8 +2995,10 @@ function renderKidsPointsPanel(){
         const needed=Math.ceil(price/(pointValueCents()/100));
         const ptsForGoal=Math.min(Math.max(pts-running,0),needed);
         const pct=needed>0?Math.min(Math.round(ptsForGoal/needed*100),100):0;
-        html+=`<div style="padding:4px 0"><div style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="flex:1">${esc(g.name)}</span><span style="color:var(--caramel);font-weight:500">€${price.toFixed(2)}</span>${g.url?` <a href="${g.url}" target="_blank" style="color:var(--caramel);text-decoration:none;font-size:11px">↗</a>`:''}</div>`;
-        html+=`<div class="goal-prog"><div class="goal-prog-fill" style="width:${pct}%"></div></div></div>`;
+        html+=`<div style="padding:4px 0"><div style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="flex:1">${esc(g.name)}</span><span style="color:var(--caramel);font-weight:500">€${price.toFixed(2)}</span>${g.url?` <a href="${g.url}" target="_blank" style="color:var(--caramel);text-decoration:none;font-size:11px">↗</a>`:''}`;
+        html+=` <button onclick="editGoalAdmin('${g.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 3px">✏️</button>`;
+        html+=`<button onclick="delGoal('${g.id}');renderKidsPointsPanel()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 3px">✕</button>`;
+        html+=`</div><div class="goal-prog"><div class="goal-prog-fill" style="width:${pct}%"></div></div></div>`;
         running+=needed;
       });
     } else {
@@ -2992,6 +3006,18 @@ function renderKidsPointsPanel(){
     }
     if(doneGoals.length){
       html+=`<div style="font-size:11px;color:var(--muted);margin-top:4px">🏆 ${doneGoals.length} ${tr('goalCompleted').toLowerCase()}</div>`;
+    }
+    // Recent point entries with delete
+    const ledger=D.pointLedger.filter(e=>e.user_id===kid.id&&!e.revoked).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,15);
+    if(ledger.length){
+      html+=`<div style="margin-top:8px;font-size:11px;color:var(--muted);cursor:pointer" onclick="togEl('pled-${kid.id}','pledc-${kid.id}')">🏆 Puntenlog (${ledger.length}) <span class="chev" id="pledc-${kid.id}" style="font-size:9px">▾</span></div>`;
+      html+=`<div class="day-body" id="pled-${kid.id}" style="display:none">`;
+      ledger.forEach(e=>{
+        const d=new Date(e.created_at);const dateStr=`${d.getDate()}/${d.getMonth()+1}`;
+        const isSpend=e.points<0;
+        html+=`<div style="display:flex;align-items:center;gap:4px;padding:2px 0;font-size:12px"><span style="color:var(--muted);width:35px">${dateStr}</span><span style="flex:1">${isSpend?'🎯 ':''}${esc(e.task_name)}</span><span style="font-weight:600;${isSpend?'color:#e65100':'color:#f57f17'}">${e.points}</span><button onclick="revokePoint('${e.id}');renderKidsPointsPanel()" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:11px;padding:0 3px" title="Verwijderen">✕</button></div>`;
+      });
+      html+=`</div>`;
     }
     html+=`</div>`;
   });
