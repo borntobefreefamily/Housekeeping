@@ -3328,10 +3328,11 @@ function populateFreqDropdown(){
 function ntUpdateDaysVis(){
   const who=document.getElementById('nt-who').value;
   const freq=document.getElementById('nt-freq-sel')?.value||'weekly';
-  const isFixed=freq==='weekly'&&!who;
-  const isPeriodic=!who&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq);
+  const hasLoc=[...document.querySelectorAll('#nt-locs .cpill.on')].length>0;
+  // Dagen alleen nodig als: persoon geselecteerd, OF geen locatie (zwevende taak)
+  const needsDays=!!who||(!hasLoc&&['once','3weekly','4weekly'].includes(freq));
   const wrap=document.getElementById('nt-days-wrap');
-  if(wrap)wrap.style.display=(isFixed||isPeriodic)?'none':'';
+  if(wrap)wrap.style.display=needsDays?'':'none';
 }
 function ntWhoChange(){
   const who=document.getElementById('nt-who').value;
@@ -3387,9 +3388,8 @@ async function addUnifiedTask(){
   const pts=parseInt(document.getElementById('nt-points').value)||0;
   const startDate=document.getElementById('nt-startdate')?.value||null;
 
-  const isFixed=freq==='weekly'&&!who;
-  const isPeriodic=!who&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq);
-  if(!daysSelected.length&&!isFixed&&!isPeriodic){doFlash('nt-flash',tr('selectMinDay'));return;}
+  const needsDays=!!who||(!selLocs.length&&['once','3weekly','4weekly'].includes(freq));
+  if(!daysSelected.length&&needsDays){doFlash('nt-flash',tr('selectMinDay'));return;}
   let insertOk=false;
 
   try{
@@ -3440,10 +3440,20 @@ async function addUnifiedTask(){
     else{const n=freq==='yearly'?5:Math.min(130,Math.ceil(260/wInt));for(let i=0;i<n;i++)wks.push(wkey(sOff+i*wInt));}
     const ins=[];
     const locs=selLocs.length?selLocs:[null];
-    for(const loc of locs)for(const di of daysSelected)for(const wk of wks){
-      const row={household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl,category:cat,points:pts};
-      if(who)row.user_id=who;
-      ins.push(row);
+    // Auto-detect day from schedule when no days selected
+    let days=daysSelected;
+    if(!days.length&&selLocs.length){
+      const curSched=D.sched.filter(s=>s.week_key===wkey(0));
+      days=selLocs.map(lid=>{const s=curSched.find(sc=>sc.location_id===lid);return s?s.day_index:0;});
+    }
+    if(!days.length)days=[0];
+    for(const loc of locs){
+      const locDay=(!daysSelected.length&&selLocs.length)?[days[selLocs.indexOf(loc)]??0]:days;
+      for(const di of locDay)for(const wk of wks){
+        const row={household_id:HID,location_id:loc,week_key:wk,day_index:di,text_nl:nl,text_pt:pt||nl,category:cat,points:pts};
+        if(who)row.user_id=who;
+        ins.push(row);
+      }
     }
     for(let i=0;i<ins.length;i+=500){
       let res=await sb.from('extra_tasks').insert(ins.slice(i,i+500));
