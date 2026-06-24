@@ -2996,8 +2996,8 @@ function renderKidsPointsPanel(){
         const ptsForGoal=Math.min(Math.max(pts-running,0),needed);
         const pct=needed>0?Math.min(Math.round(ptsForGoal/needed*100),100):0;
         html+=`<div style="padding:4px 0"><div style="display:flex;align-items:center;gap:6px;font-size:13px"><span style="flex:1">${esc(g.name)}</span><span style="color:var(--caramel);font-weight:500">€${price.toFixed(2)}</span>${g.url?` <a href="${g.url}" target="_blank" style="color:var(--caramel);text-decoration:none;font-size:11px">↗</a>`:''}`;
-        html+=` <button onclick="editGoalAdmin('${g.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 3px">✏️</button>`;
-        html+=`<button onclick="delGoal('${g.id}');renderKidsPointsPanel()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 3px">✕</button>`;
+        html+=` <button onclick="editGoalAdmin('${g.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px 6px;-webkit-tap-highlight-color:transparent">✏️</button>`;
+        html+=`<button onclick="delGoal('${g.id}');renderKidsPointsPanel()" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:16px;padding:4px 6px;-webkit-tap-highlight-color:transparent">✕</button>`;
         html+=`</div><div class="goal-prog"><div class="goal-prog-fill" style="width:${pct}%"></div></div></div>`;
         running+=needed;
       });
@@ -3010,12 +3010,12 @@ function renderKidsPointsPanel(){
     // Recent point entries with delete
     const ledger=D.pointLedger.filter(e=>e.user_id===kid.id&&!e.revoked).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,15);
     if(ledger.length){
-      html+=`<div style="margin-top:8px;font-size:11px;color:var(--muted);cursor:pointer" onclick="togEl('pled-${kid.id}','pledc-${kid.id}')">🏆 Puntenlog (${ledger.length}) <span class="chev" id="pledc-${kid.id}" style="font-size:9px">▾</span></div>`;
-      html+=`<div class="day-body" id="pled-${kid.id}" style="display:none">`;
+      html+=`<div style="margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer;padding:6px 0;-webkit-tap-highlight-color:transparent" onclick="togEl('pled-${kid.id}','pledc-${kid.id}')">🏆 Puntenlog (${ledger.length}) <span class="chev" id="pledc-${kid.id}">&#9662;</span></div>`;
+      html+=`<div class="day-body" id="pled-${kid.id}">`;
       ledger.forEach(e=>{
         const d=new Date(e.created_at);const dateStr=`${d.getDate()}/${d.getMonth()+1}`;
         const isSpend=e.points<0;
-        html+=`<div style="display:flex;align-items:center;gap:4px;padding:2px 0;font-size:12px"><span style="color:var(--muted);width:35px">${dateStr}</span><span style="flex:1">${isSpend?'🎯 ':''}${esc(e.task_name)}</span><span style="font-weight:600;${isSpend?'color:#e65100':'color:#f57f17'}">${e.points}</span><button onclick="revokePoint('${e.id}');renderKidsPointsPanel()" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:11px;padding:0 3px" title="Verwijderen">✕</button></div>`;
+        html+=`<div style="display:flex;align-items:center;gap:4px;padding:3px 0;font-size:12px"><span style="color:var(--muted);width:35px">${dateStr}</span><span style="flex:1">${isSpend?'🎯 ':''}${esc(e.task_name)}</span><span style="font-weight:600;${isSpend?'color:#e65100':'color:#f57f17'}">${e.points}</span><button onclick="revokePoint('${e.id}');renderKidsPointsPanel()" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:14px;padding:4px 6px;-webkit-tap-highlight-color:transparent" title="Verwijderen">✕</button></div>`;
       });
       html+=`</div>`;
     }
