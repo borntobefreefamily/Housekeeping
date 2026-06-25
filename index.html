@@ -1660,10 +1660,12 @@ function setupRT(){
         await loadAll();
         if(isWkr())renderWorker();
         else renderMgrWeek();
-        // Refresh points tab/panel if visible
+        // Refresh points tab/panel/catalog if visible
         const ptEl=document.getElementById('w-points-content');
         if(ptEl&&ptEl.innerHTML)renderPointsTab();
         if(document.getElementById('kids-pts-panel')?.classList.contains('open'))renderKidsPointsPanel();
+        if(document.getElementById('catalog-list')?.innerHTML)renderCatalogList();
+        if(isMgr())renderFamilyOverview(wkey(wOff));
         updLogBadge();updNotifBadge();
       },600);
     }).subscribe();
