@@ -2915,9 +2915,6 @@ function renderPointsTab(){
     html+=`</div></div>`;
   }
 
-  // 🏆 Earned history
-  html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🏆 ${tr('pointsEarned')}</div>`;
-
   // 🛒 Catalog — available tasks to claim
   html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🛒 ${tr('catAvail')}</div>`;
   const activeClaim=D.claims.find(c=>c.user_id===CU.id&&(c.status==='claimed'||c.status==='done'));
@@ -3177,7 +3174,6 @@ function renderKidsPointsPanel(){
   }
   const kids=D.users.filter(u=>u.role==='child');
   if(!kids.length){el.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:13px">Geen kinderen</div>';return;}
-  let html='';
   kids.forEach(kid=>{
     const pts=userPoints(kid.id);
     const val=pts*pointValueCents()/100;
