@@ -763,7 +763,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
     </div>
     </div>
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('pts-body','pts-chev')">
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('pts-body','pts-chev')">
       <div class="sec-title" id="inst-pts-title" style="margin:0;border:none;padding:0">⭐ Puntensysteem</div>
       <span class="chev" id="pts-chev">&#9662;</span>
     </div>
@@ -1660,6 +1660,10 @@ function setupRT(){
         await loadAll();
         if(isWkr())renderWorker();
         else renderMgrWeek();
+        // Refresh points tab/panel if visible
+        const ptEl=document.getElementById('w-points-content');
+        if(ptEl&&ptEl.innerHTML)renderPointsTab();
+        if(document.getElementById('kids-pts-panel')?.classList.contains('open'))renderKidsPointsPanel();
         updLogBadge();updNotifBadge();
       },600);
     }).subscribe();
@@ -2961,14 +2965,6 @@ function renderPointsTab(){
     } else {
       html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('catNone')}</div>`;
     }
-  }
-
-  // Verdiend (completed claims)
-  const doneClaims=D.claims.filter(c=>c.user_id===CU.id&&c.status==='completed').slice(0,10);
-  if(doneClaims.length){
-    html+=`<div style="margin-top:6px">`;
-    doneClaims.forEach(c=>{const ct=D.catalog.find(x=>x.id===c.catalog_task_id);const d=new Date(c.approved_at||c.created_at);html+=`<div style="font-size:11px;color:var(--muted);padding:2px 0">✓ ${ct?esc(ct.text_nl):'?'} · ⭐ ${ct?.points||0} · ${d.getDate()}/${d.getMonth()+1}</div>`;});
-    html+=`</div>`;
   }
 
   html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🏆 ${tr('pointsEarned')}</div>`;
