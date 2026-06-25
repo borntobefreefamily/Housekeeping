@@ -710,8 +710,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="plan-grid"></div>
     </div>
 
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('users-body','users-chev')">
-      <div class="sec-title" id="inst-users-title" style="margin:0;border:none;padding:0">Gebruikers</div>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('users-body','users-chev')">
+      <div class="sec-title" id="inst-users-title" style="margin:0;border:none;padding:0">👥 Gebruikers</div>
       <span class="chev" id="users-chev">&#9662;</span>
     </div>
     <div class="day-body" id="users-body">
@@ -722,8 +722,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
     </div>
     </div>
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('wd-body','wd-chev')">
-      <div class="sec-title" id="inst-wd-title" style="margin:0;border:none;padding:0">Werkdagen</div>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('wd-body','wd-chev')">
+      <div class="sec-title" id="inst-wd-title" style="margin:0;border:none;padding:0">📅 Werkdagen</div>
       <span class="chev" id="wd-chev">&#9662;</span>
     </div>
     <div class="day-body" id="wd-body">
@@ -733,8 +733,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="wd-flash" class="flash" style="opacity:0"></div>
     </div>
     </div>
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('gcat-body','gcat-chev')">
-      <div class="sec-title" id="inst-gcat-title" style="margin:0;border:none;padding:0">Categorieën</div>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('gcat-body','gcat-chev')">
+      <div class="sec-title" id="inst-gcat-title" style="margin:0;border:none;padding:0">🏷️ Categorieën</div>
       <span class="chev" id="gcat-chev">&#9662;</span>
     </div>
     <div class="day-body" id="gcat-body">
@@ -748,8 +748,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="gcat-flash" class="flash" style="opacity:0"></div>
     </div>
     </div>
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('loc-body','loc-chev')">
-      <div class="sec-title" id="inst-loc-title" style="margin:0;border:none;padding:0">Locaties</div>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('loc-body','loc-chev')">
+      <div class="sec-title" id="inst-loc-title" style="margin:0;border:none;padding:0">📍 Locaties</div>
       <span class="chev" id="loc-chev">&#9662;</span>
     </div>
     <div class="day-body" id="loc-body">
@@ -793,8 +793,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
     </div>
     </div>
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('wkm-body','wkm-chev')">
-      <div class="sec-title" id="inst-wk-title" style="margin:0;border:none;padding:0">Week beheren</div>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('wkm-body','wkm-chev')">
+      <div class="sec-title" id="inst-wk-title" style="margin:0;border:none;padding:0">🗓️ Week beheren</div>
       <span class="chev" id="wkm-chev">&#9662;</span>
     </div>
     <div class="day-body" id="wkm-body">
@@ -805,8 +805,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
     </div>
 
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('log-body','log-chev')">
-      <div class="sec-title" style="margin:0;border:none;padding:0">Activiteitenlog</div>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('log-body','log-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">📊 Activiteitenlog</div>
       <span class="chev" id="log-chev">&#9662;</span>
     </div>
     <div class="day-body" id="log-body">
@@ -816,7 +816,7 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
 
     <div class="collapse-hdr beheer-hdr" onclick="togEl('notes-body','notes-chev')">
-      <div class="sec-title" style="margin:0;border:none;padding:0">Notities zoeken</div>
+      <div class="sec-title" style="margin:0;border:none;padding:0">🔍 Notities zoeken</div>
       <span class="chev" id="notes-chev">&#9662;</span>
     </div>
     <div class="day-body" id="notes-body">
@@ -2330,7 +2330,14 @@ function mTab(n){
   const fab=document.getElementById('fab-add');if(fab)fab.style.display=(n==='week'&&isMgr())?'flex':'none';
   if(n==='week')renderMgrWeek();
   if(n==='eten'){renderRecSels();renderRcList();renderShopping('m');}
-  if(n==='inst'){setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();renderCatalogList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
+  if(n==='inst'){
+    // Hide admin-only sections for parents
+    const isAdmin=CU?.role==='admin';
+    document.querySelectorAll('.adm-sec').forEach(el=>{
+      el.style.display=isAdmin?'':'none';
+      const body=el.nextElementSibling;if(body?.classList.contains('day-body'))body.style.display=isAdmin?'':'none';
+    });
+    setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();renderCatalogList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
@@ -2920,8 +2927,9 @@ function renderPointsTab(){
   const activeClaim=D.claims.find(c=>c.user_id===CU.id&&(c.status==='claimed'||c.status==='done'));
   if(activeClaim){
     const ct=D.catalog.find(x=>x.id===activeClaim.catalog_task_id);
-    const dayName=dayArr()[activeClaim.day_index]||'';
-    html+=`<div style="background:#fff3e0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><strong>📋 ${tr('catMyClaim')}</strong><br>${ct?esc(ct.text_nl):'?'} · ${dayName} · ⭐ ${ct?.points||0}`;
+    const claimDate=activeClaim.target_date?new Date(activeClaim.target_date+'T12:00:00'):null;
+    const dayLbl=claimDate?`${claimDate.getDate()}/${claimDate.getMonth()+1}${activeClaim.target_time?' · '+activeClaim.target_time:''}`:dayArr()[activeClaim.day_index]||'';
+    html+=`<div style="background:#fff3e0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><strong>📋 ${tr('catMyClaim')}</strong><br>${ct?esc(ct.text_nl):'?'} · ${dayLbl} · ⭐ ${ct?.points||0}`;
     if(activeClaim.status==='claimed'){
       html+=`<br><button onclick="completeClaim('${activeClaim.id}')" style="margin-top:6px;background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">☑ ${lg()==='pt'?'Concluído':'Afgerond'}</button>`;
     } else if(activeClaim.status==='done'){
@@ -2935,12 +2943,10 @@ function renderPointsTab(){
     if(avail.length){
       avail.forEach(t=>{
         const loc=t.location_id?D.locs.find(l=>l.id===t.location_id):null;
+        const catId=t.id.replace(/-/g,'').slice(0,8);
         html+=`<div style="background:var(--steam);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1">${esc(isMgr()?t.text_nl:(lg()==='pt'&&t.text_pt?t.text_pt:t.text_nl))}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}</span><span style="color:#f57f17;font-weight:600">⭐ ${t.points}</span></div>`;
-        html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">`;
-        dayArr().forEach((dn,di)=>{
-          html+=`<button onclick="claimCatalogTask('${t.id}',${di})" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:4px 8px;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent">${dn}</button>`;
-        });
-        html+=`</div></div>`;
+        html+=`<div style="display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap"><input type="date" id="cdt-${catId}" class="finput" style="font-size:12px;padding:4px 6px;flex:1;min-width:120px"><input type="time" id="ctm-${catId}" class="finput" style="font-size:12px;padding:4px 6px;width:80px"><button onclick="claimCatalogTaskDate('${t.id}','cdt-${catId}','ctm-${catId}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">${tr('catClaim')}</button></div>`;
+        html+=`</div>`;
       });
     } else {
       html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('catNone')}</div>`;
@@ -3062,7 +3068,33 @@ async function delCatalogTask(id){
   await loadAll();renderCatalogList();
 }
 
-// Child: claim a catalog task
+// Child: claim a catalog task with date+time
+async function claimCatalogTaskDate(catId,dateId,timeId){
+  const dateVal=document.getElementById(dateId)?.value;
+  const timeVal=document.getElementById(timeId)?.value||'';
+  if(!dateVal){alert(tr('catPickDay'));return;}
+  const t=D.catalog.find(x=>x.id===catId);if(!t)return;
+  const d=new Date(dateVal+'T12:00:00');
+  const di=d.getDay()===0?6:d.getDay()-1;
+  const wk=wkey(0);
+  await sb.from('task_claims').insert({household_id:HID,catalog_task_id:catId,user_id:CU.id,day_index:di,week_key:wk,status:'claimed',target_date:dateVal,target_time:timeVal||null});
+  // Notify parents
+  const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
+  const dlbl=`${d.getDate()} ${ms[d.getMonth()]}${timeVal?' '+timeVal:''}`;
+  const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
+  if(parents.length){
+    await sb.from('notifications').insert(parents.map(u=>({
+      household_id:HID,user_id:u.id,type:'claim_new',
+      title_nl:`🛒 ${CU.name} wil "${t.text_nl}" doen (${dlbl})`,
+      title_pt:`🛒 ${CU.name} quer fazer "${t.text_pt||t.text_nl}" (${dlbl})`,
+      title_en:`🛒 ${CU.name} wants "${t.text_nl}" (${dlbl})`,
+      body:{catalog_task_id:catId}
+    })));
+  }
+  await loadAll();renderPointsTab();updNotifBadge();
+}
+
+// Child: claim a catalog task (legacy day-based)
 async function claimCatalogTask(catId,di){
   const t=D.catalog.find(x=>x.id===catId);if(!t)return;
   const wk=wkey(0);
@@ -3155,21 +3187,33 @@ function renderKidsPointsPanel(){
   let html='';
   // Pending approvals
   const pending=D.claims.filter(c=>c.status==='done');
-  if(pending.length){
+  const overdue=D.claims.filter(c=>c.status==='claimed'&&c.target_date&&c.target_time&&new Date(c.target_date+'T'+c.target_time)<new Date());
+  if(pending.length||overdue.length){
     html+=`<div style="padding:.75rem;border-bottom:2px solid var(--caramel);background:#fff8f0">`;
-    html+=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">🔔 ${tr('catPending')}</div>`;
+    if(pending.length){
+      html+=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">🔔 ${tr('catPending')}</div>`;
     pending.forEach(c=>{
       const kid=D.users.find(u=>u.id===c.user_id);
       const t=D.catalog.find(x=>x.id===c.catalog_task_id);
-      const dayName=dayArr()[c.day_index]||'';
+      const claimDate=c.target_date?new Date(c.target_date+'T12:00:00'):null;
+      const dayLbl=claimDate?`${claimDate.getDate()}/${claimDate.getMonth()+1}${c.target_time?' · '+c.target_time:''}`:dayArr()[c.day_index]||'';
       const dt=c.completed_at?new Date(c.completed_at):new Date(c.created_at);
       const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
       html+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;flex-wrap:wrap">`;
-      html+=`<span style="flex:1">${personBadge(c.user_id)} ${t?esc(t.text_nl):'?'} · ${dayName} ${dlbl} · ⭐ ${t?.points||0}</span>`;
+      html+=`<span style="flex:1">${personBadge(c.user_id)} ${t?esc(t.text_nl):'?'} · ${dayLbl} · ⭐ ${t?.points||0}</span>`;
       html+=`<button onclick="approveClaim('${c.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✓ ${tr('catApprove')}</button>`;
       html+=`<button onclick="rejectClaim('${c.id}')" style="background:none;border:1px solid #c45c5c;color:#c45c5c;border-radius:var(--rs);padding:4px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✕</button>`;
       html+=`</div>`;
     });
+    }
+    if(overdue.length){
+      html+=`<div style="font-weight:700;font-size:13px;margin:8px 0 4px;color:#c45c5c">⏰ Deadline verstreken</div>`;
+      overdue.forEach(c=>{
+        const t=D.catalog.find(x=>x.id===c.catalog_task_id);
+        const dayLbl=c.target_date?`${new Date(c.target_date+'T12:00:00').getDate()}/${new Date(c.target_date+'T12:00:00').getMonth()+1}${c.target_time?' '+c.target_time:''}`:'';
+        html+=`<div style="font-size:12px;padding:3px 0;color:#c45c5c">${personBadge(c.user_id)} ${t?esc(t.text_nl):'?'} · ${dayLbl}</div>`;
+      });
+    }
     html+=`</div>`;
   }
   const kids=D.users.filter(u=>u.role==='child');
