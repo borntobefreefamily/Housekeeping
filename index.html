@@ -1724,10 +1724,10 @@ function updateManagerLabels(){
     'nt-add-btn':tr('addTask'),
     'nt-lbl-points':tr('pointsPerTask'),
     'edit-lbl-points':tr('pointsPerTask'),
-    'inst-users-title':tr('users'),
-    'inst-wd-title':tr('workdays'),'inst-wd-btn':tr('saveWorkdays'),
-    'inst-gcat-title':tr('globalCats'),'inst-gcat-hint':tr('globalCatsHint'),
-    'inst-loc-title':tr('locationsList'),'inst-wk-title':tr('weekManage'),
+    'inst-users-title':`👥 ${tr('users')}`,
+    'inst-wd-title':`📅 ${tr('workdays')}`,'inst-wd-btn':tr('saveWorkdays'),
+    'inst-gcat-title':`🏷️ ${tr('globalCats')}`,'inst-gcat-hint':tr('globalCatsHint'),
+    'inst-loc-title':`📍 ${tr('locationsList')}`,'inst-wk-title':`🗓️ ${tr('weekManage')}`,
     'inst-clear-lbl':tr('clearChecks'),'inst-clear-sub':tr('clearSub'),'inst-clear-btn':tr('clearBtn'),
     'inst-pts-title':`⭐ ${tr('pointsLabel')}`,'inst-pts-val-lbl':tr('pointsValue'),'inst-pts-save':tr('save'),
   };
@@ -2308,7 +2308,7 @@ function renderManager(){
   document.getElementById('m-sub').textContent=tr(CU.role);
   // Hide Instellingen for non-admin
   const instTab=document.getElementById('t-inst');
-  if(instTab)instTab.style.display=CU.role==='admin'?'':'none';
+  if(instTab)instTab.style.display=isMgr(CU)?'':'none';
   // Mode bar: only admin sees rental mode
   const modeBar=document.getElementById('mode-bar');
   if(modeBar)modeBar.style.display=CU.role==='admin'?'flex':'none';
