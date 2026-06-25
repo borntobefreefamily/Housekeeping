@@ -2922,29 +2922,32 @@ function renderPointsTab(){
     html+=`</div></div>`;
   }
 
-  // 🛒 Catalog — available tasks to claim
+  // 🛒 Catalog — takenwinkel
   html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🛒 ${tr('catAvail')}</div>`;
-  const activeClaim=D.claims.find(c=>c.user_id===CU.id&&(c.status==='claimed'||c.status==='done'));
+  const activeClaim=D.claims.find(c=>c.user_id===CU.id&&['pending','assigned','done'].includes(c.status));
   if(activeClaim){
     const ct=D.catalog.find(x=>x.id===activeClaim.catalog_task_id);
     const claimDate=activeClaim.target_date?new Date(activeClaim.target_date+'T12:00:00'):null;
     const dayLbl=claimDate?`${claimDate.getDate()}/${claimDate.getMonth()+1}${activeClaim.target_time?' · '+activeClaim.target_time:''}`:dayArr()[activeClaim.day_index]||'';
-    html+=`<div style="background:#fff3e0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><strong>📋 ${tr('catMyClaim')}</strong><br>${ct?esc(ct.text_nl):'?'} · ${dayLbl} · ⭐ ${ct?.points||0}`;
-    if(activeClaim.status==='claimed'){
-      html+=`<br><button onclick="completeClaim('${activeClaim.id}')" style="margin-top:6px;background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">☑ ${lg()==='pt'?'Concluído':'Afgerond'}</button>`;
+    const statusColor=activeClaim.status==='assigned'?'#e8f5e9':activeClaim.status==='done'?'#e3f2fd':'#fff3e0';
+    html+=`<div style="background:${statusColor};border-radius:8px;padding:10px;margin-bottom:6px;font-size:13px"><strong>📋 ${ct?esc(lg()==='pt'&&ct.text_pt?ct.text_pt:ct.text_nl):'?'}</strong> · ${dayLbl} · ⭐ ${ct?.points||0}`;
+    if(activeClaim.status==='pending'){
+      html+=`<br><span style="font-size:12px;color:var(--caramel);margin-top:4px;display:inline-block">${tr('catWaiting')}</span>`;
+    } else if(activeClaim.status==='assigned'){
+      html+=`<br><button onclick="markClaimDone('${activeClaim.id}')" style="margin-top:6px;background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">☑ ${lg()==='pt'?'Concluído':'Afgerond'}</button>`;
     } else if(activeClaim.status==='done'){
-      html+=`<br><span style="font-size:12px;color:var(--muted)">${tr('catWaiting')}</span>`;
+      html+=`<br><span style="font-size:12px;color:#1565c0;margin-top:4px;display:inline-block">⏳ ${lg()==='pt'?'Aguardando aprovação do resultado':'Wacht op goedkeuring resultaat'}</span>`;
     }
     html+=`</div>`;
     html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('catLocked')}</div>`;
   } else {
-    const claimed=new Set(D.claims.filter(c=>c.status==='claimed'||c.status==='done').map(c=>c.catalog_task_id));
-    const avail=D.catalog.filter(t=>!claimed.has(t.id));
+    const blockedIds=new Set(D.claims.filter(c=>['pending','assigned','done'].includes(c.status)).map(c=>c.catalog_task_id));
+    const avail=D.catalog.filter(t=>!blockedIds.has(t.id));
     if(avail.length){
       avail.forEach(t=>{
         const loc=t.location_id?D.locs.find(l=>l.id===t.location_id):null;
         const catId=t.id.replace(/-/g,'').slice(0,8);
-        html+=`<div style="background:var(--steam);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1">${esc(isMgr()?t.text_nl:(lg()==='pt'&&t.text_pt?t.text_pt:t.text_nl))}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}</span><span style="color:#f57f17;font-weight:600">⭐ ${t.points}</span></div>`;
+        html+=`<div style="background:var(--steam);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1">${esc(lg()==='pt'&&t.text_pt?t.text_pt:t.text_nl)}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}</span><span style="color:#f57f17;font-weight:600">⭐ ${t.points}</span></div>`;
         html+=`<div style="display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap"><input type="date" id="cdt-${catId}" class="finput" style="font-size:12px;padding:4px 6px;flex:1;min-width:120px"><input type="time" id="ctm-${catId}" class="finput" style="font-size:12px;padding:4px 6px;width:80px"><button onclick="claimCatalogTaskDate('${t.id}','cdt-${catId}','ctm-${catId}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">${tr('catClaim')}</button></div>`;
         html+=`</div>`;
       });
@@ -2953,11 +2956,11 @@ function renderPointsTab(){
     }
   }
 
-  // Recent approved claims
-  const doneClaims=D.claims.filter(c=>c.user_id===CU.id&&c.status==='approved').slice(0,5);
+  // Verdiend (completed claims)
+  const doneClaims=D.claims.filter(c=>c.user_id===CU.id&&c.status==='completed').slice(0,10);
   if(doneClaims.length){
     html+=`<div style="margin-top:6px">`;
-    doneClaims.forEach(c=>{const ct=D.catalog.find(x=>x.id===c.catalog_task_id);const d=new Date(c.approved_at||c.created_at);html+=`<div style="font-size:11px;color:var(--muted);padding:2px 0">✓ ${ct?esc(ct.text_nl):'?'} · ${d.getDate()}/${d.getMonth()+1}</div>`;});
+    doneClaims.forEach(c=>{const ct=D.catalog.find(x=>x.id===c.catalog_task_id);const d=new Date(c.approved_at||c.created_at);html+=`<div style="font-size:11px;color:var(--muted);padding:2px 0">✓ ${ct?esc(ct.text_nl):'?'} · ⭐ ${ct?.points||0} · ${d.getDate()}/${d.getMonth()+1}</div>`;});
     html+=`</div>`;
   }
 
@@ -3039,9 +3042,11 @@ function renderCatalogList(){
   if(!D.catalog.length){el.innerHTML=`<div style="font-size:12px;color:var(--muted);padding:4px">${tr('catNone')}</div>`;return;}
   el.innerHTML=D.catalog.map(t=>{
     const loc=t.location_id?D.locs.find(l=>l.id===t.location_id):null;
-    const activeClaim=D.claims.find(c=>c.catalog_task_id===t.id&&(c.status==='claimed'||c.status==='done'));
+    const activeClaim=D.claims.find(c=>c.catalog_task_id===t.id&&['pending','assigned','done'].includes(c.status));
     const claimUser=activeClaim?D.users.find(u=>u.id===activeClaim.user_id):null;
-    const claimBdg=claimUser?` <span style="font-size:10px;background:#fff3e0;color:#e65100;padding:1px 5px;border-radius:8px">${claimUser.avatar||''} ${claimUser.name} — ${activeClaim.status==='done'?tr('catWaiting'):tr('catMyClaim').toLowerCase()}</span>`:'';
+    const statusLbl={pending:'wacht op goedkeuring',assigned:'toegewezen',done:'afgerond, te keuren'};
+    const statusCol={pending:'#e65100',assigned:'#1a6b5a',done:'#1565c0'};
+    const claimBdg=claimUser&&activeClaim?` <span style="font-size:10px;background:${statusCol[activeClaim.status]}15;color:${statusCol[activeClaim.status]};padding:1px 5px;border-radius:8px">${claimUser.avatar||''} ${claimUser.name} — ${statusLbl[activeClaim.status]}</span>`:'';
     return `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="flex:1">${esc(t.text_nl)}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}${claimBdg}</span><span style="color:#f57f17;font-weight:600;white-space:nowrap">⭐ ${t.points}</span><button onclick="editCatalogTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px 6px;-webkit-tap-highlight-color:transparent">✏️</button><button onclick="delCatalogTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:16px;padding:4px 6px;-webkit-tap-highlight-color:transparent">✕</button></div>`;
   }).join('');
 }
@@ -3068,7 +3073,7 @@ async function delCatalogTask(id){
   await loadAll();renderCatalogList();
 }
 
-// Child: claim a catalog task with date+time
+// Child: claim a catalog task with date+time → status pending
 async function claimCatalogTaskDate(catId,dateId,timeId){
   const dateVal=document.getElementById(dateId)?.value;
   const timeVal=document.getElementById(timeId)?.value||'';
@@ -3077,8 +3082,7 @@ async function claimCatalogTaskDate(catId,dateId,timeId){
   const d=new Date(dateVal+'T12:00:00');
   const di=d.getDay()===0?6:d.getDay()-1;
   const wk=wkey(0);
-  await sb.from('task_claims').insert({household_id:HID,catalog_task_id:catId,user_id:CU.id,day_index:di,week_key:wk,status:'claimed',target_date:dateVal,target_time:timeVal||null});
-  // Notify parents
+  await sb.from('task_claims').insert({household_id:HID,catalog_task_id:catId,user_id:CU.id,day_index:di,week_key:wk,status:'pending',target_date:dateVal,target_time:timeVal||null});
   const ms=lg()==='pt'?MONTHS_SHORT_PT:MONTHS_SHORT;
   const dlbl=`${d.getDate()} ${ms[d.getMonth()]}${timeVal?' '+timeVal:''}`;
   const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
@@ -3094,32 +3098,11 @@ async function claimCatalogTaskDate(catId,dateId,timeId){
   await loadAll();renderPointsTab();updNotifBadge();
 }
 
-// Child: claim a catalog task (legacy day-based)
-async function claimCatalogTask(catId,di){
-  const t=D.catalog.find(x=>x.id===catId);if(!t)return;
-  const wk=wkey(0);
-  await sb.from('task_claims').insert({household_id:HID,catalog_task_id:catId,user_id:CU.id,day_index:di,week_key:wk,status:'claimed'});
-  // Notify parents
-  const dayName=dayArr()[di]||'';
-  const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
-  if(parents.length){
-    await sb.from('notifications').insert(parents.map(u=>({
-      household_id:HID,user_id:u.id,type:'claim_new',
-      title_nl:`🛒 ${CU.name} wil "${t.text_nl}" doen (${dayName})`,
-      title_pt:`🛒 ${CU.name} quer fazer "${t.text_pt||t.text_nl}" (${dayName})`,
-      title_en:`🛒 ${CU.name} wants "${t.text_nl}" (${dayName})`,
-      body:{catalog_task_id:catId}
-    })));
-  }
-  await loadAll();renderPointsTab();updNotifBadge();
-}
-
-// Child: mark claim as done
-async function completeClaim(claimId){
+// Child: mark assigned task as done → notify parent for result approval
+async function markClaimDone(claimId){
   const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
   const t=D.catalog.find(x=>x.id===cl.catalog_task_id);
   await sb.from('task_claims').update({status:'done',completed_at:new Date().toISOString()}).eq('id',claimId);
-  // Notify parents
   const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
   if(parents.length&&t){
     await sb.from('notifications').insert(parents.map(u=>({
@@ -3133,36 +3116,49 @@ async function completeClaim(claimId){
   await loadAll();renderPointsTab();updNotifBadge();
 }
 
-// Parent: approve claim
+// Parent: approve claim (pending→assigned) or approve result (done→completed)
 async function approveClaim(claimId){
   const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
   const t=D.catalog.find(x=>x.id===cl.catalog_task_id);if(!t)return;
-  await sb.from('task_claims').update({status:'approved',approved_by:CU.id,approved_at:new Date().toISOString()}).eq('id',claimId);
-  // Award points
-  await sb.from('point_ledger').insert({household_id:HID,user_id:cl.user_id,task_id:cl.catalog_task_id,task_type:'catalog',task_name:t.text_nl,points:t.points,week_key:cl.week_key,day_index:cl.day_index});
-  // Notify child
   const child=D.users.find(u=>u.id===cl.user_id);
-  if(child){
-    await sb.from('notifications').insert({
-      household_id:HID,user_id:child.id,type:'claim_approved',
-      title_nl:`⭐ "${t.text_nl}" goedgekeurd! +${t.points} punten`,
-      title_pt:`⭐ "${t.text_pt||t.text_nl}" aprovado! +${t.points} pontos`,
-      title_en:`⭐ "${t.text_nl}" approved! +${t.points} points`,
-      body:{claim_id:claimId}
-    });
+  if(cl.status==='pending'){
+    // Approve the claim → assign task to child
+    await sb.from('task_claims').update({status:'assigned',approved_by:CU.id}).eq('id',claimId);
+    if(child){
+      await sb.from('notifications').insert({
+        household_id:HID,user_id:child.id,type:'claim_assigned',
+        title_nl:`✓ "${t.text_nl}" is goedgekeurd! Succes!`,
+        title_pt:`✓ "${t.text_pt||t.text_nl}" aprovado! Boa sorte!`,
+        title_en:`✓ "${t.text_nl}" approved! Good luck!`,
+        body:{claim_id:claimId}
+      });
+    }
+  } else if(cl.status==='done'){
+    // Approve the result → award points
+    await sb.from('task_claims').update({status:'completed',approved_at:new Date().toISOString()}).eq('id',claimId);
+    await sb.from('point_ledger').insert({household_id:HID,user_id:cl.user_id,task_id:cl.catalog_task_id,task_type:'catalog',task_name:t.text_nl,points:t.points,week_key:cl.week_key,day_index:cl.day_index});
+    if(child){
+      await sb.from('notifications').insert({
+        household_id:HID,user_id:child.id,type:'claim_completed',
+        title_nl:`⭐ "${t.text_nl}" goedgekeurd! +${t.points} punten`,
+        title_pt:`⭐ "${t.text_pt||t.text_nl}" aprovado! +${t.points} pontos`,
+        title_en:`⭐ "${t.text_nl}" approved! +${t.points} points`,
+        body:{claim_id:claimId}
+      });
+    }
   }
   await loadAll();renderKidsPointsPanel();updNotifBadge();
 }
 
-// Parent: reject claim
+// Parent: reject claim or result
 async function rejectClaim(claimId){
   const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
   const t=D.catalog.find(x=>x.id===cl.catalog_task_id);
   await sb.from('task_claims').update({status:'rejected',approved_by:CU.id,approved_at:new Date().toISOString()}).eq('id',claimId);
-  // Notify child
-  if(t){
+  const child=D.users.find(u=>u.id===cl.user_id);
+  if(child&&t){
     await sb.from('notifications').insert({
-      household_id:HID,user_id:cl.user_id,type:'claim_rejected',
+      household_id:HID,user_id:child.id,type:'claim_rejected',
       title_nl:`↩ "${t.text_nl}" niet goedgekeurd`,
       title_pt:`↩ "${t.text_pt||t.text_nl}" não aprovado`,
       title_en:`↩ "${t.text_nl}" not approved`,
@@ -3170,6 +3166,16 @@ async function rejectClaim(claimId){
     });
   }
   await loadAll();renderKidsPointsPanel();updNotifBadge();
+}
+
+// Parent: revoke completed claim (delete points + reset)
+async function revokeCompletedClaim(claimId){
+  const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
+  // Revoke the point ledger entry for this claim
+  const entry=D.pointLedger.find(e=>e.task_id===cl.catalog_task_id&&e.user_id===cl.user_id&&e.task_type==='catalog'&&!e.revoked);
+  if(entry)await sb.from('point_ledger').update({revoked:true,revoked_by:CU.id,revoked_at:new Date().toISOString()}).eq('id',entry.id);
+  await sb.from('task_claims').update({status:'rejected'}).eq('id',claimId);
+  await loadAll();renderKidsPointsPanel();renderPointsTab();
 }
 
 function toggleKidsPointsPanel(){
@@ -3185,26 +3191,36 @@ function toggleKidsPointsPanel(){
 function renderKidsPointsPanel(){
   const el=document.getElementById('kids-pts-list');if(!el)return;
   let html='';
-  // Pending approvals
-  const pending=D.claims.filter(c=>c.status==='done');
-  const overdue=D.claims.filter(c=>c.status==='claimed'&&c.target_date&&c.target_time&&new Date(c.target_date+'T'+c.target_time)<new Date());
-  if(pending.length||overdue.length){
+  // Section 1: Pending claim approvals (kind wil taak doen)
+  const pendingClaims=D.claims.filter(c=>c.status==='pending');
+  // Section 2: Done result approvals (kind heeft taak afgerond)
+  const doneResults=D.claims.filter(c=>c.status==='done');
+  // Section 3: Overdue (deadline passed, still assigned)
+  const overdue=D.claims.filter(c=>c.status==='assigned'&&c.target_date&&c.target_time&&new Date(c.target_date+'T'+c.target_time)<new Date());
+
+  if(pendingClaims.length||doneResults.length||overdue.length){
     html+=`<div style="padding:.75rem;border-bottom:2px solid var(--caramel);background:#fff8f0">`;
-    if(pending.length){
-      html+=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">🔔 ${tr('catPending')}</div>`;
-    pending.forEach(c=>{
-      const kid=D.users.find(u=>u.id===c.user_id);
-      const t=D.catalog.find(x=>x.id===c.catalog_task_id);
-      const claimDate=c.target_date?new Date(c.target_date+'T12:00:00'):null;
-      const dayLbl=claimDate?`${claimDate.getDate()}/${claimDate.getMonth()+1}${c.target_time?' · '+c.target_time:''}`:dayArr()[c.day_index]||'';
-      const dt=c.completed_at?new Date(c.completed_at):new Date(c.created_at);
-      const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
-      html+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;flex-wrap:wrap">`;
-      html+=`<span style="flex:1">${personBadge(c.user_id)} ${t?esc(t.text_nl):'?'} · ${dayLbl} · ⭐ ${t?.points||0}</span>`;
-      html+=`<button onclick="approveClaim('${c.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✓ ${tr('catApprove')}</button>`;
-      html+=`<button onclick="rejectClaim('${c.id}')" style="background:none;border:1px solid #c45c5c;color:#c45c5c;border-radius:var(--rs);padding:4px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✕</button>`;
-      html+=`</div>`;
-    });
+    if(pendingClaims.length){
+      html+=`<div style="font-weight:700;font-size:14px;margin-bottom:6px">🛒 Claims te keuren</div>`;
+      pendingClaims.forEach(c=>{
+        const t=D.catalog.find(x=>x.id===c.catalog_task_id);
+        const claimDate=c.target_date?new Date(c.target_date+'T12:00:00'):null;
+        const dayLbl=claimDate?`${claimDate.getDate()}/${claimDate.getMonth()+1}${c.target_time?' · '+c.target_time:''}`:dayArr()[c.day_index]||'';
+        html+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;flex-wrap:wrap">${personBadge(c.user_id)} <span style="flex:1">${t?esc(t.text_nl):'?'} · ${dayLbl} · ⭐ ${t?.points||0}</span>`;
+        html+=`<button onclick="approveClaim('${c.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✓</button>`;
+        html+=`<button onclick="rejectClaim('${c.id}')" style="background:none;border:1px solid #c45c5c;color:#c45c5c;border-radius:var(--rs);padding:4px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✕</button></div>`;
+      });
+    }
+    if(doneResults.length){
+      html+=`<div style="font-weight:700;font-size:14px;margin:${pendingClaims.length?'10px':'0'} 0 6px">✅ Resultaten te keuren</div>`;
+      doneResults.forEach(c=>{
+        const t=D.catalog.find(x=>x.id===c.catalog_task_id);
+        const dt=c.completed_at?new Date(c.completed_at):new Date(c.created_at);
+        const dlbl=`${dt.getDate()}/${dt.getMonth()+1} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+        html+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;flex-wrap:wrap">${personBadge(c.user_id)} <span style="flex:1">${t?esc(t.text_nl):'?'} · afgerond ${dlbl} · ⭐ ${t?.points||0}</span>`;
+        html+=`<button onclick="approveClaim('${c.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✓ Punten</button>`;
+        html+=`<button onclick="rejectClaim('${c.id}')" style="background:none;border:1px solid #c45c5c;color:#c45c5c;border-radius:var(--rs);padding:4px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✕</button></div>`;
+      });
     }
     if(overdue.length){
       html+=`<div style="font-weight:700;font-size:13px;margin:8px 0 4px;color:#c45c5c">⏰ Deadline verstreken</div>`;
@@ -3215,6 +3231,18 @@ function renderKidsPointsPanel(){
       });
     }
     html+=`</div>`;
+  }
+
+  // Completed claims with revoke option
+  const completed=D.claims.filter(c=>c.status==='completed').sort((a,b)=>new Date(b.approved_at||0)-new Date(a.approved_at||0)).slice(0,10);
+  if(completed.length){
+    html+=`<div style="padding:.5rem .75rem;border-bottom:1px solid var(--border)"><div style="font-size:12px;color:var(--muted);cursor:pointer;padding:4px 0" onclick="togEl('completed-claims','cc-chev')">🏆 Verdiend (${completed.length}) <span class="chev" id="cc-chev">▾</span></div><div class="day-body" id="completed-claims">`;
+    completed.forEach(c=>{
+      const t=D.catalog.find(x=>x.id===c.catalog_task_id);
+      const d=new Date(c.approved_at||c.created_at);
+      html+=`<div style="display:flex;align-items:center;gap:4px;padding:2px 0;font-size:12px">${personBadge(c.user_id)} <span style="flex:1">${t?esc(t.text_nl):'?'} · ⭐ ${t?.points||0}</span><span style="color:var(--muted)">${d.getDate()}/${d.getMonth()+1}</span><button onclick="revokeCompletedClaim('${c.id}')" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:13px;padding:2px 5px;-webkit-tap-highlight-color:transparent" title="Punten terugdraaien">✕</button></div>`;
+    });
+    html+=`</div></div>`;
   }
   const kids=D.users.filter(u=>u.role==='child');
   if(!kids.length){el.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:13px">Geen kinderen</div>';return;}
