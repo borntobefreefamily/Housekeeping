@@ -778,6 +778,21 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="pts-val-flash" class="flash" style="opacity:0"></div>
     </div>
     </div>
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('cat-body','cat-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">🛒 Takencatalogus</div>
+      <span class="chev" id="cat-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="cat-body">
+    <div class="form-card">
+      <div id="catalog-list"></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
+        <input type="text" class="finput" id="cat-name" placeholder="Taaknaam..." style="flex:2;min-width:120px">
+        <input type="number" class="finput" id="cat-pts" placeholder="⭐" min="1" style="width:60px;flex:none">
+        <select class="finput" id="cat-loc" style="flex:1;min-width:80px"><option value="">Geen locatie</option></select>
+        <button class="btn-sm" onclick="addCatalogTask()">+</button>
+      </div>
+    </div>
+    </div>
     <div class="collapse-hdr beheer-hdr" onclick="togEl('wkm-body','wkm-chev')">
       <div class="sec-title" id="inst-wk-title" style="margin:0;border:none;padding:0">Week beheren</div>
       <span class="chev" id="wkm-chev">&#9662;</span>
@@ -1181,7 +1196,7 @@ let CU=null,wOff=0,pin='',sessionLang='nl',editScope='one',planScope='default';
 let _editReplace=null,_editMap={},_editSeq=0;
 
 function mkEdit(table,ids,data){const k='em_'+(++_editSeq);_editMap[k]={table,ids:Array.isArray(ids)?ids:[ids],data};return k;}
-let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},dayNotes:[],recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[]};
+let D={users:[],locs:[],tasks:[],sched:[],extras:[],checks:{},skipped:{},dayNotes:[],recipes:[],shopping:[],recipeIngr:[],pointLedger:[],savingsGoals:[],workdays:[0,1,3,4],focusDef:[],focusWk:[],periodic:[],pChecks:[],log:[],globalCats:[],ulocs:[],persTasks:[],reactions:[],lnotes:[],notifs:[],swaps:[],bookings:[],locInfo:[],cleanTempl:[],gQuestions:[],gAnswers:[],catalog:[],claims:[]};
 const exIdMap={}; // stores extra task id arrays by key for delete
 let rtSubs=[];
 let locEditCats=[];
@@ -1277,6 +1292,7 @@ const I={
     pointsEarnedOn:'Verdiend op',pointsForTask:'voor',pointsRevoke:'Intrekken',
     pointsRevoked2:'ingetrokken',goalName:'Doel',goalPrice:'Prijs (€)',
     goalLink:'Link (optioneel)',goalAdd:'+ Spaardoel',goalReached:'🎉 Behaald!',
+    catTitle:'Takencatalogus',catAvail:'Beschikbare taken',catMyClaim:'Mijn gekozen taak',catClaim:'Ik doe het!',catPickDay:'Kies een dag',catWaiting:'Wacht op goedkeuring ⏳',catApproved:'Goedgekeurd ✓',catRejected:'Niet goedgekeurd',catApprove:'Goedkeuren',catReject:'Afwijzen',catPending:'Te keuren',catLocked:'Rond eerst je huidige taak af',catNone:'Geen taken beschikbaar',
     goalNeeded:'nog nodig',goalCompleted:'Voltooid',
     editRecipe:'Recept bewerken',
     // Jump
@@ -1408,6 +1424,7 @@ const I={
     pointsEarnedOn:'Ganho em',pointsForTask:'para',pointsRevoke:'Revogar',
     pointsRevoked2:'revogado',goalName:'Objetivo',goalPrice:'Preço (€)',
     goalLink:'Link (opcional)',goalAdd:'+ Objetivo',goalReached:'🎉 Conseguido!',
+    catTitle:'Catálogo de tarefas',catAvail:'Tarefas disponíveis',catMyClaim:'Minha tarefa escolhida',catClaim:'Eu faço!',catPickDay:'Escolha um dia',catWaiting:'Aguardando aprovação ⏳',catApproved:'Aprovado ✓',catRejected:'Não aprovado',catApprove:'Aprovar',catReject:'Rejeitar',catPending:'Para aprovar',catLocked:'Termine primeiro a tarefa atual',catNone:'Sem tarefas disponíveis',
     goalNeeded:'ainda necessário',goalCompleted:'Concluído',
     editRecipe:'Editar receita',
     // Jump
@@ -1556,7 +1573,7 @@ function intervalLabel(n){return n===-1?tr('intervalBi'):tr('interval'+n)||`${n}
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li,ct,gq,ga]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li,ct,gq,ga,tcat,tcl]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -1588,6 +1605,8 @@ async function loadAll(){
     safeQ(sb.from('cleaning_templates').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('guest_questions').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('guest_answers').select('*').eq('household_id',HID)),
+    safeQ(sb.from('task_catalog').select('*').eq('household_id',HID).order('created_at')),
+    safeQ(sb.from('task_claims').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
   ]);
   D.users=u.data||[];
   // Dedup users by id (keep first with avatar, fallback first)
@@ -1609,6 +1628,8 @@ async function loadAll(){
   D.checks={};(tc.data||[]).forEach(c=>{D.checks[c.task_id+'_'+c.week_key+'_'+c.day_index]={on:true,by:c.checked_by};});
   D.skipped={};(sk.data||[]).forEach(s=>{D.skipped[s.task_id+'_'+s.week_key+'_'+s.day_index]=true;});
   D.dayNotes=(dn.data||[]).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  D.catalog=tcat.data||[];
+  D.claims=tcl.data||[];
 }
 
 let _rtTimer=null, _rtSkipUntil=0;
@@ -1617,7 +1638,7 @@ function setupRT(){
   // Soft: preserves open state (frequent changes like checks)
   const softTbls=['task_checks','skipped_tasks','monthly_checks','task_reactions'];
   // Hard: full re-render (structural changes, new tabs may appear)
-  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info','cleaning_templates','guest_questions','guest_answers'];
+  const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info','cleaning_templates','guest_questions','guest_answers','task_catalog','task_claims'];
   softTbls.forEach(tbl=>{
     const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
@@ -2309,7 +2330,7 @@ function mTab(n){
   const fab=document.getElementById('fab-add');if(fab)fab.style.display=(n==='week'&&isMgr())?'flex':'none';
   if(n==='week')renderMgrWeek();
   if(n==='eten'){renderRecSels();renderRcList();renderShopping('m');}
-  if(n==='inst'){setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
+  if(n==='inst'){setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();renderCatalogList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
@@ -2896,6 +2917,48 @@ function renderPointsTab(){
 
   // 🏆 Earned history
   html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🏆 ${tr('pointsEarned')}</div>`;
+
+  // 🛒 Catalog — available tasks to claim
+  html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🛒 ${tr('catAvail')}</div>`;
+  const activeClaim=D.claims.find(c=>c.user_id===CU.id&&(c.status==='claimed'||c.status==='done'));
+  if(activeClaim){
+    const ct=D.catalog.find(x=>x.id===activeClaim.catalog_task_id);
+    const dayName=dayArr()[activeClaim.day_index]||'';
+    html+=`<div style="background:#fff3e0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><strong>📋 ${tr('catMyClaim')}</strong><br>${ct?esc(ct.text_nl):'?'} · ${dayName} · ⭐ ${ct?.points||0}`;
+    if(activeClaim.status==='claimed'){
+      html+=`<br><button onclick="completeClaim('${activeClaim.id}')" style="margin-top:6px;background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">☑ ${lg()==='pt'?'Concluído':'Afgerond'}</button>`;
+    } else if(activeClaim.status==='done'){
+      html+=`<br><span style="font-size:12px;color:var(--muted)">${tr('catWaiting')}</span>`;
+    }
+    html+=`</div>`;
+    html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('catLocked')}</div>`;
+  } else {
+    const claimed=new Set(D.claims.filter(c=>c.status==='claimed'||c.status==='done').map(c=>c.catalog_task_id));
+    const avail=D.catalog.filter(t=>!claimed.has(t.id));
+    if(avail.length){
+      avail.forEach(t=>{
+        const loc=t.location_id?D.locs.find(l=>l.id===t.location_id):null;
+        html+=`<div style="background:var(--steam);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1">${esc(isMgr()?t.text_nl:(lg()==='pt'&&t.text_pt?t.text_pt:t.text_nl))}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}</span><span style="color:#f57f17;font-weight:600">⭐ ${t.points}</span></div>`;
+        html+=`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">`;
+        dayArr().forEach((dn,di)=>{
+          html+=`<button onclick="claimCatalogTask('${t.id}',${di})" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:4px 8px;font-size:11px;cursor:pointer;-webkit-tap-highlight-color:transparent">${dn}</button>`;
+        });
+        html+=`</div></div>`;
+      });
+    } else {
+      html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('catNone')}</div>`;
+    }
+  }
+
+  // Recent approved claims
+  const doneClaims=D.claims.filter(c=>c.user_id===CU.id&&c.status==='approved').slice(0,5);
+  if(doneClaims.length){
+    html+=`<div style="margin-top:6px">`;
+    doneClaims.forEach(c=>{const ct=D.catalog.find(x=>x.id===c.catalog_task_id);const d=new Date(c.approved_at||c.created_at);html+=`<div style="font-size:11px;color:var(--muted);padding:2px 0">✓ ${ct?esc(ct.text_nl):'?'} · ${d.getDate()}/${d.getMonth()+1}</div>`;});
+    html+=`</div>`;
+  }
+
+  html+=`<div class="pts-section-hdr" style="margin-top:1.25rem">🏆 ${tr('pointsEarned')}</div>`;
   const ledger=D.pointLedger.filter(e=>e.user_id===CU.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   if(!ledger.length){
     html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('ingrNone')}</div>`;
@@ -2964,6 +3027,122 @@ async function revokePoint(id){
   renderKidsPointsPanel();
 }
 
+// ═══════════════ TAKENCATALOGUS ═══════════════
+function renderCatalogList(){
+  const el=document.getElementById('catalog-list');if(!el)return;
+  // Populate location dropdown
+  const sel=document.getElementById('cat-loc');
+  if(sel&&!sel.dataset.filled){sel.innerHTML='<option value="">Geen locatie</option>'+D.locs.map(l=>`<option value="${l.id}">${lnm(l)}</option>`).join('');sel.dataset.filled='1';}
+  if(!D.catalog.length){el.innerHTML=`<div style="font-size:12px;color:var(--muted);padding:4px">${tr('catNone')}</div>`;return;}
+  el.innerHTML=D.catalog.map(t=>{
+    const loc=t.location_id?D.locs.find(l=>l.id===t.location_id):null;
+    const activeClaim=D.claims.find(c=>c.catalog_task_id===t.id&&(c.status==='claimed'||c.status==='done'));
+    const claimUser=activeClaim?D.users.find(u=>u.id===activeClaim.user_id):null;
+    const claimBdg=claimUser?` <span style="font-size:10px;background:#fff3e0;color:#e65100;padding:1px 5px;border-radius:8px">${claimUser.avatar||''} ${claimUser.name} — ${activeClaim.status==='done'?tr('catWaiting'):tr('catMyClaim').toLowerCase()}</span>`:'';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="flex:1">${esc(t.text_nl)}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}${claimBdg}</span><span style="color:#f57f17;font-weight:600;white-space:nowrap">⭐ ${t.points}</span><button onclick="editCatalogTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px 6px;-webkit-tap-highlight-color:transparent">✏️</button><button onclick="delCatalogTask('${t.id}')" style="background:none;border:none;cursor:pointer;color:#c45c5c;font-size:16px;padding:4px 6px;-webkit-tap-highlight-color:transparent">✕</button></div>`;
+  }).join('');
+}
+async function addCatalogTask(){
+  const nl=document.getElementById('cat-name')?.value.trim();
+  const pts=parseInt(document.getElementById('cat-pts')?.value)||1;
+  const loc=document.getElementById('cat-loc')?.value||null;
+  if(!nl)return;
+  let pt=nl;
+  try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._cKey||''},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:100,messages:[{role:'user',content:`Translate to Portuguese (just the translation, nothing else): "${nl}"`}]})});const d=await r.json();pt=d?.content?.[0]?.text?.trim()||nl;}catch(e){pt=nl;}
+  await sb.from('task_catalog').insert({household_id:HID,text_nl:nl,text_pt:pt,points:pts,location_id:loc,created_by:CU.id});
+  document.getElementById('cat-name').value='';document.getElementById('cat-pts').value='';
+  await loadAll();renderCatalogList();
+}
+async function editCatalogTask(id){
+  const t=D.catalog.find(x=>x.id===id);if(!t)return;
+  const n=prompt('Naam:',t.text_nl);if(n===null)return;
+  const p=prompt('Punten:',String(t.points));if(p===null)return;
+  await sb.from('task_catalog').update({text_nl:n.trim()||t.text_nl,points:parseInt(p)||t.points}).eq('id',id);
+  await loadAll();renderCatalogList();
+}
+async function delCatalogTask(id){
+  await sb.from('task_catalog').delete().eq('id',id);
+  await loadAll();renderCatalogList();
+}
+
+// Child: claim a catalog task
+async function claimCatalogTask(catId,di){
+  const t=D.catalog.find(x=>x.id===catId);if(!t)return;
+  const wk=wkey(0);
+  await sb.from('task_claims').insert({household_id:HID,catalog_task_id:catId,user_id:CU.id,day_index:di,week_key:wk,status:'claimed'});
+  // Notify parents
+  const dayName=dayArr()[di]||'';
+  const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
+  if(parents.length){
+    await sb.from('notifications').insert(parents.map(u=>({
+      household_id:HID,user_id:u.id,type:'claim_new',
+      title_nl:`🛒 ${CU.name} wil "${t.text_nl}" doen (${dayName})`,
+      title_pt:`🛒 ${CU.name} quer fazer "${t.text_pt||t.text_nl}" (${dayName})`,
+      title_en:`🛒 ${CU.name} wants "${t.text_nl}" (${dayName})`,
+      body:{catalog_task_id:catId}
+    })));
+  }
+  await loadAll();renderPointsTab();updNotifBadge();
+}
+
+// Child: mark claim as done
+async function completeClaim(claimId){
+  const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
+  const t=D.catalog.find(x=>x.id===cl.catalog_task_id);
+  await sb.from('task_claims').update({status:'done',completed_at:new Date().toISOString()}).eq('id',claimId);
+  // Notify parents
+  const parents=D.users.filter(u=>u.role==='admin'||u.role==='parent');
+  if(parents.length&&t){
+    await sb.from('notifications').insert(parents.map(u=>({
+      household_id:HID,user_id:u.id,type:'claim_done',
+      title_nl:`✅ ${CU.name} heeft "${t.text_nl}" afgerond — goedkeuren?`,
+      title_pt:`✅ ${CU.name} terminou "${t.text_pt||t.text_nl}" — aprovar?`,
+      title_en:`✅ ${CU.name} completed "${t.text_nl}" — approve?`,
+      body:{claim_id:claimId}
+    })));
+  }
+  await loadAll();renderPointsTab();updNotifBadge();
+}
+
+// Parent: approve claim
+async function approveClaim(claimId){
+  const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
+  const t=D.catalog.find(x=>x.id===cl.catalog_task_id);if(!t)return;
+  await sb.from('task_claims').update({status:'approved',approved_by:CU.id,approved_at:new Date().toISOString()}).eq('id',claimId);
+  // Award points
+  await sb.from('point_ledger').insert({household_id:HID,user_id:cl.user_id,task_id:cl.catalog_task_id,task_type:'catalog',task_name:t.text_nl,points:t.points,week_key:cl.week_key,day_index:cl.day_index});
+  // Notify child
+  const child=D.users.find(u=>u.id===cl.user_id);
+  if(child){
+    await sb.from('notifications').insert({
+      household_id:HID,user_id:child.id,type:'claim_approved',
+      title_nl:`⭐ "${t.text_nl}" goedgekeurd! +${t.points} punten`,
+      title_pt:`⭐ "${t.text_pt||t.text_nl}" aprovado! +${t.points} pontos`,
+      title_en:`⭐ "${t.text_nl}" approved! +${t.points} points`,
+      body:{claim_id:claimId}
+    });
+  }
+  await loadAll();renderKidsPointsPanel();updNotifBadge();
+}
+
+// Parent: reject claim
+async function rejectClaim(claimId){
+  const cl=D.claims.find(x=>x.id===claimId);if(!cl)return;
+  const t=D.catalog.find(x=>x.id===cl.catalog_task_id);
+  await sb.from('task_claims').update({status:'rejected',approved_by:CU.id,approved_at:new Date().toISOString()}).eq('id',claimId);
+  // Notify child
+  if(t){
+    await sb.from('notifications').insert({
+      household_id:HID,user_id:cl.user_id,type:'claim_rejected',
+      title_nl:`↩ "${t.text_nl}" niet goedgekeurd`,
+      title_pt:`↩ "${t.text_pt||t.text_nl}" não aprovado`,
+      title_en:`↩ "${t.text_nl}" not approved`,
+      body:{claim_id:claimId}
+    });
+  }
+  await loadAll();renderKidsPointsPanel();updNotifBadge();
+}
+
 function toggleKidsPointsPanel(){
   const p=document.getElementById('kids-pts-panel');
   const o=document.getElementById('kids-pts-overlay');
@@ -2976,6 +3155,26 @@ function toggleKidsPointsPanel(){
 
 function renderKidsPointsPanel(){
   const el=document.getElementById('kids-pts-list');if(!el)return;
+  let html='';
+  // Pending approvals
+  const pending=D.claims.filter(c=>c.status==='done');
+  if(pending.length){
+    html+=`<div style="padding:.75rem;border-bottom:2px solid var(--caramel);background:#fff8f0">`;
+    html+=`<div style="font-weight:700;font-size:14px;margin-bottom:8px">🔔 ${tr('catPending')}</div>`;
+    pending.forEach(c=>{
+      const kid=D.users.find(u=>u.id===c.user_id);
+      const t=D.catalog.find(x=>x.id===c.catalog_task_id);
+      const dayName=dayArr()[c.day_index]||'';
+      const dt=c.completed_at?new Date(c.completed_at):new Date(c.created_at);
+      const dlbl=`${dt.getDate()}/${dt.getMonth()+1}`;
+      html+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;flex-wrap:wrap">`;
+      html+=`<span style="flex:1">${personBadge(c.user_id)} ${t?esc(t.text_nl):'?'} · ${dayName} ${dlbl} · ⭐ ${t?.points||0}</span>`;
+      html+=`<button onclick="approveClaim('${c.id}')" style="background:#1a6b5a;color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✓ ${tr('catApprove')}</button>`;
+      html+=`<button onclick="rejectClaim('${c.id}')" style="background:none;border:1px solid #c45c5c;color:#c45c5c;border-radius:var(--rs);padding:4px 10px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">✕</button>`;
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  }
   const kids=D.users.filter(u=>u.role==='child');
   if(!kids.length){el.innerHTML='<div style="padding:1rem;color:var(--muted);font-size:13px">Geen kinderen</div>';return;}
   let html='';
