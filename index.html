@@ -2934,21 +2934,28 @@ function renderPointsTab(){
     if(activeClaim.status==='pending'){
       html+=`<br><span style="font-size:12px;color:var(--caramel);margin-top:4px;display:inline-block">${tr('catWaiting')}</span>`;
     } else if(activeClaim.status==='assigned'){
-      html+=`<br><button onclick="markClaimDone('${activeClaim.id}')" style="margin-top:6px;background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">☑ ${lg()==='pt'?'Concluído':'Afgerond'}</button>`;
+      html+=`<br><button onclick="markClaimDone('${activeClaim.id}')" style="margin-top:6px;background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:6px 14px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent">☐ ${lg()==='pt'?'Marcar como concluído':'Markeer als afgerond'}</button>`;
     } else if(activeClaim.status==='done'){
       html+=`<br><span style="font-size:12px;color:#1565c0;margin-top:4px;display:inline-block">⏳ ${lg()==='pt'?'Aguardando aprovação do resultado':'Wacht op goedkeuring resultaat'}</span>`;
     }
     html+=`</div>`;
     html+=`<div style="font-size:12px;color:var(--muted);padding:4px 0">${tr('catLocked')}</div>`;
   } else {
-    const blockedIds=new Set(D.claims.filter(c=>['pending','assigned','done'].includes(c.status)).map(c=>c.catalog_task_id));
-    const avail=D.catalog.filter(t=>!blockedIds.has(t.id));
+    const assignedIds=new Set(D.claims.filter(c=>['assigned','done','completed'].includes(c.status)).map(c=>c.catalog_task_id));
+    const pendingClaims=D.claims.filter(c=>c.status==='pending');
+    const pendingIds=new Set(pendingClaims.map(c=>c.catalog_task_id));
+    const avail=D.catalog.filter(t=>!assignedIds.has(t.id));
     if(avail.length){
       avail.forEach(t=>{
         const loc=t.location_id?D.locs.find(l=>l.id===t.location_id):null;
         const catId=t.id.replace(/-/g,'').slice(0,8);
-        html+=`<div style="background:var(--steam);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1">${esc(lg()==='pt'&&t.text_pt?t.text_pt:t.text_nl)}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}</span><span style="color:#f57f17;font-weight:600">⭐ ${t.points}</span></div>`;
-        html+=`<div style="display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap"><input type="date" id="cdt-${catId}" class="finput" style="font-size:12px;padding:4px 6px;flex:1;min-width:120px"><input type="time" id="ctm-${catId}" class="finput" style="font-size:12px;padding:4px 6px;width:80px"><button onclick="claimCatalogTaskDate('${t.id}','cdt-${catId}','ctm-${catId}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">${tr('catClaim')}</button></div>`;
+        const isPending=pendingIds.has(t.id);
+        const pendingBy=isPending?pendingClaims.find(c=>c.catalog_task_id===t.id):null;
+        const bgColor=isPending?'#fff3e0':'var(--steam)';
+        html+=`<div style="background:${bgColor};border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:13px"><div style="display:flex;align-items:center;gap:6px"><span style="flex:1">${esc(lg()==='pt'&&t.text_pt?t.text_pt:t.text_nl)}${loc?` <span class="fam-loc-badge">${lnm(loc)}</span>`:''}${isPending?` ${personBadge(pendingBy.user_id)} <span style="font-size:10px;color:var(--caramel)">⏳ ${tr('catWaiting')}</span>`:''}</span><span style="color:#f57f17;font-weight:600">⭐ ${t.points}</span></div>`;
+        if(!isPending){
+          html+=`<div style="display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap"><input type="date" id="cdt-${catId}" class="finput" style="font-size:12px;padding:4px 6px;flex:1;min-width:120px"><input type="time" id="ctm-${catId}" class="finput" style="font-size:12px;padding:4px 6px;width:80px"><button onclick="claimCatalogTaskDate('${t.id}','cdt-${catId}','ctm-${catId}')" style="background:var(--caramel);color:#fff;border:none;border-radius:var(--rs);padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent">${tr('catClaim')}</button></div>`;
+        }
         html+=`</div>`;
       });
     } else {
