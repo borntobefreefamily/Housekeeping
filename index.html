@@ -648,9 +648,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   <div id="mt-inst" class="scroll" style="display:none">
     <div class="collapse-hdr beheer-hdr" onclick="togEl('taken-mgr-body','taken-mgr-chev')">
       <div class="sec-title" style="margin:0;border:none;padding:0">📋 <span id="grp-overzicht-lbl">Taakbeheer</span></div>
-      <span class="chev open" id="taken-mgr-chev">&#9662;</span>
+      <span class="chev" id="taken-mgr-chev">&#9662;</span>
     </div>
-    <div class="day-body open" id="taken-mgr-body">
+    <div class="day-body" id="taken-mgr-body">
 
     <div class="collapse-hdr" onclick="togEl('fixed-list-body','fixed-list-chev')">
       <div class="sec-title" id="fixed-sec-title" style="margin:0;border:none;padding:0">Vaste taken per locatie</div>
@@ -710,74 +710,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <div id="plan-grid"></div>
     </div>
 
-    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('users-body','users-chev')">
-      <div class="sec-title" id="inst-users-title" style="margin:0;border:none;padding:0">👥 Gebruikers</div>
-      <span class="chev" id="users-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="users-body">
-    <div class="form-card">
-      <div id="user-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <button class="save-btn" onclick="openUserEdit(null)" style="width:100%" id="add-user-btn">+ Gebruiker toevoegen</button>
-      </div>
-    </div>
-    </div>
-    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('wd-body','wd-chev')">
-      <div class="sec-title" id="inst-wd-title" style="margin:0;border:none;padding:0">📅 Werkdagen</div>
-      <span class="chev" id="wd-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="wd-body">
-    <div class="form-card">
-      <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
-      <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
-      <div id="wd-flash" class="flash" style="opacity:0"></div>
-    </div>
-    </div>
-    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('gcat-body','gcat-chev')">
-      <div class="sec-title" id="inst-gcat-title" style="margin:0;border:none;padding:0">🏷️ Categorieën</div>
-      <span class="chev" id="gcat-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="gcat-body">
-    <div class="form-card">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="inst-gcat-hint">Globale lijst voor alle locaties</div>
-      <div id="gcat-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <input type="text" id="new-gcat" placeholder="bijv. Keuken" class="finput" style="flex:1;margin:0">
-        <button class="btn-sm" onclick="addGlobalCat()">+</button>
-      </div>
-      <div id="gcat-flash" class="flash" style="opacity:0"></div>
-    </div>
-    </div>
-    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('loc-body','loc-chev')">
-      <div class="sec-title" id="inst-loc-title" style="margin:0;border:none;padding:0">📍 Locaties</div>
-      <span class="chev" id="loc-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="loc-body">
-    <div class="form-card">
-      <div id="loc-list"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <input type="text" id="new-loc" placeholder="" class="finput" style="flex:1;margin:0">
-        <input type="hidden" id="new-loc-col" value="#C8722A">
-        <button class="btn-sm" onclick="addLoc()">+</button>
-      </div>
-      <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
-    </div>
-    </div>
-    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('pts-body','pts-chev')">
-      <div class="sec-title" id="inst-pts-title" style="margin:0;border:none;padding:0">⭐ Puntensysteem</div>
-      <span class="chev" id="pts-chev">&#9662;</span>
-    </div>
-    <div class="day-body" id="pts-body">
-    <div class="form-card">
-      <label class="flbl" id="inst-pts-val-lbl">Puntwaarde (€ per punt)</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span style="font-size:14px;font-weight:600">€</span>
-        <input class="finput" type="number" id="inst-pts-val" min="0.01" max="100" step="0.01" value="0.50" style="width:100px">
-        <button class="save-btn" onclick="savePointValue()" style="padding:7px 14px" id="inst-pts-save">Opslaan</button>
-      </div>
-      <div id="pts-val-flash" class="flash" style="opacity:0"></div>
-    </div>
-    </div>
     <div class="collapse-hdr beheer-hdr" onclick="togEl('cat-body','cat-chev')">
       <div class="sec-title" style="margin:0;border:none;padding:0">🛒 Takencatalogus</div>
       <span class="chev" id="cat-chev">&#9662;</span>
@@ -793,15 +725,18 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       </div>
     </div>
     </div>
-    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('wkm-body','wkm-chev')">
-      <div class="sec-title" id="inst-wk-title" style="margin:0;border:none;padding:0">🗓️ Week beheren</div>
-      <span class="chev" id="wkm-chev">&#9662;</span>
+
+    <div class="collapse-hdr beheer-hdr" onclick="togEl('notes-body','notes-chev')">
+      <div class="sec-title" style="margin:0;border:none;padding:0">🔍 Notities zoeken</div>
+      <span class="chev" id="notes-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="wkm-body">
+    <div class="day-body" id="notes-body">
     <div class="form-card">
-      <div class="set-row"><div><div class="set-lbl" id="inst-clear-lbl">Vinkjes wissen</div><div class="set-sub" id="inst-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="inst-clear-btn">Wissen</button></div>
-      <div class="set-row" style="margin-top:8px"><div><div class="set-lbl">Taken vertalen naar PT</div><div class="set-sub">Vertaalt alle taken zonder Portugese tekst</div></div><button class="btn-sm" onclick="translateAllTasks()" id="translate-btn">Vertalen</button></div>
-      <div id="translate-flash" class="flash" style="opacity:0">Vertaling klaar!</div>
+      <div style="display:flex;gap:4px">
+        <input type="text" class="finput" id="note-search" placeholder="Zoek in notities..." style="flex:1" onkeydown="if(event.key==='Enter')searchNotes()">
+        <button onclick="searchNotes()" class="save-btn" style="width:auto;padding:8px 14px">🔍</button>
+      </div>
+      <div id="note-search-results" style="margin-top:8px"></div>
     </div>
     </div>
 
@@ -815,17 +750,88 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     </div>
     </div>
 
-    <div class="collapse-hdr beheer-hdr" onclick="togEl('notes-body','notes-chev')">
-      <div class="sec-title" style="margin:0;border:none;padding:0">🔍 Notities zoeken</div>
-      <span class="chev" id="notes-chev">&#9662;</span>
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('users-body','users-chev')">
+      <div class="sec-title" id="inst-users-title" style="margin:0;border:none;padding:0">👥 Gebruikers</div>
+      <span class="chev" id="users-chev">&#9662;</span>
     </div>
-    <div class="day-body" id="notes-body">
+    <div class="day-body" id="users-body">
     <div class="form-card">
-      <div style="display:flex;gap:4px">
-        <input type="text" class="finput" id="note-search" placeholder="Zoek in notities..." style="flex:1" onkeydown="if(event.key==='Enter')searchNotes()">
-        <button onclick="searchNotes()" class="save-btn" style="width:auto;padding:8px 14px">🔍</button>
+      <div id="user-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button class="save-btn" onclick="openUserEdit(null)" style="width:100%" id="add-user-btn">+ Gebruiker toevoegen</button>
       </div>
-      <div id="note-search-results" style="margin-top:8px"></div>
+    </div>
+    </div>
+
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('wd-body','wd-chev')">
+      <div class="sec-title" id="inst-wd-title" style="margin:0;border:none;padding:0">📅 Werkdagen</div>
+      <span class="chev" id="wd-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="wd-body">
+    <div class="form-card">
+      <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
+      <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
+      <div id="wd-flash" class="flash" style="opacity:0"></div>
+    </div>
+    </div>
+
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('loc-body','loc-chev')">
+      <div class="sec-title" id="inst-loc-title" style="margin:0;border:none;padding:0">📍 Locaties</div>
+      <span class="chev" id="loc-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="loc-body">
+    <div class="form-card">
+      <div id="loc-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <input type="text" id="new-loc" placeholder="" class="finput" style="flex:1;margin:0">
+        <input type="hidden" id="new-loc-col" value="#C8722A">
+        <button class="btn-sm" onclick="addLoc()">+</button>
+      </div>
+      <div id="new-loc-swatches" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+    </div>
+    </div>
+
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('gcat-body','gcat-chev')">
+      <div class="sec-title" id="inst-gcat-title" style="margin:0;border:none;padding:0">🏷️ Categorieën</div>
+      <span class="chev" id="gcat-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="gcat-body">
+    <div class="form-card">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px" id="inst-gcat-hint">Globale lijst voor alle locaties</div>
+      <div id="gcat-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <input type="text" id="new-gcat" placeholder="bijv. Keuken" class="finput" style="flex:1;margin:0">
+        <button class="btn-sm" onclick="addGlobalCat()">+</button>
+      </div>
+      <div id="gcat-flash" class="flash" style="opacity:0"></div>
+    </div>
+    </div>
+
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('wkm-body','wkm-chev')">
+      <div class="sec-title" id="inst-wk-title" style="margin:0;border:none;padding:0">🗓️ Week beheren</div>
+      <span class="chev" id="wkm-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="wkm-body">
+    <div class="form-card">
+      <div class="set-row"><div><div class="set-lbl" id="inst-clear-lbl">Vinkjes wissen</div><div class="set-sub" id="inst-clear-sub">Begin nieuwe week opgeschoond</div></div><button class="btn-danger" onclick="clearChecks()" id="inst-clear-btn">Wissen</button></div>
+      <div class="set-row" style="margin-top:8px"><div><div class="set-lbl">Taken vertalen naar PT</div><div class="set-sub">Vertaalt alle taken zonder Portugese tekst</div></div><button class="btn-sm" onclick="translateAllTasks()" id="translate-btn">Vertalen</button></div>
+      <div id="translate-flash" class="flash" style="opacity:0">Vertaling klaar!</div>
+    </div>
+    </div>
+
+    <div class="collapse-hdr beheer-hdr adm-sec" onclick="togEl('pts-body','pts-chev')">
+      <div class="sec-title" id="inst-pts-title" style="margin:0;border:none;padding:0">⭐ Puntensysteem</div>
+      <span class="chev" id="pts-chev">&#9662;</span>
+    </div>
+    <div class="day-body" id="pts-body">
+    <div class="form-card">
+      <label class="flbl" id="inst-pts-val-lbl">Puntwaarde (€ per punt)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:14px;font-weight:600">€</span>
+        <input class="finput" type="number" id="inst-pts-val" min="0.01" max="100" step="0.01" value="0.50" style="width:100px">
+        <button class="save-btn" onclick="savePointValue()" style="padding:7px 14px" id="inst-pts-save">Opslaan</button>
+      </div>
+      <div id="pts-val-flash" class="flash" style="opacity:0"></div>
     </div>
     </div>
 
@@ -1080,28 +1086,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 </div>
 <div id="kids-pts-overlay" onclick="toggleKidsPointsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
 
-<div class="modal-bg" id="swap-modal">
-  <div class="modal">
-    <div class="modal-title">Taak verplaatsen</div>
-    <input type="hidden" id="sw-task-id">
-    <input type="hidden" id="sw-from-day">
-    <div id="sw-task-lbl" style="font-size:14px;font-weight:600;margin-bottom:10px"></div>
-    <label class="flbl">Verplaatsen naar</label>
-    <select class="finput" id="sw-to-day"></select>
-    <label class="flbl">Type</label>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="pill on" id="sw-once" onclick="swType(false)" style="flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--caramel);background:var(--caramel);color:#fff;cursor:pointer;font-size:13px">Alleen deze week</button>
-      <button class="pill" id="sw-recur" onclick="swType(true)" style="flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-size:13px">Elke week</button>
-    </div>
-    <label class="flbl">Reden (optioneel)</label>
-    <input class="finput" type="text" id="sw-reason" placeholder="Bijv. tandarts op zaterdag">
-    <div style="display:flex;gap:8px;margin-top:.75rem">
-      <button class="save-btn" onclick="submitSwapRequest()" style="flex:1">Verzoek indienen</button>
-      <button class="save-btn" onclick="closeSwapModal()" style="flex:1;background:var(--steam);color:var(--text)">Annuleren</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-bg" id="user-modal">
   <div class="modal">
     <div class="modal-title" id="um-title">Gebruiker bewerken</div>
@@ -1146,6 +1130,29 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 </div>
 
 </div>
+
+<div class="modal-bg" id="swap-modal">
+  <div class="modal">
+    <div class="modal-title">Taak verplaatsen</div>
+    <input type="hidden" id="sw-task-id">
+    <input type="hidden" id="sw-from-day">
+    <div id="sw-task-lbl" style="font-size:14px;font-weight:600;margin-bottom:10px"></div>
+    <label class="flbl">Verplaatsen naar</label>
+    <select class="finput" id="sw-to-day"></select>
+    <label class="flbl">Type</label>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="pill on" id="sw-once" onclick="swType(false)" style="flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--caramel);background:var(--caramel);color:#fff;cursor:pointer;font-size:13px">Alleen deze week</button>
+      <button class="pill" id="sw-recur" onclick="swType(true)" style="flex:1;padding:8px;border-radius:var(--rs);border:1.5px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font-size:13px">Elke week</button>
+    </div>
+    <label class="flbl">Reden (optioneel)</label>
+    <input class="finput" type="text" id="sw-reason" placeholder="Bijv. tandarts op zaterdag">
+    <div style="display:flex;gap:8px;margin-top:.75rem">
+      <button class="save-btn" onclick="submitSwapRequest()" style="flex:1">Verzoek indienen</button>
+      <button class="save-btn" onclick="closeSwapModal()" style="flex:1;background:var(--steam);color:var(--text)">Annuleren</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // Mobile viewport fix — Android Chrome adresbalk telt mee in 100vh
 (function(){
@@ -3060,11 +3067,11 @@ async function addCatalogTask(){
   const pts=parseInt(document.getElementById('cat-pts')?.value)||1;
   const loc=document.getElementById('cat-loc')?.value||null;
   if(!nl)return;
-  let pt=nl;
-  try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._cKey||''},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:100,messages:[{role:'user',content:`Translate to Portuguese (just the translation, nothing else): "${nl}"`}]})});const d=await r.json();pt=d?.content?.[0]?.text?.trim()||nl;}catch(e){pt=nl;}
-  await sb.from('task_catalog').insert({household_id:HID,text_nl:nl,text_pt:pt,points:pts,location_id:loc,created_by:CU.id});
+  const{data}=await sb.from('task_catalog').insert({household_id:HID,text_nl:nl,text_pt:nl,points:pts,location_id:loc,created_by:CU.id}).select();
   document.getElementById('cat-name').value='';document.getElementById('cat-pts').value='';
   await loadAll();renderCatalogList();
+  // Background translate
+  if(data?.[0]?.id){try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,system:'Vertaal naar Europees Portugees. Alleen de vertaling, geen uitleg, geen aanhalingstekens.',messages:[{role:'user',content:nl}]})});const d=await r.json();const pt=d?.content?.[0]?.text?.trim();if(pt&&pt!==nl){await sb.from('task_catalog').update({text_pt:pt}).eq('id',data[0].id);}}catch(e){}}
 }
 async function editCatalogTask(id){
   const t=D.catalog.find(x=>x.id===id);if(!t)return;
@@ -4245,7 +4252,22 @@ function renderShopList(prefix,wk){
   const allItems=D.shopping.filter(s=>weeks.includes(s.week_key));
 
   if(!allItems.length){
-    el.innerHTML=`<div class="empty" style="margin-top:.5rem">${tr('shopNoItems')}</div>`;
+    let html=`<div class="empty" style="margin-top:.5rem">${tr('shopNoItems')}</div>`;
+    // Still show add row
+    html+=`<div style="margin-top:6px">`;
+    html+=`<div class="shop-add-row">`;
+    html+=`<input type="text" id="shop-inline-add-${prefix}" placeholder="${tr('shopItem')}..." style="flex:1">`;
+    html+=`<input type="text" id="shop-inline-qty-${prefix}" placeholder="${tr('shopQty')}" style="width:55px">`;
+    html+=`</div>`;
+    html+=`<div class="shop-add-row" style="margin-top:4px">`;
+    html+=`<select id="shop-inline-cat-${prefix}" style="flex:1">${catOptions('overig')}</select>`;
+    html+=`<select id="shop-inline-rec-${prefix}" style="flex:1">`;
+    html+=`<option value="">🛒 ${tr('noRecipe')}</option>`;
+    for(let i=0;i<4;i++){const w=wkey(wOff+i);const wRecs=D.recipes.filter(r=>r.week_key===w).sort((a,b)=>a.day_index-b.day_index);wRecs.forEach(r=>{const wLbl=i===0?'':` (${wlbl(wOff+i)})`;html+=`<option value="${r.id}">🍳 ${esc(r.name)}${wLbl}</option>`;});}
+    html+=`</select>`;
+    html+=`<button onclick="addShopFlat('${prefix}')" class="shop-add-btn">+</button>`;
+    html+=`</div></div>`;
+    el.innerHTML=html;
     renderShopSummary(prefix,allItems);
     return;
   }
