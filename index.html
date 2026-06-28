@@ -1892,10 +1892,29 @@ function renderMgrLog(){
 
 async function editLogEntry(id){
   const entry=D.log.find(l=>l.id===id);if(!entry)return;
-  const nv=prompt('Wijzig activiteit:',entry.description);
-  if(nv===null||!nv.trim())return;
-  await sb.from('change_log').update({description:nv.trim()}).eq('id',id);
-  await loadAll();renderMgrLog();
+  // Extract task name from quotes in description
+  const qm=entry.description.match(/"([^"]+)"/);
+  if(!qm){const nv=prompt('Wijzig activiteit:',entry.description);if(nv!==null&&nv.trim()){await sb.from('change_log').update({description:nv.trim()}).eq('id',id);await loadAll();renderMgrLog();}return;}
+  const name=qm[1];
+  // Search all task tables for matching task
+  let found=null;
+  // Fixed tasks
+  const ft=D.tasks.filter(t=>t.text_nl===name);
+  if(ft.length){const t=ft[0];const locs=[...new Set(ft.map(x=>x.location_id).filter(Boolean))];found={table:'fixed_tasks',ids:ft.map(x=>x.id),data:{nl:name,pt:t.text_pt||'',locs,freq:'weekly',cat:t.category||'',points:t.points||0}};};
+  // Personal tasks
+  if(!found){const pt2=D.persTasks.filter(t=>t.text_nl===name);
+  if(pt2.length){const t=pt2[0];found={table:'personal_tasks',ids:pt2.map(x=>x.id),data:{nl:name,pt:t.text_pt||'',who:t.user_id,days:[...new Set(pt2.map(x=>x.day_index))],locs:t.location_id?[t.location_id]:[],freq:'weekly',points:t.points||0}};};}
+  // Extra tasks
+  if(!found){const et=D.extras.filter(t=>t.text_nl===name);
+  if(et.length){const t=et[0];found={table:'extra_tasks',ids:et.map(x=>x.id),data:{nl:name,pt:t.text_pt||'',who:t.user_id||'',days:[...new Set(et.map(x=>x.day_index))],locs:t.location_id?[t.location_id]:[],freq:'once',cat:t.category||'',points:t.points||0}};};}
+  // Periodic tasks
+  if(!found){const mt=D.periodic.filter(t=>t.text_nl===name);
+  if(mt.length){const t=mt[0];found={table:'monthly_tasks',ids:[t.id],data:{nl:name,pt:t.text_pt||'',locs:t.location_ids||[],freq:t.interval_months===0?'weekly':t.interval_months===1?'4weekly':'4weekly',cat:t.category||''}};};}
+  if(!found){const nv=prompt('Taak niet gevonden. Wijzig log-tekst:',entry.description);if(nv!==null&&nv.trim()){await sb.from('change_log').update({description:nv.trim()}).eq('id',id);await loadAll();renderMgrLog();}return;}
+  // Open task form pre-filled
+  _editReplace={table:found.table,ids:found.ids};
+  openTaskModal();
+  setTimeout(()=>prefillTaskForm(found.data),60);
 }
 
 // ═══════════════ RENDER HELPERS ═══════════════
