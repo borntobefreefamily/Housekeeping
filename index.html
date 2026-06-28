@@ -3747,6 +3747,11 @@ async function addUnifiedTask(){
     const locs=selLocs.length?selLocs:[null];
     // Auto-detect day from schedule when no days selected
     let days=daysSelected;
+    if(!days.length&&freq==='once'&&startDate){
+      // For one-time tasks with a start date, use the day of week from the date
+      const sdDay=new Date(startDate).getDay();
+      days=[(sdDay+6)%7]; // Convert JS Sunday=0 to Monday=0 convention
+    }
     if(!days.length&&selLocs.length){
       const curSched=D.sched.filter(s=>s.week_key===wkey(0));
       days=selLocs.map(lid=>{const s=curSched.find(sc=>sc.location_id===lid);return s?s.day_index:0;});
