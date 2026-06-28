@@ -3732,7 +3732,14 @@ async function addUnifiedTask(){
     const weekMap={once:0,'2weekly':2,'3weekly':3,'4weekly':4,monthly:4,'2monthly':9,'3monthly':13,'4monthly':17,'5monthly':22,'6monthly':26,yearly:52};
     const wInt=weekMap[freq]||1;
     let sOff=0;
-    if(startDate){const sd2=new Date(startDate),now=new Date();sOff=Math.max(0,Math.round((sd2-now)/(7*864e5)));}
+    if(startDate){
+      // Calculate week offset: difference between Monday of start date's week and Monday of current week
+      const sd2=new Date(startDate);
+      const n2=new Date();
+      const thisMonday=new Date(n2);thisMonday.setDate(n2.getDate()-((n2.getDay()+6)%7));thisMonday.setHours(0,0,0,0);
+      const sdMonday=new Date(sd2);sdMonday.setDate(sd2.getDate()-((sd2.getDay()+6)%7));sdMonday.setHours(0,0,0,0);
+      sOff=Math.max(0,Math.round((sdMonday-thisMonday)/(7*864e5)));
+    }
     const wks=[];
     if(freq==='once'){wks.push(wkey(sOff));}
     else{const n=freq==='yearly'?5:Math.min(130,Math.ceil(260/wInt));for(let i=0;i<n;i++)wks.push(wkey(sOff+i*wInt));}
