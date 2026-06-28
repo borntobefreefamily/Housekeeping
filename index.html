@@ -478,8 +478,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <button class="key" onclick="pp('1')">1</button><button class="key" onclick="pp('2')">2</button><button class="key" onclick="pp('3')">3</button>
       <button class="key" onclick="pp('4')">4</button><button class="key" onclick="pp('5')">5</button><button class="key" onclick="pp('6')">6</button>
       <button class="key" onclick="pp('7')">7</button><button class="key" onclick="pp('8')">8</button><button class="key" onclick="pp('9')">9</button>
-      <button class="key" style="visibility:hidden"></button><button class="key" onclick="pp('0')">0</button>
-      <button class="key" onclick="pdel()" style="font-size:18px">&#9003;</button>
+      <button class="key" onclick="pdel()" style="font-size:20px">←</button><button class="key" onclick="pp('0')">0</button>
+      <button class="key" style="visibility:hidden"></button>
     </div>
     <div class="pin-hint" id="pin-hint">Voer je PIN in</div>
   </div>
@@ -857,8 +857,9 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <!-- 2. Waar? -->
     <label class="flbl" id="nt-lbl-loc">Waar?</label>
     <div class="pill-group" id="nt-locs"></div>
-    <!-- 3. Voor wie? -->
-    <label class="flbl" id="nt-lbl-who">Voor wie?</label>
+    <!-- 3. Toewijzing -->
+    <label class="flbl" id="nt-lbl-who">Toewijzing</label>
+    <div style="font-size:11px;color:var(--muted);margin:-4px 0 6px" id="nt-hint-who">Taak voor een persoon of locatie?</div>
     <select class="finput" id="nt-who" onchange="ntWhoChange()"></select>
     <!-- 4. Dagen -->
     <div id="nt-days-wrap">
@@ -1065,27 +1066,6 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
   </div>
 </div>
 
-<div class="notif-panel" id="notif-panel">
-  <div class="notif-panel-hdr">
-    <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">Meldingen</span>
-    <button onclick="toggleNotifPanel()" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button>
-  </div>
-  <div class="notif-panel-body" id="notif-list"></div>
-  <div style="padding:8px;border-top:1px solid var(--border)">
-    <button onclick="markAllRead()" class="save-btn" style="width:100%;background:var(--steam);color:var(--text);font-size:12px">Alles gelezen</button>
-  </div>
-</div>
-<div class="notif-overlay" id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
-
-<div class="notif-panel" id="kids-pts-panel">
-  <div class="notif-panel-hdr">
-    <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">⭐ Spaardoelen</span>
-    <button onclick="toggleKidsPointsPanel()" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button>
-  </div>
-  <div class="notif-panel-body" id="kids-pts-list"></div>
-</div>
-<div id="kids-pts-overlay" onclick="toggleKidsPointsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
-
 <div class="modal-bg" id="user-modal">
   <div class="modal">
     <div class="modal-title" id="um-title">Gebruiker bewerken</div>
@@ -1130,6 +1110,27 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 </div>
 
 </div>
+
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-panel-hdr">
+    <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">Meldingen</span>
+    <button onclick="toggleNotifPanel()" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <div class="notif-panel-body" id="notif-list"></div>
+  <div style="padding:8px;border-top:1px solid var(--border)">
+    <button onclick="markAllRead()" class="save-btn" style="width:100%;background:var(--steam);color:var(--text);font-size:12px">Alles gelezen</button>
+  </div>
+</div>
+<div class="notif-overlay" id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
+
+<div class="notif-panel" id="kids-pts-panel">
+  <div class="notif-panel-hdr">
+    <span style="font-family:'Fraunces',serif;font-weight:700;font-size:16px">⭐ Spaardoelen</span>
+    <button onclick="toggleKidsPointsPanel()" style="background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <div class="notif-panel-body" id="kids-pts-list"></div>
+</div>
+<div id="kids-pts-overlay" onclick="toggleKidsPointsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:140"></div>
 
 <div class="modal-bg" id="swap-modal">
   <div class="modal">
@@ -1242,8 +1243,8 @@ const I={
     tabWeek:'Week',tabPlan:'Planning',tabRecipes:'Recepten',tabEten:'Eten',tabTasks:'Taken',tabSettings:'Instellingen',tabBeheer:'Beheer',
     // New task form
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
-    taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
-    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',freqAlways:'Altijd',freqOptional:'— optioneel —',
+    taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Toewijzing',taskWhoHint:'Taak voor een persoon of locatie?',taskFreq:'Hoe vaak?',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',freqAlways:'Altijd',freqOptional:'📍 Locatie',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1311,8 +1312,8 @@ const I={
     taskAdded:'Taak toegevoegd!',ago:'geleden',min:'min',
     periodicLabel:'Periodieke taken',
     newTask:'Nieuwe taak',typeFixed:'Vast',typePeriodic:'Periodiek',typeExtra:'Extra',typePersonal:'Persoonlijk',
-    taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Voor wie?',taskFreq:'Hoe vaak?',
-    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',freqAlways:'Altijd',freqOptional:'— optioneel —',
+    taskWhat:'Wat?',taskWhere:'Waar?',taskWho:'Toewijzing',taskWhoHint:'Taak voor een persoon of locatie?',taskFreq:'Hoe vaak?',
+    taskEveryone:'Iedereen',taskEveryDay:'Elke dag',taskEveryWeek:'Elke week',freqAlways:'Altijd',freqOptional:'📍 Locatie',
     type:'Type',descNl:'Omschrijving (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Portugese vertaling automatisch',
     person:'Gezinslid',day:'Dag',optLocation:'Locatie (optioneel)',
@@ -1375,8 +1376,8 @@ const I={
     tabWeek:'Semana',tabPlan:'Planeamento',tabRecipes:'Receitas',tabEten:'Comida',tabTasks:'Tarefas',tabSettings:'Definições',tabBeheer:'Gestão',
     // New task form
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
-    taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
-    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',freqAlways:'Sempre',freqOptional:'— opcional —',
+    taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Atribuição',taskWhoHint:'Tarefa para uma pessoa ou local?',taskFreq:'Com que frequência?',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',freqAlways:'Sempre',freqOptional:'📍 Local',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1443,8 +1444,8 @@ const I={
     taskAdded:'Tarefa adicionada!',ago:'atrás',min:'min',
     periodicLabel:'Tarefas periódicas',
     newTask:'Nova tarefa',typeFixed:'Fixa',typePeriodic:'Periódica',typeExtra:'Extra',typePersonal:'Pessoal',
-    taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Para quem?',taskFreq:'Com que frequência?',
-    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',freqAlways:'Sempre',freqOptional:'— opcional —',
+    taskWhat:'O quê?',taskWhere:'Onde?',taskWho:'Atribuição',taskWhoHint:'Tarefa para uma pessoa ou local?',taskFreq:'Com que frequência?',
+    taskEveryone:'Todos',taskEveryDay:'Todos os dias',taskEveryWeek:'Cada semana',freqAlways:'Sempre',freqOptional:'📍 Local',
     type:'Tipo',descNl:'Descrição (NL)',descPt:'Descrição (PT)',
     autoHint:'↳ Tradução portuguesa automática',
     person:'Membro',day:'Dia',optLocation:'Local (opcional)',
@@ -1731,6 +1732,7 @@ function updateManagerLabels(){
     'nt-lbl-nl':tr('taskWhat'),'nt-lbl-pt':tr('descPt'),
     'nt-auto-hint':tr('autoHint'),'nt-lbl-loc':tr('taskWhere'),
     'nt-lbl-who':tr('taskWho'),
+    'nt-hint-who':tr('taskWhoHint'),
     'nt-lbl-freq':tr('taskFreq'),
     'nt-lbl-cat':tr('category'),'nt-lbl-startdate':tr('startDate'),'edit-lbl-startdate':tr('startDate'),
     'nt-lbl-days':tr('days'),
@@ -1797,8 +1799,7 @@ function updWkLbls(){
 function getFocus(di){
   const wkF=D.focusWk.find(f=>f.week_key===wkey(wOff)&&f.day_index===di);
   if(wkF)return lg()==='pt'?wkF.focus_pt:wkF.focus_nl;
-  const def=D.focusDef.find(f=>f.day_index===di);
-  return def?(lg()==='pt'?def.focus_pt:def.focus_nl):'';
+  return '';
 }
 
 async function ensureWeekSched(off){
@@ -1885,8 +1886,16 @@ function renderMgrLog(){
     const ts=diff<60?`${diff}min`:diff<1440?`${Math.floor(diff/60)}u`:`${Math.floor(diff/1440)}d`;
     const who=uname(l.user_id)||'Systeem';
     const wc=ucol(l.user_id);
-    return `<div class="clog-item"><div class="clog-who" style="color:${wc}">${who}</div><div class="clog-txt">${l.description}</div><div class="clog-time">${ts} geleden</div></div>`;
+    return `<div class="clog-item" style="position:relative"><div class="clog-who" style="color:${wc}">${who}</div><div class="clog-txt">${esc(l.description)}</div><div class="clog-time">${ts} geleden<button onclick="editLogEntry('${l.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;margin-left:4px;opacity:.5" title="Bewerken">✏️</button></div></div>`;
   }).join('');
+}
+
+async function editLogEntry(id){
+  const entry=D.log.find(l=>l.id===id);if(!entry)return;
+  const nv=prompt('Wijzig activiteit:',entry.description);
+  if(nv===null||!nv.trim())return;
+  await sb.from('change_log').update({description:nv.trim()}).eq('id',id);
+  await loadAll();renderMgrLog();
 }
 
 // ═══════════════ RENDER HELPERS ═══════════════
