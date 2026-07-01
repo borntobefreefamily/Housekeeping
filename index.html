@@ -148,10 +148,13 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
 .fam-loc-badge{font-size:10px;color:var(--muted);background:var(--steam);padding:1px 6px;border-radius:8px}
 
 /* DAY CARD */
-.day-card{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;background:var(--white)}
-.day-hdr{padding:.65rem 1rem;background:var(--steam);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.day-card{border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;overflow:hidden;background:var(--white)}
+.day-hdr{padding:.5rem .85rem;background:var(--steam);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;flex-wrap:wrap;gap:0}
 .day-name{font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--espresso)}
 .day-prog-txt{font-size:11px;color:var(--muted)}
+.day-mini-bar{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.day-mini-fill{height:100%;background:var(--caramel);border-radius:2px;transition:width .3s}
+.day-loc-dots{display:flex;gap:3px;margin-left:6px}
 .chev{font-size:18px;color:var(--muted);transition:transform .2s;display:inline-block;margin-left:5px}
 .chev.open{transform:rotate(180deg)}
 .day-body{padding:.75rem 1rem;display:none}
@@ -772,6 +775,15 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
       <div id="wd-toggles" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.75rem"></div>
       <button class="save-btn" onclick="saveWd()" id="inst-wd-btn">Werkdagen opslaan</button>
       <div id="wd-flash" class="flash" style="opacity:0"></div>
+    </div>
+    <div class="form-card" style="margin-top:8px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:6px">Beschikbaarheid deze week</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+        <button class="btn-sm" onclick="chAvailWeek(-1)" style="padding:2px 8px">‹</button>
+        <span id="avail-wk-lbl" style="font-size:12px;font-weight:600;flex:1;text-align:center"></span>
+        <button class="btn-sm" onclick="chAvailWeek(1)" style="padding:2px 8px">›</button>
+      </div>
+      <div id="avail-grid"></div>
     </div>
     </div>
 
@@ -1510,7 +1522,23 @@ function ptsBadge(pts,ck){
 }
 function personBadge(uid){const u=D.users.find(x=>x.id===uid);if(!u)return '';return `<span class="badge-person" style="background:${ucol(uid)}20;color:${ucol(uid)}">${u.avatar||''} ${u.name}</span>`;}
 function dayNoteBadge(wk,di){const c=D.dayNotes.filter(n=>n.week_key===wk&&n.day_index===di).length;return c?` <span style="font-size:10px;background:#e3f2fd;color:#1565c0;padding:1px 5px;border-radius:8px;margin-left:2px">📝 ${c}</span>`:'';}
-// Role helpers — admin+parent see manager screen, child+worker see worker screen
+function locDots(wk,di){const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);if(!sd.length)return '';return '<span class="day-loc-dots">'+sd.map(s=>{const loc=D.locs.find(l=>l.id===s.location_id);const c=loc?.color||'#ccc';return `<span style="width:8px;height:8px;border-radius:50%;background:${c};display:inline-block" title="${esc(loc?.name||'')}"></span>`;}).join('')+'</span>';}
+function todayDi(){return (new Date().getDay()+6)%7;}
+function getAvailWorkers(wk,di){
+  // Returns array of user objects available on day di in week wk
+  return D.users.filter(u=>{
+    if(u.role==='admin')return false; // admin is not a worker
+    const override=D.workerAvail.find(a=>a.user_id===u.id&&a.week_key===wk);
+    const days=override?override.available_days:(u.default_days||[]);
+    return days.includes(di);
+  });
+}
+function workerDots(wk,di){
+  const workers=getAvailWorkers(wk,di);
+  if(!workers.length)return '';
+  return '<span style="display:flex;gap:2px;margin-left:4px">'+workers.map(w=>`<span style="font-size:10px" title="${esc(w.name)}">${w.avatar||w.name[0]}</span>`).join('')+'</span>';
+}
+function autoOpenToday(prefix){if(wOff!==0)return;const di=todayDi();const b=document.getElementById(prefix+di);const c=document.getElementById(prefix.replace('d','dc')+di.toString().replace(prefix.slice(0,1)+'d',''));if(b&&!b.classList.contains('open')){b.classList.add('open');const chevId=prefix==='md'?'mdc'+di:'wdc'+di;const ch=document.getElementById(chevId);if(ch)ch.classList.add('open');}}// Role helpers — admin+parent see manager screen, child+worker see worker screen
 function isMgr(u){const r=(u||CU)?.role;return r==='admin'||r==='parent';}
 function isWkr(u){const r=(u||CU)?.role;return r==='worker'||r==='child';}
 function lnm(loc){if(!loc)return '';const l=lg();return(l==='pt'?loc.name_pt:l==='en'?loc.name_en:null)||loc.name||'';}
@@ -1581,7 +1609,7 @@ function intervalLabel(n){return n===-1?tr('intervalBi'):tr('interval'+n)||`${n}
 
 async function safeQ(q){try{const r=await q;return r;}catch(e){return {data:[]};}}
 async function loadAll(){
-  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li,ct,gq,ga,tcat,tcl]=await Promise.all([
+  const [u,l,ft,ws,et,tc,sk,dn,rc,hh,fd,fw,pt2,pc,cl,gc,ul,ptk,trx,ln,nf,sw,si,ri,pl,sg,bk,li,ct,gq,ga,tcat,tcl,wa]=await Promise.all([
     safeQ(sb.from('users').select('*').eq('household_id',HID)),
     safeQ(sb.from('locations').select('*').eq('household_id',HID).order('sort_order')),
     safeQ(sb.from('fixed_tasks').select('*').eq('household_id',HID).order('sort_order')),
@@ -1615,6 +1643,7 @@ async function loadAll(){
     safeQ(sb.from('guest_answers').select('*').eq('household_id',HID)),
     safeQ(sb.from('task_catalog').select('*').eq('household_id',HID).order('created_at')),
     safeQ(sb.from('task_claims').select('*').eq('household_id',HID).order('created_at',{ascending:false})),
+    safeQ(sb.from('worker_availability').select('*').eq('household_id',HID)),
   ]);
   D.users=u.data||[];
   // Dedup users by id (keep first with avatar, fallback first)
@@ -1638,6 +1667,7 @@ async function loadAll(){
   D.dayNotes=(dn.data||[]).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
   D.catalog=tcat.data||[];
   D.claims=tcl.data||[];
+  D.workerAvail=wa.data||[];
 }
 
 let _rtTimer=null, _rtSkipUntil=0;
@@ -2243,7 +2273,8 @@ function renderWorker(){
         tot+=dt;done+=dd;
         const hasMePersC=allPt.length>0||childExtras2.length>0;
         const persStyleC=hasMePersC?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-        html+=`<div class="day-card" style="${persStyleC}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${dayNoteBadge(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        const pctC=dt?Math.round(dd/dt*100):0;
+        html+=`<div class="day-card" style="${persStyleC}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${dayNoteBadge(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${pctC}% · ${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div><div class="day-mini-bar"><div class="day-mini-fill" style="width:${pctC}%"></div></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       } else {
         const sd=D.sched.filter(s=>s.week_key===wk&&s.day_index===di);
         const ex=D.extras.filter(e=>e.week_key===wk&&e.day_index===di&&(!e.user_id||e.user_id===CU.id));
@@ -2259,12 +2290,14 @@ function renderWorker(){
         tot+=dt;done+=dd;
         const hasMePersW=D.persTasks.some(t=>t.user_id===CU.id&&t.day_index===di)||D.extras.some(e=>e.week_key===wk&&e.day_index===di&&e.user_id===CU.id&&!e.booking_id);
         const persStyleW=hasMePersW?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${dayNoteBadge(wk,di)}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
+        const pctW=dt?Math.round(dd/dt*100):0;
+        html+=`<div class="day-card" style="${persStyleW}"><div class="day-hdr" onclick="togDay('wd${di}','wdc${di}')"><div class="day-name">${dayArr()[di]}${dayNoteBadge(wk,di)}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}${locDots(wk,di)}${workerDots(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${pctW}% · ${dd}/${dt}</span><span class="chev" id="wdc${di}">&#9662;</span></div><div class="day-mini-bar"><div class="day-mini-fill" style="width:${pctW}%"></div></div></div><div class="day-body" id="wd${di}">${renderDayBody(di,wk,false)}</div></div>`;
       }
     });
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('w-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
     document.getElementById('w-days').innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
+    if(wOff===0){const tdi=todayDi();const tb=document.getElementById('wd'+tdi);const tc=document.getElementById('wdc'+tdi);if(tb&&!tb.classList.contains('open')){tb.classList.add('open');if(tc)tc.classList.add('open');}}
   });
 }
 
@@ -2378,7 +2411,7 @@ function mTab(n){
       el.style.display=isAdmin?'':'none';
       const body=el.nextElementSibling;if(body?.classList.contains('day-body'))body.style.display=isAdmin?'':'none';
     });
-    setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();renderCatalogList();loadInstForm();renderMgrLog();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
+    setPlanScope(planScope);renderTaskForm();renderFixedList();renderPeriodicList();renderExList();renderPersForm();renderPersList();renderUserList();renderGlobalCatList();renderLocList();renderCatalogList();loadInstForm();renderMgrLog();renderAvailGrid();const pvEl=document.getElementById('inst-pts-val');if(pvEl)pvEl.value=(pointValueCents()/100).toFixed(2);}
 }
 
 // ═══════════════ GEZIN OVERZICHT ═══════════════
@@ -2721,11 +2754,13 @@ function renderMgrWeek(){
       tot+=dt;done+=dd;
       const hasMePers=D.persTasks.some(t=>t.day_index===di)||D.extras.some(e=>e.week_key===wk&&e.day_index===di&&e.user_id&&!e.booking_id);
       const persStyle=hasMePers?'border-left:4px solid #8e7cc3;background:#f3f0fa':'';
-      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${dayNoteBadge(wk,di)}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
+      const pctD=dt?Math.round(dd/dt*100):0;
+      html+=`<div class="day-card" style="${persStyle}"><div class="day-hdr" onclick="togDay('md${di}','mdc${di}')"><div class="day-name">${dayArr()[di]}${dayNoteBadge(wk,di)}${bkDayLabel(wk,di)}${shopReminderBadge(wk,di)}${locDots(wk,di)}${workerDots(wk,di)}</div><div style="display:flex;align-items:center"><span class="day-prog-txt">${pctD}% · ${dd}/${dt}</span><span class="chev" id="mdc${di}">&#9662;</span></div><div class="day-mini-bar"><div class="day-mini-fill" style="width:${pctD}%"></div></div></div><div class="day-body" id="md${di}">${renderDayBody(di,wk,true)}</div></div>`;
     });
     const pct=tot?Math.round(done/tot*100):0;
     document.getElementById('m-prog').innerHTML=`<div class="prog-card"><div class="prog-top"><span class="prog-title">${tr('progress')}</span><span class="prog-count">${done}/${tot} ${tr('tasks')}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div class="prog-pct">${pct}%</div></div>`;
     const el=document.getElementById('m-days');if(el)el.innerHTML=html||`<div class="empty" style="margin-top:1rem">${tr('noTasks')}</div>`;
+    if(wOff===0){const tdi=todayDi();const tb=document.getElementById('md'+tdi);const tc=document.getElementById('mdc'+tdi);if(tb&&!tb.classList.contains('open')){tb.classList.add('open');if(tc)tc.classList.add('open');}}
     renderFamilyOverview(wk);
     renderMgrWeekLog();
   });
@@ -5921,6 +5956,54 @@ function loadInstForm(){
   });
 }
 async function saveWd(){await sb.from('households').update({workdays:D.workdays}).eq('id',HID);await loadAll();doFlash('wd-flash');}
+
+let _availOff=0;
+function chAvailWeek(d){_availOff+=d;renderAvailGrid();}
+function renderAvailGrid(){
+  const el=document.getElementById('avail-grid');if(!el)return;
+  const wk=wkey(_availOff);
+  const lbl=document.getElementById('avail-wk-lbl');
+  if(lbl)lbl.textContent=_availOff===0?'Deze week':_availOff===1?'Volgende week':wk;
+  const workers=D.users.filter(u=>u.role==='worker'||u.role==='child');
+  if(!workers.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">Geen workers</div>';return;}
+  const dns=['Ma','Di','Wo','Do','Vr','Za','Zo'];
+  let html='<div style="display:flex;gap:4px;margin-bottom:4px;padding-left:70px">'+dns.map(d=>`<span style="font-size:10px;color:var(--muted);width:28px;text-align:center">${d}</span>`).join('')+'</div>';
+  workers.forEach(u=>{
+    const override=D.workerAvail.find(a=>a.user_id===u.id&&a.week_key===wk);
+    const days=override?override.available_days:(u.default_days||[]);
+    const isOverride=!!override;
+    html+=`<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">`;
+    html+=`<span style="font-size:11px;width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.avatar||''} ${esc(u.name)}</span>`;
+    for(let d=0;d<7;d++){
+      const on=days.includes(d);
+      html+=`<button onclick="togAvailDay('${u.id}',${d})" style="width:28px;height:24px;border-radius:4px;border:1px solid ${on?'var(--caramel)':'var(--border)'};background:${on?'var(--caramel)':'var(--white)'};color:${on?'#fff':'var(--muted)'};cursor:pointer;font-size:10px;padding:0">${on?'✓':''}</button>`;
+    }
+    if(isOverride)html+=`<button onclick="resetAvail('${u.id}','${wk}')" style="background:none;border:none;cursor:pointer;font-size:11px;opacity:.5" title="Reset naar standaard">↺</button>`;
+    html+=`</div>`;
+  });
+  el.innerHTML=html;
+}
+async function togAvailDay(uid,di){
+  const wk=wkey(_availOff);
+  const override=D.workerAvail.find(a=>a.user_id===uid&&a.week_key===wk);
+  const u=D.users.find(x=>x.id===uid);
+  let days=override?[...override.available_days]:[...(u?.default_days||[])];
+  if(days.includes(di))days=days.filter(d=>d!==di);else days.push(di);
+  days.sort();
+  if(override){
+    await sb.from('worker_availability').update({available_days:days}).eq('id',override.id);
+    override.available_days=days;
+  }else{
+    const{data}=await sb.from('worker_availability').insert({household_id:HID,user_id:uid,week_key:wk,available_days:days}).select();
+    if(data?.[0])D.workerAvail.push(data[0]);
+  }
+  renderAvailGrid();
+}
+async function resetAvail(uid,wk){
+  const idx=D.workerAvail.findIndex(a=>a.user_id===uid&&a.week_key===wk);
+  if(idx>=0){await sb.from('worker_availability').delete().eq('id',D.workerAvail[idx].id);D.workerAvail.splice(idx,1);}
+  renderAvailGrid();
+}
 async function saveProfile(){
   const name=document.getElementById('inst-name').value.trim();
   const lang=document.getElementById('inst-lang').value;
