@@ -2200,7 +2200,7 @@ function renderLocBlock(loc,wk,di,isMgr){
 
   // Group by category
   const cats=[...new Set(tasks.map(t=>t.category||tr('general')))];
-  const uid=`loc-${di}-${loc.id.slice(0,6)}`;
+  const uid=`loc-${di}-${loc.id}`;
   let lb='';
 
   cats.forEach(cat=>{
