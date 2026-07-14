@@ -1201,7 +1201,10 @@ document.addEventListener('click',function(e){
 const SU='https://imojddlvfkpbistifqav.supabase.co';
 const SK='sb_publishable_qBefjbJ833G3_zbRy-A_EA_42CEebvW';
 const sb=supabase.createClient(SU,SK);
-const HID='11111111-1111-1111-1111-111111111111';
+// Household ID: uit URL-parameter ?h=uuid, anders default huishouden
+const _hParam=new URLSearchParams(location.search).get('h');
+const _uuidRe=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const HID=(_hParam&&_uuidRe.test(_hParam))?_hParam:'11111111-1111-1111-1111-111111111111';
 const ALL_DAYS=['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'];
 const ALL_DAYS_PT=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
 const MONTHS_NL=['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
