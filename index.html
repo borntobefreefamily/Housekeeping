@@ -1681,7 +1681,7 @@ function setupRT(){
   // Hard: full re-render (structural changes, new tabs may appear)
   const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info','cleaning_templates','guest_questions','guest_answers','task_catalog','task_claims'];
   softTbls.forEach(tbl=>{
-    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'household_id=eq.'+HID},()=>{
       if(Date.now()<_rtSkipUntil)return;
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
@@ -1694,7 +1694,7 @@ function setupRT(){
     rtSubs.push(ch);
   });
   hardTbls.forEach(tbl=>{
-    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'household_id=eq.'+HID},()=>{
       if(Date.now()<_rtSkipUntil)return;
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
