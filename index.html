@@ -882,6 +882,8 @@ html,body{height:100%;height:-webkit-fill-available;overflow:hidden;background:v
     <label class="flbl" id="nt-lbl-freq">Hoe vaak?</label>
     <label class="flbl" id="nt-lbl-startdate" style="font-weight:400;font-size:12px;margin-top:2px">Startdatum</label>
     <input type="date" class="finput" id="nt-startdate">
+    <label class="flbl" id="nt-lbl-enddate" style="font-weight:400;font-size:12px;margin-top:2px">Einddatum (optioneel)</label>
+    <input type="date" class="finput" id="nt-enddate">
     <select class="finput" id="nt-freq-sel" onchange="ntUpdateDaysVis()"></select>
     <!-- 6. Categorie -->
     <div id="nt-cat-wrap">
@@ -1502,6 +1504,7 @@ const tr=k=>I[lg()]?.[k]||I['nl']?.[k]||k;
 
 function wkey(off=0){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+off*7);return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
 
+function wkeyDate(d){const m=new Date(d);m.setDate(m.getDate()-((m.getDay()+6)%7));return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
 function wlbl(off){
   if(off===0)return tr('thisWeek');
   if(off===1)return tr('nextWeek');
@@ -1681,7 +1684,7 @@ function setupRT(){
   // Hard: full re-render (structural changes, new tabs may appear)
   const hardTbls=['week_schedule','extra_tasks','day_notes','recipes','day_focus','change_log','personal_tasks','location_notes','notifications','swap_requests','shopping_items','recipe_ingredients','point_ledger','savings_goals','bookings','location_info','cleaning_templates','guest_questions','guest_answers','task_catalog','task_claims'];
   softTbls.forEach(tbl=>{
-    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'household_id=eq.'+HID},()=>{
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
@@ -1694,7 +1697,7 @@ function setupRT(){
     rtSubs.push(ch);
   });
   hardTbls.forEach(tbl=>{
-    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'household_id=eq.'+HID},()=>{
+    const ch=sb.channel('rt-'+tbl).on('postgres_changes',{event:'*',schema:'public',table:tbl},()=>{
       if(Date.now()<_rtSkipUntil)return;
       clearTimeout(_rtTimer);
       _rtTimer=setTimeout(async()=>{
@@ -2849,7 +2852,7 @@ function refreshWorker(){
   const openLocs=saveAllLocStates();
   const isChild=CU?.role==='child';
   const showAll=isChild||CU?.show_all_days;
-  const allDi=showAll?[0,1,2,3,4,5,6]:[...new Set([...D.workdays,...D.sched.filter(s=>s.week_key===wk).map(s=>s.day_index)])].sort((a,b)=>a-b);
+  const allDi=[0,1,2,3,4,5,6];
   const mySwaps=isChild?D.swaps.filter(s=>s.requester_id===CU.id&&s.week_key===wk&&s.status==='approved'&&!s.recurring&&s.task_id):[];
   let tot=0,done=0;
   allDi.forEach(di=>{
@@ -3648,6 +3651,7 @@ function populateFreqDropdown(){
   const l=lg()==='pt';
   sel.innerHTML=
     `<option value="weekly">${l?'Cada semana':'Elke week'}</option>`+
+    `<option value="daily">${l?'Todos os dias':'Elke dag'}</option>`+
     `<option value="once">${l?'Uma vez':'Eenmalig'}</option>`+
     `<option value="2weekly">${l?'A cada 2 semanas':'Om de week'}</option>`+
     `<option value="3weekly">${l?'A cada 3 semanas':'Om de twee weken'}</option>`+
@@ -3666,7 +3670,7 @@ function ntUpdateDaysVis(){
   const freq=document.getElementById('nt-freq-sel')?.value||'weekly';
   const hasLoc=[...document.querySelectorAll('#nt-locs .cpill.on')].length>0;
   // Dagen alleen nodig als: persoon geselecteerd, OF geen locatie (zwevende taak)
-  const needsDays=!!who||(!hasLoc&&['once','3weekly','4weekly'].includes(freq));
+  const needsDays=freq!=='daily'&&(!!who||(!hasLoc&&['once','3weekly','4weekly'].includes(freq)));
   const wrap=document.getElementById('nt-days-wrap');
   if(wrap)wrap.style.display=needsDays?'':'none';
 }
@@ -3693,6 +3697,7 @@ function renderTaskForm(){
   populateFreqDropdown();
   document.getElementById('nt-who').value='';
   document.getElementById('nt-startdate').value='';
+  const _ed=document.getElementById('nt-enddate');if(_ed)_ed.value='';
   ntWhoChange();
   ntUpdateDaysVis();
 }
@@ -3723,13 +3728,14 @@ async function addUnifiedTask(){
   const cat=document.getElementById('nt-cat').value||'Algemeen';
   const pts=parseInt(document.getElementById('nt-points').value)||0;
   const startDate=document.getElementById('nt-startdate')?.value||null;
+  const endDate=document.getElementById('nt-enddate')?.value||null;
 
-  const needsDays=!!who||(!selLocs.length&&['once','3weekly','4weekly'].includes(freq));
+  const needsDays=freq!=='daily'&&(!!who||(!selLocs.length&&['once','3weekly','4weekly'].includes(freq)));
   if(!daysSelected.length&&needsDays){doFlash('nt-flash',tr('selectMinDay'));return;}
   let insertOk=false;
 
   try{
-  if(freq==='weekly'&&who){
+  if(freq==='weekly'&&who&&!endDate){
     // PERSONAL TASK — one record per selected day
     const locId=selLocs[0]||null;
     for(const day of daysSelected){
@@ -3739,7 +3745,7 @@ async function addUnifiedTask(){
     const uName=D.users.find(x=>x.id===who)?.name||'';
     await logChange(`${tr('typePersonal')}: "${nl}" → ${uName} (${daysSelected.map(d=>dayArr()[d]).join(', ')})`);
     insertOk=true;
-  } else if(freq==='weekly'&&!who){
+  } else if(freq==='weekly'&&!who&&!endDate){
     // FIXED TASK — per locatie, of dagelijkse basis als geen locatie
     if(selLocs.length){
       for(const loc of selLocs){
@@ -3752,7 +3758,7 @@ async function addUnifiedTask(){
     }
     await logChange(`${tr('typeFixed')}: "${nl}"`);
     insertOk=true;
-  } else if(!who&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq)){
+  } else if(!who&&!endDate&&['2weekly','monthly','2monthly','3monthly','4monthly','5monthly','6monthly','yearly'].includes(freq)){
     // PERIODIC TASK (monthly_tasks)
     if(!selLocs.length){doFlash('nt-flash',tr('selectMinLoc'));return;}
     const iMap={'2weekly':-1,monthly:1,'2monthly':2,'3monthly':3,'4monthly':4,'5monthly':5,'6monthly':6,yearly:12};
@@ -3778,11 +3784,27 @@ async function addUnifiedTask(){
       const sdMonday=new Date(sd2);sdMonday.setDate(sd2.getDate()-((sd2.getDay()+6)%7));sdMonday.setHours(0,0,0,0);
       sOff=Math.max(0,Math.round((sdMonday-thisMonday)/(7*864e5)));
     }
-    const wks=[];
+    let wks=[];
     if(freq==='once'){wks.push(wkey(sOff));}
-    else{const n=freq==='yearly'?5:Math.min(130,Math.ceil(260/wInt));for(let i=0;i<n;i++)wks.push(wkey(sOff+i*wInt));}
+    else if(freq!=='daily'){const n=freq==='yearly'?5:Math.min(130,Math.ceil(260/wInt));for(let i=0;i<n;i++)wks.push(wkey(sOff+i*wInt));}
+    // Einddatum: kap de reeks af op de week van de einddatum (week_key is YYYY-MM-DD, string-vergelijking volstaat)
+    if(endDate&&freq!=='daily'){const ew=wkeyDate(new Date(endDate+'T12:00:00'));wks=wks.filter(w=>w<=ew);}
     const ins=[];
     const locs=selLocs.length?selLocs:[null];
+    if(freq==='daily'){
+      // Elke dag binnen de periode — één rij per kalenderdag, ongeacht werkdagen
+      const dStart=startDate?new Date(startDate+'T12:00:00'):new Date();
+      const dEnd=endDate?new Date(endDate+'T12:00:00'):new Date(dStart.getTime()+6*864e5);
+      if(dEnd<dStart){doFlash('nt-flash',lg()==='pt'?'Data final antes da inicial':'Einddatum ligt voor startdatum');return;}
+      for(let d=new Date(dStart);d<=dEnd;d.setDate(d.getDate()+1)){
+        const di2=(d.getDay()+6)%7, wk2=wkeyDate(d);
+        for(const loc of locs){
+          const row={household_id:HID,location_id:loc,week_key:wk2,day_index:di2,text_nl:nl,text_pt:pt||nl,category:cat,points:pts};
+          if(who)row.user_id=who;
+          ins.push(row);
+        }
+      }
+    } else {
     // Auto-detect day from schedule when no days selected
     let days=daysSelected;
     if(!days.length&&freq==='once'&&startDate){
@@ -3803,6 +3825,8 @@ async function addUnifiedTask(){
         ins.push(row);
       }
     }
+    }
+    if(!ins.length){doFlash('nt-flash',lg()==='pt'?'Nada para criar':'Niets aan te maken — check de periode');return;}
     for(let i=0;i<ins.length;i+=500){
       let res=await sb.from('extra_tasks').insert(ins.slice(i,i+500));
       if(res.error&&who){
