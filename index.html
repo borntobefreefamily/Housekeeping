@@ -1622,7 +1622,7 @@ async function loadAll(){
     safeQ(sb.from('week_schedule').select('*').eq('household_id',HID)),
     safeQ(sb.from('extra_tasks').select('*').eq('household_id',HID)),
     safeQ(sb.from('task_checks').select('*').eq('household_id',HID).order('week_key',{ascending:false})),
-    safeQ(sb.from('skipped_tasks').select('*').eq('household_id',HID)),
+    safeQ(sb.from('skipped_tasks').select('*').eq('household_id',HID).order('week_key',{ascending:false})),
     safeQ(sb.from('day_notes').select('*').eq('household_id',HID)),
     safeQ(sb.from('recipes').select('*').eq('household_id',HID)),
     safeQ(sb.from('households').select('*').eq('id',HID)),
